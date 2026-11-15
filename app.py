@@ -116,4 +116,44 @@ def score():
     if n not in USERS: USERS[n]={"password":d.get("password",""),"wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[]}
     USERS[n]["wins"]=int(d.get("wins",0)); USERS[n]["losses"]=int(d.get("losses",0)); USERS[n]["last_seen"]=time.time()
     if d.get("password"): USERS[n]["password"]=d.get("password")
-    return jsonify({"
+    return jsonify({"ok":True})
+@app.route("/api/online", methods=["POST"])
+def online():
+    d=request.get_json() or {}; n=d.get("name")
+    if n in USERS: USERS[n]["last_seen"]=time.time()
+    return jsonify({"ok":True})
+@app.route("/api/notif")
+def notif():
+    n=request.args.get("name",""); reqs=[]
+    if n in USERS: reqs=USERS[n].get("requests",[])
+    now=time.time(); newOnline=""
+    for k,v in USERS.items():
+        if k!=n and (now-v.get("last_seen",0))<10: newOnline=k
+    return jsonify({"requests":reqs,"newOnline":newOnline})
+@app.route("/api/friend", methods=["POST"])
+def friend():
+    d=request.get_json() or {}; frm=d.get("from"); to=d.get("to")
+    if to in USERS and frm not in USERS[to]["requests"] and frm not in USERS[to].get("friends",[]):
+        USERS[to]["requests"].append(frm)
+    return jsonify({"ok":True})
+@app.route("/api/respond", methods=["POST"])
+def respond():
+    d=request.get_json() or {}; me=d.get("me"); frm=d.get("from"); act=d.get("action")
+    if me in USERS and frm in USERS[me]["requests"]: USERS[me]["requests"].remove(frm)
+    if act=="accept" and me in USERS and frm in USERS:
+        if frm not in USERS[me]["friends"]: USERS[me]["friends"].append(frm)
+        if me not in USERS[frm]["friends"]: USERS[frm]["friends"].append(me)
+    return jsonify({"ok":True})
+@app.route("/webhook", methods=["GET","POST"])
+def webhook():
+    if request.method=="GET":
+        if request.args.get("hub.mode")=="subscribe" and request.args.get("hub.verify_token")==VERIFY_TOKEN: return request.args.get("hub.challenge"),200
+        return "Forbidden",403
+    data=request.get_json() or {}
+    try:
+        for m in data["entry"][0]["changes"][0]["value"].get("messages",[]):
+            if m.get("from") and m.get("text",{}).get("body"): send_whatsapp(m["from"], handle_command(m["from"], m["text"]["body"]))
+    except: pass
+    return "OK",200
+if __name__=="__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
