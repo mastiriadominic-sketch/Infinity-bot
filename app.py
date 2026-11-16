@@ -344,8 +344,7 @@ def get_player():
         if stored!=str(pw):
             return jsonify({"found":True,"password_ok":False,"display_name":u.get("display_name")})
     else:
-        return jsonify({"found":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{}),"password_ok":True})
-    return jsonify({"found":True,"password_ok```python
+        return jsonify({"found":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{}),"password_ok":True}) 
     return jsonify({"found":True,"password_ok":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{}),"registered_at":u.get("registered_at")})
 @app.route("/api/score", methods=["POST"])
 def score():
