@@ -24,13 +24,13 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 </style></head><body>
 <div class="topbar"><div><span class="catTimeTop" id="catTime">🕐 Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">👑 INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn">🔊</div><div class="profile" id="profileBtn">👤<span id="notifBadge" class="notif hidden">1</span></div></div></div>
 <div id="toast" class="toast hidden"></div>
-<div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p><p style="font-size:12px;opacity:.7">🎹 Tap ENTER to start Yeshua Instrumental</p></div>
+<div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p></div>
 <div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px"><button class="btn2" onclick="showPage('page-home')">← Back</button>
 <div class="card" style="text-align:center"><div style="font-size:60px">👑</div><h1 class="cursive" style="font-size:48px;margin:5px">Register</h1><p id="regSub">Create your Infinity account 👑</p>
 <div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="e.g. Chikondi" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="e.g. 5678 - NOT 1234 or 0000" maxlength="4" inputmode="numeric" type="password" class="regInput"><p style="font-size:12px;color:#ffd700">⚠️ Do NOT use 1234 or 0000 - Too easy!</p><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div>
 <div id="loginForm" class="hidden"><label style="text-align:left;display:block">Your Name:</label><input id="loginName" placeholder="Your registered name"><label style="text-align:left;display:block">4-Digit Password:</label><input id="loginPass" placeholder="****" maxlength="4" inputmode="numeric" type="password" class="regInput"><button class="btn" onclick="doLogin()">🔓 LOGIN</button><p style="font-size:13px;opacity:.8">New here? <b style="color:#ffd700;cursor:pointer" onclick="showRegister()">Click here to Register</b></p></div>
 <p style="font-size:12px;opacity:.7">Chikondi = My Princess 👸<br>Chimwemwe = Her Majesty 👑</p></div></div>
-<div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span><br><span style="font-size:11px;opacity:.7">🎹 Yeshua Playing • Tap 👤 for Wins / Losses / Friends</span></div>
+<div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span></div>
 <div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div>
 <div class="card"><h3 style="text-align:center;margin:0">🏆 LEADERBOARD 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="loadLeader()">🔄 Refresh</button></div></div>
 <div id="page-game" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back to Dashboard</button><div class="card" style="position:relative"><h2 id="gameTitle" style="text-align:center">🧩 RIDDLES</h2><div id="gameBody"></div></div></div>
@@ -74,40 +74,66 @@ function isLocked(){ var now=catNow(); var unlock=new Date(2027,0,24,12,0,0); re
 function blockedFeature(name){ if(isLocked()){ alert('🔒 '+name+' is locked!\nAvailable on 24 January 2027 at 12:00hrs CAT'); } else { alert('✅ '+name+' is now unlocked!'); } }
 function addEmoji(){ var inp=document.getElementById('msgInput'); inp.value+='😊'; inp.focus(); toggleSend(); }
 function toggleSend(){ var v=document.getElementById('msgInput').value.trim(); document.getElementById('micBtn').style.display=v?'none':'flex'; document.getElementById('sendBtnSmall').style.display=v?'block':'none'; }
-var audioCtx=null, soundOn=true, soundNodes=[], soundStarted=false;
+// ============================================================
+// *** ONLY ONE SOUND - SOFT BABY SLEEP LULLABY ***
+// All old sounds removed. Only this one soft sound!
+// Very soft, very slow, like singing a baby to sleep 🤱
+// ============================================================
+var audioCtx=null, soundOn=true, soundNodes=[], soundStarted=false, lullabyTimer=null, lullabyMaster=null;
 function unlockAudio(){
   try{
     if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==='suspended'){ audioCtx.resume(); }
+    if(audioCtx.state==='suspended') audioCtx.resume();
     var o=audioCtx.createOscillator(), g=audioCtx.createGain();
     g.gain.value=0.0001; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.05);
   }catch(e){}
 }
-function playTick(){ try{ unlockAudio(); var o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.value=1200; g.gain.value=0.08; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.08); }catch(e){} }
+function playSoftNote(freq, vol, dur){
+  try{
+    var o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type='sine'; o.frequency.value=freq;
+    // Super soft fade in / fade out - like a whisper
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime+0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
+    o.connect(g); g.connect(lullabyMaster);
+    o.start(); o.stop(audioCtx.currentTime+dur+0.1);
+  }catch(e){}
+}
 function startDashboardSound(){
   if(!soundOn) return;
   try{
     unlockAudio();
     stopDashboardSound();
-    var master=audioCtx.createGain(); master.gain.value=0.18; master.connect(audioCtx.destination); soundNodes.push(master);
-    var len=audioCtx.sampleRate*2; var buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate); var d=buf.getChannelData(0); for(var i=0;i<len;i++) d[i]=Math.random()*2-1;
-    var noise=audioCtx.createBufferSource(); noise.buffer=buf; noise.loop=true;
-    var filt=audioCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=700;
-    var ng=audioCtx.createGain(); ng.gain.value=0.22;
-    noise.connect(filt); filt.connect(ng); ng.connect(master); noise.start(); soundNodes.push(noise);
-    var dropTimer=setInterval(function(){ if(!soundOn) return; try{ var o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.setValueAtTime(800+Math.random()*600, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime+0.4); g.gain.setValueAtTime(0.10, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.4); o.connect(g); g.connect(master); o.start(); o.stop(audioCtx.currentTime+0.45); }catch(e){} }, 1100); soundNodes.push({isTimer:true, id:dropTimer});
-    var yeshua=[523.25, 659.25, 783.99, 659.25, 587.33, 659.25, 523.25, 0, 440, 523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 0, 392, 440, 523.25, 659.25, 587.33, 440, 523.25];
-    var ni=0;
-    var pianoTimer=setInterval(function(){ if(!soundOn) return; var f=yeshua[ni % yeshua.length]; ni++; if(f===0) return; try{
-      var o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(0.35, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+2.0); o.connect(g); g.connect(master); o.start(); o.stop(audioCtx.currentTime+2.0);
-      var o2=audioCtx.createOscillator(), g2=audioCtx.createGain(); o2.type='sine'; o2.frequency.value=f/2; g2.gain.setValueAtTime(0.15, audioCtx.currentTime); g2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+2.0); o2.connect(g2); g2.connect(master); o2.start(); o2.stop(audioCtx.currentTime+2.0);
-    }catch(e){} }, 1200); soundNodes.push({isTimer:true, id:pianoTimer});
+    lullabyMaster=audioCtx.createGain(); lullabyMaster.gain.value=0.35; lullabyMaster.connect(audioCtx.destination); soundNodes.push(lullabyMaster);
+    // Baby Sleep Lullaby - Twinkle Twinkle style, very slow, very soft, low notes only
+    // C - E - G - C - G - A - G - E - C - E - G - E - D - C
+    // Played super slowly, one note every 2 seconds, like rocking a baby
+    var lullaby=[261.63,329.63,392.00,523.25,0,392.00,440.00,392.00,329.63,0,261.63,329.63,392.00,329.63,293.66,261.63,0,0,261.63,329.63,392.00,523.25,0,392.00,440.00,392.00,329.63,0,261.63,0,293.66,329.63,293.66,261.63,0,0];
+    var li=0;
+    lullabyTimer=setInterval(function(){
+      if(!soundOn) return;
+      var f=lullaby[li % lullaby.length]; li++;
+      if(f!==0){
+        playSoftNote(f, 0.08, 3.0);
+        playSoftNote(f/2, 0.04, 3.0);
+      }
+    }, 2000);
+    soundNodes.push({isTimer:true, id:lullabyTimer});
     soundStarted=true;
     var b=document.getElementById('soundBtn'); if(b) b.innerText='🔊';
   }catch(e){}
 }
-function stopDashboardSound(){ try{ soundNodes.forEach(function(n){ try{ if(n.isTimer) clearInterval(n.id); else if(n.stop) n.stop(); else if(n.disconnect) n.disconnect(); }catch(e){} }); soundNodes=[]; soundStarted=false; if(audioCtx && audioCtx.state==='running'){ audioCtx.suspend(); } }catch(e){} }
-function toggleSound(){ unlockAudio(); soundOn=!soundOn; var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇'; if(soundOn){ startDashboardSound(); toast('🎹 Yeshua Instrumental ON'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); } }
+function stopDashboardSound(){
+  try{
+    if(lullabyTimer) clearInterval(lullabyTimer);
+    soundNodes.forEach(function(n){ try{ if(n.isTimer) clearInterval(n.id); else if(n.stop) n.stop(); else if(n.disconnect) n.disconnect(); }catch(e){} });
+    soundNodes=[]; soundStarted=false; lullabyTimer=null;
+    if(audioCtx && audioCtx.state==='running'){ audioCtx.suspend(); }
+  }catch(e){}
+}
+function playTick(){ try{ unlockAudio(); var o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.value=900; g.gain.value=0.03; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.08); }catch(e){} }
+function toggleSound(){ unlockAudio(); soundOn=!soundOn; var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇'; if(soundOn){ startDashboardSound(); toast('🤱 Soft Baby Sleep Sound ON'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); } }
 document.addEventListener('touchstart', function(){ unlockAudio(); if(soundOn && loggedIn && !soundStarted){ startDashboardSound(); } }, {passive:true});
 document.addEventListener('click', function(){ unlockAudio(); if(soundOn && loggedIn && !soundStarted){ startDashboardSound(); } }, true);
 function autoLogout(){
@@ -135,7 +161,6 @@ function showPage(id){
 function requireLogin(){ if(!loggedIn){ alert('Please LOGIN first!'); showPage('page-register'); showLogin(); return false; } return true; }
 function welcomeName(){ if(!user) return 'Player'; var n=user.name.trim().toLowerCase(); if(n.indexOf('chikondi')===0) return 'My Princess 👸'; if(n.indexOf('chimwemwe')===0) return 'Her Majesty 👑'; return user.name; }
 function save(){ try{ localStorage.setItem('inf_user',JSON.stringify(user)); localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} sync(); }
-// *** FIX: Login MUST push you to leaderboard! ***
 function forceSync(){
   if(!user || !loggedIn) return;
   fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ return fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name})}); }).then(function(){ loadLeader(); }).catch(function(){ loadLeader(); });
