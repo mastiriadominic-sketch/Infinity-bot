@@ -22,19 +22,20 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 .backFab{position:fixed;left:16px;bottom:16px;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#1a1a2e,#3a0a5e);display:none;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#ffd700;border:3px solid #ffd700;box-shadow:0 0 20px rgba(255,215,0,.6);cursor:pointer;z-index:60}
 .chatRow{display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,0,0,.45);border-radius:16px;margin:8px 0}.chatBtn{width:36px;height:36px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#00e5ff,#ff006e);display:inline-flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;margin-left:6px}.chatBox{background:#1a1a2e;border-radius:20px;padding:12px;min-height:320px;max-height:380px;overflow-y:auto}.bubble{max-width:80%;padding:10px 14px;border-radius:18px;margin:6px 0;font-size:14px}.mine{background:#ffd700;color:#000;margin-left:auto}.theirs{background:rgba(255,255,255,.2);color:#fff}
 .msgBarWrap{display:flex;align-items:center;gap:8px;margin-top:12px}.msgBar{flex:1;display:flex;align-items:center;gap:10px;background:#2b2b33;border-radius:999px;padding:10px 12px}.msgBar .emojiBtn{font-size:22px;background:none;border:none;cursor:pointer}.msgBar input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px;padding:0;margin:0}.msgBar input::placeholder{color:#aaa}.msgBar .attachBtn{font-size:20px;background:none;border:none;cursor:pointer}.micBtn{width:52px;height:52px;min-width:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#c39bff,#9a6bff);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}.sendBtnSmall{width:44px;height:44px;border-radius:50%;border:none;background:#ffd700;font-size:20px;cursor:pointer;display:none}.catTimeTop{font-size:11px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:4px 8px;border-radius:20px;display:inline-block}.timer{position:absolute;top:10px;right:12px;background:#ff2222;color:#fff;padding:6px 12px;border-radius:20px;font-weight:900;font-size:18px}.topRight{display:flex;align-items:center;gap:6px}.soundSmall{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
+.leaderScroll{max-height:480px;overflow-y:auto;scroll-behavior:smooth}.myRankBar{position:sticky;bottom:0;background:linear-gradient(90deg,#ffd700,#ff006e);color:#000;padding:12px;border-radius:16px;font-weight:900;text-align:center;cursor:pointer;margin-top:10px;border:2px solid #fff}.myRankBar small{font-weight:400}
 </style></head><body>
-<div id="ytPlayer" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;visibility:hidden"></div>
 <div class="topbar"><div><span class="catTimeTop" id="catTime">🕐 Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">👑 INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn">🔊</div><div class="profile" id="profileBtn">👤<span id="notifBadge" class="notif hidden">1</span></div></div></div>
 <div id="toast" class="toast hidden"></div>
-<div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login<br>📶 Low Data • Audio Only • ~10MB / 2hrs</p></div>
+<div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login<br>📶 Low Data • Soft Piano • ~10MB / 2hrs</p></div>
 <div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px">
 <div class="card" style="text-align:center"><div style="font-size:60px">👑</div><h1 class="cursive" style="font-size:48px;margin:5px">Register</h1><p id="regSub">Create your Infinity account 👑</p>
 <div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="e.g. Chikondi" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="e.g. 5678 - NOT 1234 or 0000" maxlength="4" inputmode="numeric" type="password" class="regInput"><p style="font-size:12px;color:#ffd700">⚠️ Do NOT use 1234 or 0000 - Too easy!</p><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div>
 <div id="loginForm" class="hidden"><label style="text-align:left;display:block">Your Name:</label><input id="loginName" placeholder="Your registered name"><label style="text-align:left;display:block">4-Digit Password:</label><input id="loginPass" placeholder="****" maxlength="4" inputmode="numeric" type="password" class="regInput"><button class="btn" onclick="doLogin()">🔓 LOGIN</button><p style="font-size:13px;opacity:.8">New here? <b style="color:#ffd700;cursor:pointer" onclick="showRegister()">Click here to Register</b></p></div>
-<p style="font-size:12px;opacity:.7">Chikondi = My Princess 👸<br>Chimwemwe = Her Majesty 👑</p></div></div>
+</div></div>
 <div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span></div>
 <div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div>
-<div class="card"><h3 style="text-align:center;margin:0">🏆 LEADERBOARD 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="loadLeader()">🔄 Refresh</button></div></div>
+<div class="card"><h3 style="text-align:center;margin:0">🏆 TOP 3 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="openFullLeader()">👀 View Full Leaderboard</button></div></div>
+<div id="page-leader" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h3 style="text-align:center;margin:0">🏆 FULL LEADERBOARD 🏆</h3><p style="text-align:center;font-size:12px;opacity:.8">All players • Online + Offline • Scroll for more</p><div class="leaderScroll" id="fullLeaderList">Loading...</div><div id="myRankJump"></div><button class="btn2" onclick="loadMoreLeader()">⬇️ Load More (Next 20)</button></div></div>
 <div id="page-game" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="position:relative"><h2 id="gameTitle" style="text-align:center">🧩 RIDDLES</h2><div id="gameBody"></div></div></div>
 <div id="page-coming" class="hidden" style="max-width:520px;margin:0 auto;padding:40px 20px;text-align:center"><div style="font-size:80px">🚀</div><h1 class="cursive" style="font-size:54px">Coming Soon</h1><h2 id="comingName">SCI-FI</h2><p>Launching on<br><b>25th December 2026</b></p><p>Returning in:</p><div class="count" id="countDown">5</div></div>
 <div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p>🏆 Wins: <b id="profWins">0</b> | ❌ Losses: <b id="profLoss">0</b></p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p></div>
@@ -47,7 +48,6 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <p style="text-align:center;font-size:11px;opacity:.7">📎 Picture • 🎤 Voice • 📞 Call unlock 24 Jan 2027 12:00 CAT</p></div></div>
 <div class="msgFab" id="msgFab">💬</div>
 <div class="backFab" id="backFab">←</div>
-<script src="https://www.youtube.com/iframe_api"></script>
 <script>
 try{ if(!localStorage.getItem('inf_version')){ localStorage.setItem('inf_version','v6-final'); } }catch(e){}
 var user=null; try{ user=JSON.parse(localStorage.getItem('inf_user')||'null'); }catch(e){ user=null; }
@@ -55,12 +55,27 @@ var wins=parseInt(localStorage.getItem('inf_wins')||'0')||0, losses=parseInt(loc
 var stageIdx=parseInt(localStorage.getItem('inf_stage')||'0')||0;
 var loggedIn=false;
 var STAGES=['Beginner','Intermediate','Advanced','Expert','Professional'];
-function stageName(){ return STAGES[Math.min(stageIdx, STAGES.length-1)] + (stageIdx>=5 ? ' +' : ''); }
+// *** RANK RULES - HIDDEN IN BACKGROUND! ***
+// Beginner -> Intermediate = 50 correct, Intermediate -> Advanced = 150, Advanced -> Expert = 300, Expert -> Professional = 500
+// Nobody sees these numbers!
+function computeStageFromWins(w){
+  if(w>=500) return 4;
+  if(w>=300) return 3;
+  if(w>=150) return 2;
+  if(w>=50) return 1;
+  return 0;
+}
+function refreshStageFromWins(){
+  var ns=computeStageFromWins(wins);
+  if(ns!==stageIdx){ var old=stageIdx; stageIdx=ns; if(ns>old && loggedIn){ setTimeout(function(){ toast('🎉 LEVEL UP! You are now '+stageName()+'! 👑'); },600); } }
+  return stageIdx;
+}
+function stageName(){ refreshStageFromWins(); return STAGES[Math.min(stageIdx, STAGES.length-1)] + (stageIdx>=5 ? ' +' : ''); }
 function getDiff(){ return (Math.pow(1.3, stageIdx)).toFixed(2); }
 var currentMode='',currentCat='',qIndex=0,qList=[],score=0,roundWins=0,roundLoss=0,prevRank=999, lastNotif='', chatFriend='';
 var currentPage='page-home';
+var fullLeaderData=[], leaderShown=20;
 function isBannedPassword(pw){ return pw==='1234' || pw==='0000'; }
-// *** HISTORY - HIDDEN + 10ms FASTER! Uses Set for instant O(1) check! ***
 var playerHistory={};
 var askedSet=new Set();
 function rebuildAskedSet(){ askedSet=new Set(); for(var k in playerHistory){ if(playerHistory[k] && playerHistory[k].asked>0) askedSet.add(k); } }
@@ -95,7 +110,6 @@ function hasBeenAsked(qText){ return askedSet.has(qText); }
 function getAskedMap(){ try{ return JSON.parse(localStorage.getItem('inf_asked_qs')||'{}'); }catch(e){ return {}; } }
 function saveAskedMap(m){ try{ localStorage.setItem('inf_asked_qs', JSON.stringify(m)); }catch(e){} }
 function markAsked(qText){ var m=getAskedMap(); m[qText]=Date.now(); saveAskedMap(m); }
-// *** 10ms FASTER: Single pass, no double filter, Set lookup ***
 function gamblePick(list, count){
   var neverAsked=[], already=[];
   for(var i=0;i<list.length;i++){ if(askedSet.has(list[i].q)) already.push(list[i]); else neverAsked.push(list[i]); }
@@ -111,33 +125,77 @@ function blockedFeature(name){ if(isLocked()){ alert('🔒 '+name+' is locked!\n
 function addEmoji(){ var inp=document.getElementById('msgInput'); inp.value+='😊'; inp.focus(); toggleSend(); }
 function toggleSend(){ var v=document.getElementById('msgInput').value.trim(); document.getElementById('micBtn').style.display=v?'none':'flex'; document.getElementById('sendBtnSmall').style.display=v?'block':'none'; }
 // ============================================================
-// *** AUDIO ONLY - YESHUA INSTRUMENTAL WORSHIP ***
-// https://youtu.be/JT9aSnNYRjc
-// NO video! Only audio! Lowest quality!
-// HEARTBEAT REMOVED - No pinging!
+// *** SOFT PIANO RELAXING MIX - LOW, SOFT, CALM ***
+// No YouTube! Pure soft piano, notes mixing slowly!
+// Very low volume, relaxing like sleeping music!
 // ============================================================
-var ytPlayer=null, ytReady=false, soundOn=true, ytWantPlay=false;
-function onYouTubeIframeAPIReady(){
+var audioCtx=null, soundOn=true, pianoTimer=null, pianoStarted=false, pianoMaster=null;
+function unlockAudio(){
   try{
-    ytPlayer=new YT.Player('ytPlayer',{height:'1',width:'1',videoId:'JT9aSnNYRjc',playerVars:{autoplay:0,controls:0,disablekb:1,fs:0,modestbranding:1,rel:0,loop:1,playlist:'JT9aSnNYRjc',playsinline:1,iv_load_policy:3},events:{onReady:function(e){ ytReady=true; try{ e.target.setPlaybackQuality('small'); e.target.setPlaybackQualityRange('small','small'); }catch(err){} e.target.setVolume(35); if(ytWantPlay && soundOn){ e.target.playVideo(); } },onStateChange:function(e){ if(e.data===YT.PlayerState.ENDED && soundOn){ e.target.playVideo(); } if(e.data===YT.PlayerState.PLAYING){ try{ e.target.setPlaybackQuality('small'); }catch(err){} } }}});
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    var o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    g.gain.value=0.0001; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.05);
+  }catch(e){}
+}
+function playPianoNote(freq, vol, dur){
+  try{
+    var o1=audioCtx.createOscillator(), o2=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o1.type='sine'; o1.frequency.value=freq;
+    o2.type='triangle'; o2.frequency.value=freq*2;
+    var g2=audioCtx.createGain(); g2.gain.value=0.25;
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime+0.25);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
+    o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(pianoMaster);
+    o1.start(); o2.start(); o1.stop(audioCtx.currentTime+dur+0.1); o2.stop(audioCtx.currentTime+dur+0.1);
+    // Soft echo - relaxing mix
+    try{
+      var dly=audioCtx.createDelay(); dly.delayTime.value=0.45;
+      var fb=audioCtx.createGain(); fb.gain.value=0.18;
+      var wet=audioCtx.createGain(); wet.gain.value=0.18;
+      g.connect(dly); dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(pianoMaster);
+    }catch(e){}
   }catch(e){}
 }
 function startDashboardSound(){
-  ytWantPlay=true;
   if(!soundOn) return;
-  try{ if(ytReady && ytPlayer){ ytPlayer.unMute(); ytPlayer.setVolume(35); try{ ytPlayer.setPlaybackQuality('small'); }catch(e){} ytPlayer.playVideo(); } }catch(e){}
-  var b=document.getElementById('soundBtn'); if(b) b.innerText='🔊';
+  try{
+    unlockAudio();
+    stopDashboardSound();
+    pianoMaster=audioCtx.createGain(); pianoMaster.gain.value=0.35; pianoMaster.connect(audioCtx.destination);
+    // Soft Piano Relaxing Mix - C Major pentatonic, very low, very slow, notes blend together
+    var notes=[261.63,293.66,329.63,392.00,440.00,523.25,587.33,659.25,392.00,329.63,261.63,329.63,440.00,523.25,440.00,392.00,329.63,293.66,261.63,0,523.25,659.25,587.33,523.25,440.00,0,392.00,440.00,523.25,0];
+    var chords=[[130.81,196.00,261.63],[174.61,220.00,261.63],[146.83,196.00,246.94],[130.81,164.81,196.00]];
+    var ni=0, ci=0;
+    pianoTimer=setInterval(function(){
+      if(!soundOn) return;
+      var f=notes[ni % notes.length]; ni++;
+      if(f!==0){
+        playPianoNote(f, 0.06, 3.5);
+        playPianoNote(f/2, 0.03, 3.5);
+      }
+      if(ni % 8===0){ var ch=chords[ci % chords.length]; ci++; for(var k=0;k<ch.length;k++){ playPianoNote(ch[k], 0.025, 4.5); } }
+    }, 1800);
+    pianoStarted=true;
+    var b=document.getElementById('soundBtn'); if(b) b.innerText='🔊';
+  }catch(e){}
 }
 function stopDashboardSound(){
-  ytWantPlay=false;
-  try{ if(ytReady && ytPlayer){ ytPlayer.pauseVideo(); } }catch(e){}
+  try{
+    if(pianoTimer) clearInterval(pianoTimer);
+    pianoTimer=null; pianoStarted=false;
+    if(audioCtx && audioCtx.state==='running'){ audioCtx.suspend(); }
+  }catch(e){}
 }
 function playTick(){}
 function toggleSound(){
   soundOn=!soundOn;
   var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇';
-  if(soundOn){ startDashboardSound(); toast('🎹 Yeshua Instrumental Worship ON - Audio Only'); } else { stopDashboardSound(); try{ if(ytReady && ytPlayer) ytPlayer.mute(); }catch(e){} toast('🔇 Sound OFF'); }
+  if(soundOn){ startDashboardSound(); toast('🎹 Soft Piano Relaxing ON'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); }
 }
+document.addEventListener('touchstart', function(){ unlockAudio(); if(soundOn && loggedIn && !pianoStarted){ startDashboardSound(); } }, {passive:true});
+document.addEventListener('click', function(){ unlockAudio(); if(soundOn && loggedIn && !pianoStarted){ startDashboardSound(); } }, true);
 function autoLogout(){
   stopDashboardSound();
   loggedIn=false;
@@ -163,6 +221,7 @@ function updateBackFab(){
 }
 function goBack(){
   if(currentPage==='page-register'){ showPage('page-home'); }
+  else if(currentPage==='page-leader'){ goDash(); }
   else if(currentPage==='page-game'){ showPage('page-dash'); }
   else if(currentPage==='page-coming'){ goDash(); }
   else if(currentPage==='page-profile'){ goDash(); }
@@ -173,7 +232,7 @@ function goBack(){
 }
 function showPage(id){
   currentPage=id;
-  ['page-home','page-register','page-dash','page-game','page-coming','page-profile','page-other','page-messages','page-chat'].forEach(function(p){ document.getElementById(p).classList.add('hidden'); });
+  ['page-home','page-register','page-dash','page-leader','page-game','page-coming','page-profile','page-other','page-messages','page-chat'].forEach(function(p){ document.getElementById(p).classList.add('hidden'); });
   document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0);
   updateBackFab();
   try{ if(loggedIn && id!=='page-home'){ localStorage.setItem('inf_page', id); } }catch(e){}
@@ -186,34 +245,75 @@ function forceSync(){
   fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); fetchServerHistory(); }).catch(function(){ loadLeader(); fetchServerHistory(); });
 }
 function sync(){ if(!user || !loggedIn) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); }).catch(function(){}); }
-// *** HEARTBEAT REMOVED! No more pinging! ***
-// Online updates only on: Login / Answer / Score save
-// Notif check only every 60s - Low Data!
 setInterval(function(){ checkNotif(); },60000);
 function goRegister(){ if(user){ showPage('page-register'); showLogin(); document.getElementById('loginName').value=user.name; document.getElementById('regSub').innerText='Welcome back '+user.name+' 👑 Enter password to Login'; } else { showPage('page-register'); showRegister(); } }
 function showRegister(){ document.getElementById('registerForm').classList.remove('hidden'); document.getElementById('loginForm').classList.add('hidden'); document.getElementById('regSub').innerText='Create your Infinity account 👑'; }
 function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('regSub').innerText='Login to your account 👑'; }
-function doRegister(){ var n=document.getElementById('regName').value.trim(); var pw=document.getElementById('regPass').value.trim(); if(!n){ alert('Please enter your name!'); return; } if(!pw || pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits! e.g. 5678'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!\nExample: 5678, 2468, 1357'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); startDashboardSound(); }
-function doLogin(){ var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ loggedIn=true; try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} toast('Welcome back '+welcomeName()+' 👑 - Nothing reset! History kept!'); updateMe(); showPage('page-dash'); forceSync(); startDashboardSound(); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); startDashboardSound(); } }
-function updateMe(){ if(!user) return; document.getElementById('welcomeText').innerText='Welcome '+welcomeName(); document.getElementById('myStage').innerText=stageName(); }
+function doRegister(){ unlockAudio(); var n=document.getElementById('regName').value.trim(); var pw=document.getElementById('regPass').value.trim(); if(!n){ alert('Please enter your name!'); return; } if(!pw || pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits! e.g. 5678'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!\nExample: 5678, 2468, 1357'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); startDashboardSound(); }
+function doLogin(){ unlockAudio(); var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ loggedIn=true; try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} toast('Welcome back '+welcomeName()+' 👑 - Nothing reset! History kept!'); updateMe(); showPage('page-dash'); forceSync(); startDashboardSound(); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); startDashboardSound(); } }
+function updateMe(){ if(!user) return; refreshStageFromWins(); document.getElementById('welcomeText').innerText='Welcome '+welcomeName(); document.getElementById('myStage').innerText=stageName(); }
 function goDash(){ if(!requireLogin()) return; showPage('page-dash'); updateMe(); loadLeader(); }
+function sortPlayers(arr){ return arr.slice().sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); }); }
 function loadLeader(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){
- var sorted=(d.players||d).sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); });
+ var sorted=sortPlayers(d.players||d);
  var idx=-1; for(var i=0;i<sorted.length;i++){ if(user && loggedIn && sorted[i].name===user.name) idx=i; }
  document.getElementById('myRank').innerText=idx>=0?'#'+(idx+1):'#-'; prevRank=idx>=0?idx+1:999;
- var html=''; if(sorted.length===0) html='<p style="text-align:center">No players yet</p>';
- sorted.forEach(function(p,i){ var dot=p.online?'<span class="dot green"></span>':'<span class="dot red"></span>'; html+='<div class="leadRow" onclick="openOther(\''+p.name+'\')"><span>'+dot+' '+(i+1)+'. '+p.name+' '+(i==0?'👑':'')+'</span><span><b>'+p.wins+'</b> Win | <b>'+p.losses+'</b> Lose</span></div>'; });
+ // Dashboard: ONLY TOP 3!
+ var top3=sorted.slice(0,3);
+ var medals=['🥇','🥈','🥉'];
+ var html=''; if(!top3.length) html='<p style="text-align:center">No players yet</p>';
+ top3.forEach(function(p,i){ var dot=p.online?'<span class="dot green"></span>':'<span class="dot red"></span>'; html+='<div class="leadRow" onclick="openOther(\''+p.name+'\')"><span>'+dot+' '+medals[i]+' '+(i+1)+'. '+p.name+'</span><span><b>'+p.wins+'</b> Win | <b>'+p.losses+'</b> Lose</span></div>'; });
+ if(idx>=3 && user){ html+='<div class="leadRow" style="border:2px solid #ffd700" onclick="openFullLeader()"><span>👤 Your Rank: #'+(idx+1)+'</span><span>Tap to see full →</span></div>'; }
  document.getElementById('leaderList').innerHTML=html;
  }).catch(function(){}); }
+function openFullLeader(){ if(!requireLogin()) return; showPage('page-leader'); leaderShown=20; loadFullLeader(); }
+function loadFullLeader(){
+  fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){
+    fullLeaderData=sortPlayers(d.players||d);
+    renderFullLeader();
+  }).catch(function(){});
+}
+function renderFullLeader(){
+  var box=document.getElementById('fullLeaderList');
+  var show=fullLeaderData.slice(0,leaderShown);
+  var html='';
+  if(!show.length) html='<p style="text-align:center">No players yet</p>';
+  show.forEach(function(p,i){
+    var dot=p.online?'<span class="dot green"></span>':'<span class="dot red"></span>';
+    var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    var isMe=(user && p.name===user.name);
+    html+='<div class="leadRow" id="rank-'+(i+1)+'" '+(isMe?'style="border:2px solid #ffd700;background:rgba(255,215,0,.25)"':'')+' onclick="openOther(\''+p.name+'\')"><span>'+dot+' '+medal+' '+(i+1)+'. '+p.name+(isMe?' 👈 YOU':'')+'</span><span><b>'+p.wins+'</b> Win | <b>'+p.losses+'</b> Lose</span></div>';
+  });
+  if(leaderShown<fullLeaderData.length) html+='<p style="text-align:center;font-size:12px;opacity:.7">Showing '+leaderShown+' of '+fullLeaderData.length+' • Scroll / Load More</p>';
+  box.innerHTML=html;
+  // Your Rank bar at bottom - clickable to jump to you!
+  var myIdx=-1; for(var i=0;i<fullLeaderData.length;i++){ if(user && fullLeaderData[i].name===user.name) myIdx=i; }
+  var jump=document.getElementById('myRankJump');
+  if(myIdx>=0){
+    var me=fullLeaderData[myIdx];
+    jump.innerHTML='<div class="myRankBar" onclick="jumpToMyRank()">👤 YOUR RANK: #'+(myIdx+1)+' • '+me.wins+' Win | '+me.losses+' Lose<br><small>Tap to jump to your rank →</small></div>';
+  } else { jump.innerHTML=''; }
+}
+function loadMoreLeader(){ leaderShown+=20; if(leaderShown>fullLeaderData.length) leaderShown=fullLeaderData.length; renderFullLeader(); }
+function jumpToMyRank(){
+  var myIdx=-1; for(var i=0;i<fullLeaderData.length;i++){ if(user && fullLeaderData[i].name===user.name) myIdx=i; }
+  if(myIdx<0) return;
+  // Ensure your rank is loaded - expand list to include you!
+  if(myIdx+1>leaderShown){ leaderShown=myIdx+1; renderFullLeader(); }
+  setTimeout(function(){
+    var el=document.getElementById('rank-'+(myIdx+1));
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.boxShadow='0 0 20px #ffd700'; setTimeout(function(){ el.style.boxShadow=''; },2000); toast('👤 You are Rank #'+(myIdx+1)+'!'); }
+  },100);
+}
 function checkNotif(){ if(!user || !loggedIn) return; fetch('/api/notif?name='+encodeURIComponent(user.name)).then(function(r){ return r.json(); }).then(function(d){
  if(d.requests && d.requests.length>0){ document.getElementById('notifBadge').innerText=d.requests.length; document.getElementById('notifBadge').classList.remove('hidden'); if(lastNotif!==d.requests.join(',')){ toast('📩 You have a friend request from '+d.requests[0]+'!'); lastNotif=d.requests.join(','); } } else { document.getElementById('notifBadge').classList.add('hidden'); }
  if(d.newOnline && d.newOnline!==user.name && lastNotif!==('online'+d.newOnline)){ toast('🟢 '+d.newOnline+' is now Online!'); lastNotif='online'+d.newOnline; }
  }).catch(function(){}); }
 function openMyProfile(){ if(!requireLogin()) return; showPage('page-profile'); document.getElementById('profName').innerText=user.name; document.getElementById('profDot').className='dot green'; document.getElementById('profStatus').innerText='Online'; document.getElementById('profWins').innerText=wins; document.getElementById('profLoss').innerText=losses; document.getElementById('profStage').innerText=stageName();
- fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=arr.sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); }); var ii=-1; for(var i=0;i<s.length;i++){ if(s[i].name===user.name) ii=i; } document.getElementById('profRank').innerText='#'+(ii+1); var me=null; for(var k=0;k<s.length;k++){ if(s[k].name===user.name) me=s[k]; } document.getElementById('profFriends').innerText='👥 Friends: '+(me?me.friends.length:0); document.getElementById('friendList').innerHTML=(me && me.friends.length)?me.friends.map(function(f){ return '<p>👤 '+f+'</p>'; }).join(''):'<p>No friends yet</p>'; }).catch(function(){});
+ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=sortPlayers(arr); var ii=-1; for(var i=0;i<s.length;i++){ if(s[i].name===user.name) ii=i; } document.getElementById('profRank').innerText='#'+(ii+1); var me=null; for(var k=0;k<s.length;k++){ if(s[k].name===user.name) me=s[k]; } document.getElementById('profFriends').innerText='👥 Friends: '+(me?me.friends.length:0); document.getElementById('friendList').innerHTML=(me && me.friends.length)?me.friends.map(function(f){ return '<p>👤 '+f+'</p>'; }).join(''):'<p>No friends yet</p>'; }).catch(function(){});
  fetch('/api/notif?name='+encodeURIComponent(user.name)).then(function(r){ return r.json(); }).then(function(d){ if(d.requests.length===0) document.getElementById('reqList').innerHTML='<p>No requests</p>'; else document.getElementById('reqList').innerHTML=d.requests.map(function(req){ return '<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);padding:10px;border-radius:12px;margin:6px 0"><span>👤 '+req+'</span><span><button onclick="respondFriend(\''+req+'\',\'accept\')" style="background:#00cc00;color:white;border:none;padding:8px 12px;border-radius:50%;font-weight:900">✓</button> <button onclick="respondFriend(\''+req+'\',\'reject\')" style="background:#ff2222;color:white;border:none;padding:8px 12px;border-radius:50%;font-weight:900">✕</button></span></div>'; }).join(''); }).catch(function(){});
 }
-function openOther(name){ if(!requireLogin()) return; if(name===user.name){ openMyProfile(); return; } fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=arr.sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); }); var p=null; for(var i=0;i<s.length;i++){ if(s[i].name===name) p=s[i]; } if(!p) return; var idx=0; for(var j=0;j<s.length;j++){ if(s[j].name===name) idx=j; } document.getElementById('otherName').innerText=p.name; document.getElementById('otherDot').className=p.online?'dot green':'dot red'; document.getElementById('otherStatus').innerText=p.online?'Online':'Offline'; document.getElementById('otherRank').innerText='#'+(idx+1); document.getElementById('otherWins').innerText=p.wins; document.getElementById('otherLoss').innerText=p.losses; var me=null; for(var k=0;k<s.length;k++){ if(s[k].name===user.name) me=s[k]; } var isFriend=me && me.friends.indexOf(name)>=0; document.getElementById('otherActions').innerHTML=isFriend?'<p style="color:#00ff00">✅ Already Friends</p>':'<button class="btn" onclick="addFriend(\''+name+'\')">➕ Add Friend</button>'; showPage('page-other'); }).catch(function(){}); }
+function openOther(name){ if(!requireLogin()) return; if(name===user.name){ openMyProfile(); return; } fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=sortPlayers(arr); var p=null; for(var i=0;i<s.length;i++){ if(s[i].name===name) p=s[i]; } if(!p) return; var idx=0; for(var j=0;j<s.length;j++){ if(s[j].name===name) idx=j; } document.getElementById('otherName').innerText=p.name; document.getElementById('otherDot').className=p.online?'dot green':'dot red'; document.getElementById('otherStatus').innerText=p.online?'Online':'Offline'; document.getElementById('otherRank').innerText='#'+(idx+1); document.getElementById('otherWins').innerText=p.wins; document.getElementById('otherLoss').innerText=p.losses; var me=null; for(var k=0;k<s.length;k++){ if(s[k].name===user.name) me=s[k]; } var isFriend=me && me.friends.indexOf(name)>=0; document.getElementById('otherActions').innerHTML=isFriend?'<p style="color:#00ff00">✅ Already Friends</p>':'<button class="btn" onclick="addFriend(\''+name+'\')">➕ Add Friend</button>'; showPage('page-other'); }).catch(function(){}); }
 function addFriend(to){ if(!requireLogin()) return; fetch('/api/friend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:user.name,to:to})}).then(function(){ toast('Friend request sent to '+to+'!'); }); }
 function respondFriend(from,act){ fetch('/api/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({me:user.name,from:from,action:act})}).then(function(){ toast(act==='accept'?'✅ You accepted '+from:'❌ You rejected '+from); openMyProfile(); }); }
 function openMessages(){ if(!requireLogin()) return; showPage('page-messages'); loadChatList(); }
@@ -223,8 +323,8 @@ function chatKey(a,b){ return [a,b].sort().join('|'); }
 function getMsgs(){ var k=chatKey(user.name, chatFriend); return JSON.parse(localStorage.getItem('msg_'+k)||'[]'); }
 function renderChat(){ var msgs=getMsgs(); var box=document.getElementById('chatBox'); if(!msgs.length) box.innerHTML='<p style="text-align:center;opacity:.7">Say hi to '+chatFriend+' 👋</p>'; else box.innerHTML=msgs.map(function(m){ return '<div class="bubble '+(m.from===user.name?'mine':'theirs')+'"><b>'+(m.from===user.name?'You':m.from)+':</b> '+m.text+'<br><small style="opacity:.6">'+m.time+'</small></div>'; }).join(''); box.scrollTop=box.scrollHeight; }
 function sendMsg(){ var inp=document.getElementById('msgInput'); var txt=inp.value.trim(); if(!txt) return; var msgs=getMsgs(); msgs.push({from:user.name,text:txt,time:catNow().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}); try{ localStorage.setItem('msg_'+chatKey(user.name,chatFriend), JSON.stringify(msgs)); }catch(e){} inp.value=''; toggleSend(); renderChat(); }
-function openRiddles(){ if(!requireLogin()) return; fetchServerHistory(); showPage('page-game'); document.getElementById('gameTitle').innerText='🧩 RIDDLES'; document.getElementById('gameBody').innerHTML='<p style="text-align:center">What kind? • 🎯 '+stageName()+' • '+getDiff()+'x</p><button class="opt" onclick="startGame(\'riddle\',\'Brain Teasers\')">1. 🧠 Brain Teasers</button><button class="opt" onclick="startGame(\'riddle\',\'Love Riddles\')">2. 💖 Love Riddles</button><button class="opt" onclick="startGame(\'riddle\',\'Funny Riddles\')">3. 😂 Funny Riddles</button><button class="opt" onclick="startGame(\'riddle\',\'Smart Riddles\')">4. 🎓 Smart Riddles</button><button class="opt" onclick="startGame(\'riddle\',\'Programmers Riddles\')">5. 💻 Programmers Riddles</button>'; }
-function openBible(){ if(!requireLogin()) return; fetchServerHistory(); showPage('page-game'); document.getElementById('gameTitle').innerText='📖 BIBLE FIGHT'; document.getElementById('gameBody').innerHTML='<p style="text-align:center">Choose • 🎯 '+stageName()+' • '+getDiff()+'x</p><button class="opt" onclick="startGame(\'bible\',\'Random Bible\')">1. 🎲 Random Bible Questions</button><button class="opt" onclick="startGame(\'bible\',\'Old Testament\')">2. 📜 Old Testament Story</button><button class="opt" onclick="startGame(\'bible\',\'New Testament\')">3. ✝️ New Testament Story</button><button class="opt" onclick="startGame(\'bible\',\'Name Questions\')">4. 🏷️ Name Questions</button>'; }
+function openRiddles(){ if(!requireLogin()) return; fetchServerHistory(); showPage('page-game'); document.getElementById('gameTitle').innerText='🧩 RIDDLES'; document.getElementById('gameBody').innerHTML='<p style="text-align:center">What kind? • 🎯 '+stageName()+'</p><button class="opt" onclick="startGame(\'riddle\',\'Brain Teasers\')">1. 🧠 Brain Teasers</button><button class="opt" onclick="startGame(\'riddle\',\'Love Riddles\')">2. 💖 Love Riddles</button><button class="opt" onclick="startGame(\'riddle\',\'Funny Riddles\')">3. 😂 Funny Riddles</button><button class="opt" onclick="startGame(\'riddle\',\'Smart Riddles\')">4. 🎓 Smart Riddles</button><button class="opt" onclick="startGame(\'riddle\',\'Programmers Riddles\')">5. 💻 Programmers Riddles</button>'; }
+function openBible(){ if(!requireLogin()) return; fetchServerHistory(); showPage('page-game'); document.getElementById('gameTitle').innerText='📖 BIBLE FIGHT'; document.getElementById('gameBody').innerHTML='<p style="text-align:center">Choose • 🎯 '+stageName()+'</p><button class="opt" onclick="startGame(\'bible\',\'Random Bible\')">1. 🎲 Random Bible Questions</button><button class="opt" onclick="startGame(\'bible\',\'Old Testament\')">2. 📜 Old Testament Story</button><button class="opt" onclick="startGame(\'bible\',\'New Testament\')">3. ✝️ New Testament Story</button><button class="opt" onclick="startGame(\'bible\',\'Name Questions\')">4. 🏷️ Name Questions</button>'; }
 var RIDDLES={'Brain Teasers':[{q:'I speak without a mouth, hear without ears?',o:['Echo','Phone','Wind']},{q:'What has keys but cannot open lock?',o:['Piano','Door','Map']},{q:'What gets wetter the more it dries?',o:['Towel','Rain','Soap']},{q:'What has face & 2 hands but no arms?',o:['Clock','Mirror','Robot']},{q:'What can you catch but never throw?',o:['A Cold','Ball','Fish']},{q:'Many needles but never sews?',o:['Christmas Tree','Doctor','Porcupine']},{q:'Goes up but never comes down?',o:['Age','Balloon','Rocket']},{q:'One eye but cannot see?',o:['Needle','Camera','Cyclops']},{q:'Runs but never walks?',o:['Water','Cheetah','Car']},{q:'Head & tail but no body?',o:['Coin','Snake','Cat']}],'Love Riddles':[{q:'Full of love but never tired?',o:['Heart','Phone','Brain']},{q:'Grows when you share me?',o:['Love','Money','Food']},{q:'Give and still keep?',o:['A Smile','Car','House']},{q:'Red, beats fast when you see crush?',o:['Heart','Tomato','Rose']},{q:'Language of love?',o:['Kindness','English','French']},{q:'Lovers hold, never breaks?',o:['Hands','Glass','Promise']},{q:'Sweeter than honey in love?',o:['A Kiss','Sugar','Cake']},{q:'Flies without wings in love?',o:['Butterflies','Bird','Plane']},{q:'Best gift in love?',o:['Time','Gold','Car']},{q:'What did heart say to brain?',o:['I love you','Think','Sleep']}],'Funny Riddles':[{q:'Why chicken cross road?',o:['To get to other side','Dance','Sleep']},{q:'Fish without eyes?',o:['Fsh','Blind','Nemo']},{q:'Scarecrow won award why?',o:['Outstanding in field','Funny','Tall']},{q:'Orange & sounds like parrot?',o:['Carrot','Orange','Mango']},{q:'Math book sad why?',o:['Too many problems','No friends','Old']},{q:'Cheese that is not yours?',o:['Nacho Cheese','My Cheese','Stolen']},{q:'Cookie went to hospital why?',o:['Felt crumby','Fell','Hungry']},{q:'Wall said to other wall?',o:['Meet at corner','Hello','Bye']},{q:'Ghosts bad liars why?',o:['See through them','Scary','Whisper']},{q:'4 wheels & flies?',o:['Garbage Truck','Plane','Car']}],'Smart Riddles':[{q:'2,6,12,20,30,?',o:['42','36','40']},{q:'3 apples, take 2, how many you have?',o:['2','1','3']},{q:'15+15-10?',o:['20','15','30']},{q:'Heavier: 1kg steel or 1kg feathers?',o:['Same','Steel','Feathers']},{q:'How many months have 28 days?',o:['All','1','2']},{q:'Once in minute, twice in moment, never in 1000 years?',o:['M','O','Time']},{q:'Odd number, take letter become even?',o:['Seven','Nine','Five']},{q:'Half of 2+2?',o:['3','2','4']},{q:'Plane crashes Zambia-Zimbabwe border, bury survivors where?',o:['Nowhere, alive','Zambia','Zimbabwe']},{q:'Hexagon sides?',o:['6','5','8']}],'Programmers Riddles':[{q:'HTML stands for?',o:['HyperText Markup Language','High Text','Hyper Tool']},{q:'Style websites?',o:['CSS','Python','Java']},{q:'Brain of computer?',o:['CPU','RAM','Keyboard']},{q:'WWW?',o:['World Wide Web','World Web Wide','Wide World']},{q:'Python comment?',o:['#','//','/*']},{q:'Bug in coding?',o:['Error','Insect','Feature']},{q:'Link tag?',o:['<a>','<p>','<link>']},{q:'AI?',o:['Artificial Intelligence','Amazing Internet','Automatic']},{q:'File that runs website?',o:['index.html','photo.jpg','music.mp3']},{q:'Python is?',o:['Programming Language','Snake','Game']}]};
 var BIBLE={'Random Bible':[{q:'Who built Ark?',o:['Noah','Moses','David']},{q:'God created world in?',o:['6 days','7 days','10 days']},{q:'Swallowed by big fish?',o:['Jonah','Peter','Paul']},{q:'First book?',o:['Genesis','Exodus','Matthew']},{q:'Killed Goliath?',o:['David','Saul','Samson']},{q:'Mother of Jesus?',o:['Mary','Ruth','Esther']},{q:'Disciples?',o:['12','10','7']},{q:'Moses parted?',o:['Red Sea','Jordan','Lake']},{q:'Wrote Psalms?',o:['David','Solomon','Abraham']},{q:'Birth of Jesus in?',o:['Matthew','Genesis','Revelation']}],'Old Testament':[{q:'Led Israel out of Egypt?',o:['Moses','Aaron','Joshua']},{q:'God gave Moses?',o:['10 Commandments','Ark','Crown']},{q:'Lions den?',o:['Daniel','Joseph','Jacob']},{q:'Coat of many colours?',o:['Joseph','Benjamin','Reuben']},{q:'First man?',o:['Adam','Noah','Abraham']},{q:'First woman?',o:['Eve','Sarah','Rebekah']},{q:'Samson fought?',o:['Philistines','Egyptians','Romans']},{q:'David killed Goliath with?',o:['Stone & Sling','Sword','Spear']},{q:'Chariot of fire?',o:['Elijah','Elisha','Enoch']},{q:'Tower of Babel?',o:['People of Babel','Noah','Abraham']}],'New Testament':[{q:'Jesus born where?',o:['Bethlehem','Nazareth','Jerusalem']},{q:'Baptized Jesus?',o:['John the Baptist','Peter','Paul']},{q:'Loaves to feed 5000?',o:['5','7','12']},{q:'Denied Jesus 3 times?',o:['Peter','Judas','Thomas']},{q:'Betrayed Jesus?',o:['Judas','Peter','John']},{q:'Jesus rose on?',o:['Sunday','Friday','Saturday']},{q:'First to see risen Jesus?',o:['Mary Magdalene','Peter','John']},{q:'Wrote Revelation?',o:['John','Paul','Luke']},{q:'Last book?',o:['Revelation','Jude','Acts']},{q:'Saul became?',o:['Paul','Peter','Stephen']}],'Name Questions':[{q:'Emmanuel means?',o:['God with us','God great','Peace']},{q:'Jesus means?',o:['Saviour','King','Teacher']},{q:'Father of Faith?',o:['Abraham','Moses','Jacob']},{q:'Beloved Disciple?',o:['John','Peter','James']},{q:'David means?',o:['Beloved','Strong','King']},{q:'Called Israel?',o:['Jacob','Joseph','Esau']},{q:'Moses means?',o:['Drawn out of water','Leader','Prince']},{q:'Weeping Prophet?',o:['Jeremiah','Isaiah','Ezekiel']},{q:'Gabriel means?',o:['God is my strength','Messenger','Angel']},{q:'Called Rock?',o:['Peter','Paul','Andrew']}]};
 var HARD={'riddle':[{q:'[ADVANCED] I have cities but no houses, forests but no trees, water but no fish. What am I?',o:['Map','Earth','Book']},{q:'[ADVANCED] What comes after 1, 1, 2, 3, 5, 8, 13?',o:['21','18','20']},{q:'[EXPERT] If 5 machines make 5 parts in 5 mins, 100 machines make 100 parts in?',o:['5 mins','100 mins','20 mins']},{q:'[EXPERT] What is 7 x 8 + (12 / 3) - 5?',o:['55','60','51']},{q:'[PROFESSIONAL] I am taken from a mine and shut in a wooden case, never released, used by all. What am I?',o:['Pencil lead','Gold','Coal']}],'bible':[{q:'[ADVANCED] Who was the father of John the Baptist?',o:['Zechariah','Joseph','Simeon']},{q:'[ADVANCED] How many books in Old Testament?',o:['39','27','66']},{q:'[EXPERT] Who was first king of Israel?',o:['Saul','David','Solomon']},{q:'[EXPERT] In which city was Paul born?',o:['Tarsus','Jerusalem','Antioch']},{q:'[PROFESSIONAL] What is shortest verse?',o:['Jesus wept','God is love','Pray always']}]};
@@ -243,15 +343,15 @@ function prepareQuestions(list, mode){
 }
 var qTimer=null, qTimeLeft=21;
 function startGame(mode,cat){ if(!requireLogin()) return; currentMode=mode; currentCat=cat; qIndex=0; score=0; roundWins=0; roundLoss=0; var raw=mode=='riddle'?RIDDLES[cat]:BIBLE[cat]; qList=prepareQuestions(raw, mode); showQuestion(); }
-function continueHarder(){ stageIdx++; save(); updateMe(); toast('🔥 Harder now! Stage: '+stageName()+' • '+getDiff()+'x'); startGame(currentMode,currentCat); }
+function continueHarder(){ refreshStageFromWins(); save(); updateMe(); toast('🔁 Play Again! Stage: '+stageName()); startGame(currentMode,currentCat); }
 function clearQTimer(){ if(qTimer) clearInterval(qTimer); qTimer=null; }
 function showQuestion(){ clearQTimer(); if(qIndex>=10){ finishRound(); return; } var q=qList[qIndex]; qTimeLeft=21;
- document.getElementById('gameBody').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><span><b>Q '+(qIndex+1)+'/10</b> • '+currentCat+'</span><span class="timer" id="qTimer">⏰ '+qTimeLeft+'</span></div><p>🎯 '+stageName()+' • '+getDiff()+'x Harder</p><p style="font-size:18px"><b>'+q.q+'</b></p>'+q.o.map(function(o,i){ return '<button class="opt" onclick="answerQ('+i+')">'+['A','B','C'][i]+') '+o+'</button>'; }).join('')+'<p>✅ '+roundWins+' • ❌ '+roundLoss+'</p>';
- qTimer=setInterval(function(){ qTimeLeft--; var el=document.getElementById('qTimer'); if(el) el.innerText='⏰ '+qTimeLeft; if(qTimeLeft<=5 && qTimeLeft>0) playTick(); if(qTimeLeft<=0){ clearQTimer(); recordAnswer(q.q, false, currentCat, currentMode); markAsked(q.q); losses++; roundLoss++; save(); updateMe(); alert('⏰ TIME UP! Question VOID - Moving to next!'); qIndex++; showQuestion(); } },1000);
+ document.getElementById('gameBody').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><span><b>Q '+(qIndex+1)+'/10</b> • '+currentCat+'</span><span class="timer" id="qTimer">⏰ '+qTimeLeft+'</span></div><p>🎯 '+stageName()+'</p><p style="font-size:18px"><b>'+q.q+'</b></p>'+q.o.map(function(o,i){ return '<button class="opt" onclick="answerQ('+i+')">'+['A','B','C'][i]+') '+o+'</button>'; }).join('')+'<p>✅ '+roundWins+' • ❌ '+roundLoss+'</p>';
+ qTimer=setInterval(function(){ qTimeLeft--; var el=document.getElementById('qTimer'); if(el) el.innerText='⏰ '+qTimeLeft; if(qTimeLeft<=5 && qTimeLeft>0) playTick(); if(qTimeLeft<=0){ clearQTimer(); recordAnswer(q.q, false, currentCat, currentMode); markAsked(q.q); losses++; roundLoss++; refreshStageFromWins(); save(); updateMe(); alert('⏰ TIME UP! Question VOID - Moving to next!'); qIndex++; showQuestion(); } },1000);
 }
-function answerQ(i){ clearQTimer(); var q=qList[qIndex]; var wasCorrect=(i===q.a); recordAnswer(q.q, wasCorrect, currentCat, currentMode); markAsked(q.q); if(wasCorrect){ wins++; roundWins++; score++; alert('✅ CORRECT! +1 WIN 👑'); } else { losses++; roundLoss++; alert('❌ WRONG! Correct: '+q.o[q.a]); } save(); updateMe(); qIndex++; showQuestion(); }
-function finishRound(){ clearQTimer(); document.getElementById('gameBody').innerHTML='<h3 style="text-align:center">⏳ Calculating...</h3><p style="text-align:center">Bot calculating...<br>Press CONTINUE to go HARDER!</p><div class="count" style="text-align:center"><span id="coolT">5</span></div><p style="text-align:center">Score: '+score+'/10 • Wins +'+roundWins+' • Losses +'+roundLoss+'<br>Current Stage: '+stageName()+'</p>'; var t=5; var iv=setInterval(function(){ t--; document.getElementById('coolT').innerText=t; if(t<=0){ clearInterval(iv); showResult(); } },1000); }
-function showResult(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=arr.sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); }); var nr=0; for(var i=0;i<s.length;i++){ if(user && s[i].name===user.name) nr=i+1; } var move=nr<prevRank?'📈 MOVED UP! 👑':nr>prevRank?'📉 Moved DOWN':'➡️ Same rank'; var nextStage=STAGES[Math.min(stageIdx+1, STAGES.length-1)]; document.getElementById('gameBody').innerHTML='<h2 style="text-align:center">🏁 DONE!</h2><p style="text-align:center;font-size:22px">Marks: <b>'+score+'/10</b></p><p style="text-align:center">Rank: #'+nr+'<br>'+move+'<br>Now: '+stageName()+' → Next if you Continue: <b>'+nextStage+'</b> 🔥</p><button class="btn" onclick="continueHarder()">🔁 CONTINUE - HARDER! ('+nextStage+')</button><button class="btn2" onclick="openRiddles()">Change Riddle Type</button><button class="btn2" onclick="openBible()">Change Bible Type</button><button class="btn2" onclick="goDash()">🏠 Dashboard</button>'; prevRank=nr; }); }
+function answerQ(i){ clearQTimer(); var q=qList[qIndex]; var wasCorrect=(i===q.a); recordAnswer(q.q, wasCorrect, currentCat, currentMode); markAsked(q.q); if(wasCorrect){ wins++; roundWins++; score++; alert('✅ CORRECT! +1 WIN 👑'); } else { losses++; roundLoss++; alert('❌ WRONG! Correct: '+q.o[q.a]); } refreshStageFromWins(); save(); updateMe(); qIndex++; showQuestion(); }
+function finishRound(){ clearQTimer(); document.getElementById('gameBody').innerHTML='<h3 style="text-align:center">⏳ Calculating...</h3><p style="text-align:center">Bot calculating...<br>Press CONTINUE to play again!</p><div class="count" style="text-align:center"><span id="coolT">5</span></div><p style="text-align:center">Score: '+score+'/10 • Wins +'+roundWins+' • Losses +'+roundLoss+'<br>Current Stage: '+stageName()+'</p>'; var t=5; var iv=setInterval(function(){ t--; document.getElementById('coolT').innerText=t; if(t<=0){ clearInterval(iv); showResult(); } },1000); }
+function showResult(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=sortPlayers(arr); var nr=0; for(var i=0;i<s.length;i++){ if(user && s[i].name===user.name) nr=i+1; } var move=nr<prevRank?'📈 MOVED UP! 👑':nr>prevRank?'📉 Moved DOWN':'➡️ Same rank'; var nextStage=STAGES[Math.min(computeStageFromWins(wins), STAGES.length-1)]; document.getElementById('gameBody').innerHTML='<h2 style="text-align:center">🏁 DONE!</h2><p style="text-align:center;font-size:22px">Marks: <b>'+score+'/10</b></p><p style="text-align:center">Rank: #'+nr+'<br>'+move+'<br>Now: '+stageName()+'</p><button class="btn" onclick="continueHarder()">🔁 PLAY AGAIN</button><button class="btn2" onclick="openRiddles()">Change Riddle Type</button><button class="btn2" onclick="openBible()">Change Bible Type</button><button class="btn2" onclick="goDash()">🏠 Dashboard</button>'; prevRank=nr; }); }
 function openComing(name){ showPage('page-coming'); document.getElementById('comingName').innerText=name+' - COMING SOON'; var t=5; document.getElementById('countDown').innerText=t; var iv=setInterval(function(){ t--; document.getElementById('countDown').innerText=t; if(t<=0){ clearInterval(iv); goDash(); } },1000); }
 try{
 document.getElementById('enterBtn').addEventListener('click', function(){ goRegister(); });
@@ -281,7 +381,14 @@ def score():
         return jsonify({"ok":False,"error":f"Capacity full: {cap} players. Upgrades to 10000 on 25 Dec!"}),403
     if n not in USERS: USERS[n]={"password":d.get("password",""),"wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{}}
     if "history" not in USERS[n]: USERS[n]["history"]={}
-    USERS[n]["wins"]=int(d.get("wins",0)); USERS[n]["losses"]=int(d.get("losses",0)); USERS[n]["last_seen"]=time.time(); USERS[n]["stage"]=int(d.get("stage",0)); USERS[n]["logged_out"]=False
+    w=int(d.get("wins",0))
+    # Server also enforces hidden rank rules!
+    if w>=500: st=4
+    elif w>=300: st=3
+    elif w>=150: st=2
+    elif w>=50: st=1
+    else: st=0
+    USERS[n]["wins"]=w; USERS[n]["losses"]=int(d.get("losses",0)); USERS[n]["last_seen"]=time.time(); USERS[n]["stage"]=st; USERS[n]["logged_out"]=False
     if d.get("password"): USERS[n]["password"]=d.get("password")
     return jsonify({"ok":True,"capacity":cap})
 @app.route("/api/history")
@@ -314,7 +421,6 @@ def logout():
     n=d.get("name")
     if n in USERS: USERS[n]["logged_out"]=True; USERS[n]["last_seen"]=0
     return jsonify({"ok":True})
-# HEARTBEAT REMOVED - kept for old app versions only, does nothing extra
 @app.route("/api/online", methods=["POST"])
 def online():
     d=request.get_json() or {}; n=d.get("name")
