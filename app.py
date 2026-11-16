@@ -1,10 +1,34 @@
 from flask import Flask, request, jsonify
-import os, requests, time, datetime
+import os, requests, time, datetime, json, threading
 app = Flask(__name__)
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN","infinity")
 WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN","")
 PHONE_ID = os.environ.get("PHONE_NUMBER_ID","")
-USERS={}
+# *** FOREVER LEADERBOARD - SAVED TO FILE, NEVER WIPED! ***
+LEADER_FILE = os.path.join(os.path.dirname(__file__), "leaderboard.json")
+USERS = {}
+_lock = threading.Lock()
+def load_users():
+    global USERS
+    try:
+        if os.path.exists(LEADER_FILE):
+            with open(LEADER_FILE, "r") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    USERS = data
+                    print(f"Loaded {len(USERS)} players from forever leaderboard")
+    except Exception as e:
+        print("Load leaderboard failed:", e)
+def save_users():
+    try:
+        with _lock:
+            tmp = LEADER_FILE + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(USERS, f)
+            os.replace(tmp, LEADER_FILE)
+    except Exception as e:
+        print("Save leaderboard failed:", e)
+load_users()
 def get_capacity():
     try:
         now=datetime.datetime.now()
@@ -24,9 +48,7 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 .msgBarWrap{display:flex;align-items:center;gap:8px;margin-top:12px}.msgBar{flex:1;display:flex;align-items:center;gap:10px;background:#2b2b33;border-radius:999px;padding:10px 12px}.msgBar .emojiBtn{font-size:22px;background:none;border:none;cursor:pointer}.msgBar input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px;padding:0;margin:0}.msgBar input::placeholder{color:#aaa}.msgBar .attachBtn{font-size:20px;background:none;border:none;cursor:pointer}.micBtn{width:52px;height:52px;min-width:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#c39bff,#9a6bff);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}.sendBtnSmall{width:44px;height:44px;border-radius:50%;border:none;background:#ffd700;font-size:20px;cursor:pointer;display:none}.catTimeTop{font-size:11px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:4px 8px;border-radius:20px;display:inline-block}.timer{position:absolute;top:10px;right:12px;background:#ff2222;color:#fff;padding:6px 12px;border-radius:20px;font-weight:900;font-size:18px}.topRight{display:flex;align-items:center;gap:6px}.soundSmall{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
 .leaderScroll{max-height:480px;overflow-y:auto;scroll-behavior:smooth}.myRankBar{position:sticky;bottom:0;background:linear-gradient(90deg,#ffd700,#ff006e);color:#000;padding:12px;border-radius:16px;font-weight:900;text-align:center;cursor:pointer;margin-top:10px;border:2px solid #fff}.myRankBar small{font-weight:400}
 </style></head><body>
-<!-- SOUND 1: ENTER / LOGIN / REGISTER - PLAYS ONCE -->
 <audio id="enterAudio" src="https://cdn.pixabay.com/audio/2025/07/09/audio_121db7b43f.mp3" preload="auto" playsinline></audio>
-<!-- SOUND 2: DASHBOARD PIANO - SEAMLESS LOOP via Web Audio (no gap) - Fallback audio element -->
 <audio id="dashAudio" src="https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3" preload="auto" playsinline></audio>
 <div class="topbar"><div><span class="catTimeTop" id="catTime">🕐 Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">👑 INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn">🔊</div><div class="profile" id="profileBtn">👤<span id="notifBadge" class="notif hidden">1</span></div></div></div>
 <div id="toast" class="toast hidden"></div>
@@ -77,6 +99,14 @@ function hasBeenAsked(qText){ return askedSet.has(qText); }
 function getAskedMap(){ try{ return JSON.parse(localStorage.getItem('inf_asked_qs')||'{}'); }catch(e){ return {}; } }
 function saveAskedMap(m){ try{ localStorage.setItem('inf_asked_qs', JSON.stringify(m)); }catch(e){} }
 function markAsked(qText){ var m=getAskedMap(); m[qText]=Date.now(); saveAskedMap(m); }
+// *** FOREVER LEADERBOARD: RESTORE ME ON PAGE LOAD ***
+function restoreMeToLeaderboard(){
+  if(!user) return;
+  // Re-register my name to server so I NEVER disappear, even after server restart / refresh / logout
+  fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password||'',wins:wins,losses:losses,stage:stageIdx,restore:true})}).then(function(){ loadLeader(); }).catch(function(){});
+}
+// On load, if we have a saved user, restore them as OFFLINE (will become ONLINE on login)
+try{ if(user) setTimeout(restoreMeToLeaderboard, 800); }catch(e){}
 function P(s){ var p=s.split('|'); return {q:p[0], a:p[1], lvl:parseInt(p[2]||'0')}; }
 var BANK_BIBLE=["Who penned most Psalms?|David|0","First book of New Testament?|Matthew|0","How many days did God create + rest?|7|0","Who was swallowed by great fish?|Jonah|0","Abraham's wife?|Sarah|0","Who betrayed Jesus for 30 silver?|Judas Iscariot|0","Shortest verse?|Jesus wept|0","Who built the ark?|Noah|0","River where Jesus was baptized?|Jordan River|0","Mother of Jesus?|Mary|0","Books in Protestant Bible?|66|0","Who led Israel out of Egypt?|Moses|0","Last book of Bible?|Revelation|0","First king of Israel?|Saul|0","What did David use to kill Goliath?|A sling and a stone|0","Thrown into lions den?|Daniel|0","Paul's name before conversion?|Saul|0","Where was Jesus born?|Bethlehem|0","First man?|Adam|0","First woman?|Eve|0","How many disciples?|12|0","Denied Jesus 3 times?|Peter|0","New Testament written in?|Greek|1","Old Testament written in?|Hebrew|1","Who wrote Revelation?|John|1","Longest book?|Psalms|1","Strongest man?|Samson|1","Moses received on Sinai?|The Ten Commandments|1","Sold by brothers into slavery?|Joseph|1","Joseph's father?|Jacob|1","Father of John the Baptist?|Zechariah|1","Mother of John the Baptist?|Elizabeth|1","Jesus age when ministry started?|About 30|1","Jesus first miracle?|Turned water into wine at Cana|1","Loaves that fed 5000?|5 loaves and 2 fish|1","Walked on water with Jesus?|Peter|1","Tax collector who climbed tree?|Zacchaeus|1","Garden where Jesus prayed before arrest?|Gethsemane|1","Governor who sentenced Jesus?|Pontius Pilate|1","Jesus rose on which day?|The third day / Sunday|1","First commandment?|You shall have no other gods before me|1","Wisest king?|Solomon|1","Built Temple in Jerusalem?|Solomon|1","David's son who became king?|Solomon|1","Sign of God's covenant to Noah?|Rainbow|1","Mother of Samuel?|Hannah|1","Who anointed David?|Samuel|1","Ruth's mother-in-law?|Naomi|1","Ruth's husband?|Boaz|1","Book about leaving Egypt?|Exodus|1","Years wandering wilderness?|40 years|1","Emmanuel means?|God with us|1","Prophet who challenged Baal prophets?|Elijah|2","Taken up in chariot of fire?|Elijah|2","Succeeded Elijah?|Elisha|2","Interpreted Pharaoh's dreams?|Joseph|2","Sea Moses parted?|Red Sea|2","First martyr in New Testament?|Stephen|2","City Paul going to when converted?|Damascus|2","Wrote Romans?|Paul|2","How many plagues in Egypt?|10|2","Last plague?|Death of the firstborn|2","Brother of Moses?|Aaron|2","Sister of Moses?|Miriam|2","Giant killed by David?|Goliath|2","David's best friend?|Jonathan|2","King who tried to kill baby Jesus?|Herod|2","Where did Jesus grow up?|Nazareth|2","First 4 New Testament books called?|The Gospels|2","Greek word for God's love?|Agape|2","Doubting Thomas?|Thomas|2","Fed crowd of 4000 with?|7 loaves and a few fish|2","Woman who washed Jesus feet with perfume?|Mary Magdalene|2","Lazarus sisters?|Martha and Mary|2","Blind man healed at Jericho?|Bartimaeus|2","Lord's Prayer starts?|Our Father in heaven|2","First to see risen Jesus?|Mary Magdalene|3","Christ means?|Anointed One|3","Messiah means?|Anointed One|3","Queen who visited Solomon?|Queen of Sheba|3","Book about vanity of vanities?|Ecclesiastes|3","Wrote Proverbs?|Solomon|3","Acts about?|The early church and the apostles|3","Husband of Mary?|Joseph|3","Jesus job before ministry?|Carpenter|3","Chapters in Psalms?|150|3","Parable about son who left home?|The Prodigal Son|3","Island where John wrote Revelation?|Patmos|3","Centurion said Son of God?|Centurion at the cross|3","At Transfiguration with Jesus?|Peter, James, John|3","Bible means?|Books|3","Ethiopian eunuch baptized by?|Philip|3","First European convert?|Lydia|3","Fruit of Spirit?|Love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, self-control|3","Greatest commandment?|Love the Lord your God with all your heart|3","Second greatest?|Love your neighbor as yourself|3","Vanity of vanities book + author old age?|Ecclesiastes - Solomon|4","Only woman judge in Judges + tree?|Deborah - Palm tree of Deborah|4","How long did Methuselah live?|969 years|4","3 men in fiery furnace + 4th figure?|Shadrach, Meshach, Abednego - Son of God|4","High priest who tore robes at Jesus trial?|Caiaphas|4","Elders around throne in Revelation?|24 elders|4","Sheol vs Hades vs Gehenna vs Tartarus?|Sheol/Hades = grave, Gehenna = hell, Tartarus = prison for fallen angels|4","Only king and priest?|Melchizedek|4","Weight of Goliath spearhead?|600 shekels of iron|4","5 Torah books in Hebrew?|Bereshit, Shemot, Vayikra, Bamidbar, Devarim|4","Father of Caleb?|Jephunneh|4","Moses father-in-law also Reuel?|Jethro|4","First Gentile church city?|Antioch|4","Ebenezer means + who set stone?|Stone of Help - Samuel|4","How many Fear not in Bible?|365 times|4","Only apostle to die natural death?|John|4","Demon called Legion?|Legion - Because we are many|4","Longest chapter?|Psalm 119|4","Shortest chapter?|Psalm 117|4","Struck blind touching Ark?|Uzzah|4"].map(P);
 var BANK_RIDDLE=["Has keys but can't open locks?|A piano|0","Face + 2 hands no arms/legs?|A clock|0","Gets wetter the more it dries?|A towel|0","Neck but no head?|A bottle|0","Runs but never walks?|Water|0","Many teeth can't bite?|A comb|0","Catch but never throw?|A cold|0","Bed but never sleeps?|A river|0","Once in minute, twice in moment, never in 1000 years?|The letter M|0","One eye can't see?|A needle|0","Always in front but can't be seen?|The future|0","Gets bigger more you take away?|A hole|0","Words but never speaks?|A book|0","Fills room without space?|Light|0","Legs but can't walk?|A table|0","Goes up never comes down?|Your age|0","Heart that doesn't beat?|A deck of cards|0","Break without touching?|A promise|0","Ring but no finger?|A telephone|0","Full of holes holds water?|A sponge|0","Travel world without leaving corner?|A stamp|1","Thumb + 4 fingers not alive?|A glove|1","Lighter than feather no one holds long?|Your breath|1","13 hearts no organs?|A deck of cards|1","Black when clean white when dirty?|A chalkboard|1","Head + tail no body?|A coin|1","Yours but others use more?|Your name|1","Through cities never moves?|A road|1","Many needles never sews?|A pine tree|1","Fragile saying name breaks it?|Silence|1","Cracked, made, told, played?|A joke|1","Bottom at top?|Your legs|1","Always coming never arrives?|Tomorrow|1","2 heads 4 eyes 6 legs + tail?|A man on a horse|1","Cut on table never eaten?|A deck of cards|1","Mouth never talks?|A river|1","Tall young short old?|A candle|1","Foot no legs?|A ruler|1","Touched not seen?|Wind|1","End of everything?|The letter G|1","Made of water put in water dies?|Ice|2","No beginning end middle?|A donut|2","Bank no money?|A river|2","End of rainbow?|The letter W|2","Hear not see/touch?|Your voice|2","Face no frown?|A clock|2","Up + down doesn't move?|A staircase|2","Tongue never talks?|A shoe|2","4 legs morning 2 afternoon 3 evening?|A human|2","Roof no walls?|An umbrella|2","Lots of eyes can't see?|A potato|2","Fish without eyes?|A fsh|2","Head never weeps?|A nail|2","Hands can't clap?|A clock|2","Middle of nowhere?|The letter H|2","Spine no bones?|A book|2","Lid no box?|An eye|2","Key can't open door?|A piano|2","Longest word?|Smiles|2","Foot each side + one middle?|A yardstick|2","On ground never dirty?|A shadow|2","Long/short grows without water?|A story|2","No legs can run?|Water|2","Beginning of eternity?|The letter E|2","Head no brain?|A hammer|2","Horn never sound?|A rhinoceros|3","Seen middle March/April not start/end?|The letter R|3","Heavier ton feathers or bricks?|Same|3","Goes up when rain comes down?|An umbrella|3","Body no soul?|A doll|3","Nose can't smell?|A shoe|3","Back no front?|A chair|3","Mouth no teeth?|A bottle|3","Behind you never see?|Your back|3","4 wheels + flies?|A garbage truck|3","Spelled incorrectly in dictionary?|Incorrectly|3","Throw never catch?|A tantrum|3","Wing can't fly?|A chicken wing|3","Through glass without breaking?|Light|3","Chest no heart?|A treasure chest|3","Cap no head?|A bottle|3","Empty + full same time?|A glass half full|3","Hole still full?|A donut|3","Tail no animal?|A kite|3","Most valuable you can give?|Your time|3","Always hungry must be fed finger turns red?|Fire|4","Man photo brothers none man's father is my father's son?|His son|4","3 boxes labels all wrong pick 1 fruit fix?|Pick from box labeled both|4","Plane crashes border bury survivors?|Nowhere - Survivors alive|4","Rooster lays egg on roof which side rolls?|Roosters don't lay eggs|4","Overtake 2nd place what place?|2nd place|4","3/7 chicken 2/3 cat 1/2 goat?|Chicago|4","Cowboy Friday 3 days leaves Friday?|His horse is named Friday|4","Maker doesn't need buyer doesn't use user doesn't know?|A coffin|4","Hold in right never left?|Your left hand|4","Cities no houses forests no trees water no fish?|A map|4","Next 1,11,21,1211,111221?|312211|4","12 coins 1 fake 3 weighs?|Divide 4-4-4 logic|4","2 doors 1 guard lies 1 truth 1 question?|Ask what other guard would say then opposite|4","Beginning eternity end time space?|Letter E|4","Dies old age on 25th birthday?|Born Feb 29 Leap year|4","Head tail brown no legs?|A penny|4"].map(P);
@@ -93,91 +123,20 @@ function isLocked(){ var now=catNow(); var unlock=new Date(2027,0,24,12,0,0); re
 function blockedFeature(name){ if(isLocked()){ alert('🔒 '+name+' is locked!\nAvailable on 24 January 2027 at 12:00hrs CAT'); } else { alert('✅ '+name+' is now unlocked!'); } }
 function addEmoji(){ var inp=document.getElementById('msgInput'); inp.value+='😊'; inp.focus(); toggleSend(); }
 function toggleSend(){ var v=document.getElementById('msgInput').value.trim(); document.getElementById('micBtn').style.display=v?'none':'flex'; document.getElementById('sendBtnSmall').style.display=v?'block':'none'; }
-// *** 2 SOUNDS - ENTER (once) + DASHBOARD (SEAMLESS CONTINUOUS, NO GAP) ***
 var soundOn=true;
 var DASH_URL='https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3';
 var dashCtx=null, dashGain=null, dashSource=null, dashBuffer=null, dashLoading=false, dashPlaying=false, dashFallback=false;
-function ensureDashCtx(){
-  try{
-    if(!dashCtx) dashCtx=new (window.AudioContext||window.webkitAudioContext)();
-    if(dashCtx.state==='suspended') dashCtx.resume();
-    if(!dashGain){ dashGain=dashCtx.createGain(); dashGain.gain.value=0.35; dashGain.connect(dashCtx.destination); }
-  }catch(e){}
-}
-function startDashWebAudio(){
-  if(!dashBuffer || dashPlaying) return;
-  try{
-    ensureDashCtx();
-    if(dashSource){ try{ dashSource.stop(); }catch(e){} }
-    dashSource=dashCtx.createBufferSource();
-    dashSource.buffer=dashBuffer;
-    dashSource.loop=true; // *** TRUE SEAMLESS LOOP - NO STOP, NO GAP ***
-    dashSource.loopStart=0; dashSource.loopEnd=dashBuffer.duration;
-    dashSource.connect(dashGain);
-    dashSource.start(0);
-    dashPlaying=true;
-  }catch(e){}
-}
-function loadDashBuffer(){
-  if(dashBuffer || dashLoading) return;
-  dashLoading=true;
-  try{
-    fetch(DASH_URL).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
-      ensureDashCtx();
-      dashCtx.decodeAudioData(buf.slice(0), function(decoded){
-        dashBuffer=decoded; dashLoading=false;
-        if(soundOn && loggedIn) startDashWebAudio();
-      }, function(){ dashLoading=false; useDashFallback(); });
-    }).catch(function(){ dashLoading=false; useDashFallback(); });
-  }catch(e){ dashLoading=false; useDashFallback(); }
-}
-function useDashFallback(){
-  if(dashFallback) return; dashFallback=true;
-  try{ var a=document.getElementById('dashAudio'); if(a){ a.volume=0.35; a.loop=true; var p=a.play(); if(p&&p.catch) p.catch(function(){}); } }catch(e){}
-}
-function playEnterSound(){
-  if(!soundOn) return;
-  try{
-    stopDashFallbackOnly();
-    var a=document.getElementById('enterAudio'); if(!a) return;
-    a.currentTime=0; a.volume=0.45; a.loop=false; a.muted=false;
-    var p=a.play(); if(p && p.catch) p.catch(function(){});
-  }catch(e){}
-}
+function ensureDashCtx(){ try{ if(!dashCtx) dashCtx=new (window.AudioContext||window.webkitAudioContext)(); if(dashCtx.state==='suspended') dashCtx.resume(); if(!dashGain){ dashGain=dashCtx.createGain(); dashGain.gain.value=0.35; dashGain.connect(dashCtx.destination); } }catch(e){} }
+function startDashWebAudio(){ if(!dashBuffer || dashPlaying) return; try{ ensureDashCtx(); if(dashSource){ try{ dashSource.stop(); }catch(e){} } dashSource=dashCtx.createBufferSource(); dashSource.buffer=dashBuffer; dashSource.loop=true; dashSource.loopStart=0; dashSource.loopEnd=dashBuffer.duration; dashSource.connect(dashGain); dashSource.start(0); dashPlaying=true; }catch(e){} }
+function loadDashBuffer(){ if(dashBuffer || dashLoading) return; dashLoading=true; try{ fetch(DASH_URL).then(function(r){ return r.arrayBuffer(); }).then(function(buf){ ensureDashCtx(); dashCtx.decodeAudioData(buf.slice(0), function(decoded){ dashBuffer=decoded; dashLoading=false; if(soundOn && loggedIn) startDashWebAudio(); }, function(){ dashLoading=false; useDashFallback(); }); }).catch(function(){ dashLoading=false; useDashFallback(); }); }catch(e){ dashLoading=false; useDashFallback(); } }
+function useDashFallback(){ if(dashFallback) return; dashFallback=true; try{ var a=document.getElementById('dashAudio'); if(a){ a.volume=0.35; a.loop=true; var p=a.play(); if(p&&p.catch) p.catch(function(){}); } }catch(e){} }
+function playEnterSound(){ if(!soundOn) return; try{ stopDashFallbackOnly(); var a=document.getElementById('enterAudio'); if(!a) return; a.currentTime=0; a.volume=0.45; a.loop=false; a.muted=false; var p=a.play(); if(p && p.catch) p.catch(function(){}); }catch(e){} }
 function stopDashFallbackOnly(){ try{ var a=document.getElementById('dashAudio'); if(a) a.pause(); }catch(e){} }
-function startDashboardSound(){
-  if(!soundOn) return;
-  try{
-    var e=document.getElementById('enterAudio'); if(e) e.pause();
-    // Preload seamless buffer in background, start immediately if ready
-    if(dashBuffer){ startDashWebAudio(); }
-    else { loadDashBuffer(); useDashFallback(); }
-    var b=document.getElementById('soundBtn'); if(b) b.innerText='🔊';
-  }catch(e){}
-}
-function stopDashboardSound(){
-  try{
-    dashPlaying=false;
-    if(dashSource){ try{ dashSource.stop(); }catch(e){} dashSource=null; }
-    if(dashCtx && dashCtx.state==='running'){ dashCtx.suspend(); }
-    var a=document.getElementById('dashAudio'); if(a) a.pause();
-    var e=document.getElementById('enterAudio'); if(e) e.pause();
-  }catch(e){}
-}
-function resumeDashAfterMute(){
-  try{
-    if(dashCtx && dashCtx.state==='suspended') dashCtx.resume();
-    if(dashBuffer && !dashPlaying) startDashWebAudio();
-    else if(!dashBuffer) loadDashBuffer();
-    else { var a=document.getElementById('dashAudio'); if(a && a.paused){ a.play().catch(function(){}); } }
-  }catch(e){}
-}
+function startDashboardSound(){ if(!soundOn) return; try{ var e=document.getElementById('enterAudio'); if(e) e.pause(); if(dashBuffer){ startDashWebAudio(); } else { loadDashBuffer(); useDashFallback(); } var b=document.getElementById('soundBtn'); if(b) b.innerText='🔊'; }catch(e){} }
+function stopDashboardSound(){ try{ dashPlaying=false; if(dashSource){ try{ dashSource.stop(); }catch(e){} dashSource=null; } if(dashCtx && dashCtx.state==='running'){ dashCtx.suspend(); } var a=document.getElementById('dashAudio'); if(a) a.pause(); var e=document.getElementById('enterAudio'); if(e) e.pause(); }catch(e){} }
+function resumeDashAfterMute(){ try{ if(dashCtx && dashCtx.state==='suspended') dashCtx.resume(); if(dashBuffer && !dashPlaying) startDashWebAudio(); else if(!dashBuffer) loadDashBuffer(); else { var a=document.getElementById('dashAudio'); if(a && a.paused){ a.play().catch(function(){}); } } }catch(e){} }
 function playTick(){}
-function toggleSound(){
-  soundOn=!soundOn;
-  var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇';
-  if(soundOn){ ensureDashCtx(); resumeDashAfterMute(); toast('🎹 Piano Background ON - Continuous'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); }
-}
+function toggleSound(){ soundOn=!soundOn; var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇'; if(soundOn){ ensureDashCtx(); resumeDashAfterMute(); toast('🎹 Piano Background ON - Continuous'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); } }
 document.addEventListener('click', function(){ if(soundOn && loggedIn){ ensureDashCtx(); if(dashBuffer && !dashPlaying) startDashWebAudio(); } }, true);
 function autoLogout(){ stopDashboardSound(); loggedIn=false; if(!user) return; try{ var data=JSON.stringify({name:user.name}); if(navigator.sendBeacon){ navigator.sendBeacon('/api/logout', new Blob([data], {type:'application/json'})); } else { fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:data,keepalive:true}).catch(function(){}); } }catch(e){} try{ localStorage.setItem('inf_needs_login','yes'); localStorage.setItem('inf_page','page-home'); }catch(e){} }
 try{ document.addEventListener('visibilitychange', function(){ if(document.hidden){ autoLogout(); } }); window.addEventListener('pagehide', function(){ autoLogout(); }); window.addEventListener('beforeunload', function(){ autoLogout(); }); }catch(e){}
@@ -235,10 +194,11 @@ showPage('page-home'); try{ loadLeader(); }catch(e){}
 def home(): return HOME
 @app.route("/api/leaderboard")
 def lb():
+    # NEVER filter out offline players - EVERYONE stays forever!
     now=time.time(); arr=[]
     for n,v in USERS.items():
         online = v.get("logged_out", False)==False and (now - v.get("last_seen",0)) < 300
-        arr.append({"name":n,"wins":v["wins"],"losses":v["losses"],"online":online,"friends":v.get("friends",[]),"stage":v.get("stage",0)})
+        arr.append({"name":n,"wins":v.get("wins",0),"losses":v.get("losses",0),"online":online,"friends":v.get("friends",[]),"stage":v.get("stage",0)})
     cap=get_capacity()
     return jsonify({"capacity":cap,"players":arr[:cap]})
 @app.route("/api/score", methods=["POST"])
@@ -247,17 +207,44 @@ def score():
     cap=get_capacity()
     if n not in USERS and len(USERS)>=cap:
         return jsonify({"ok":False,"error":f"Capacity full: {cap} players. Upgrades to 10000 on 25 Dec!"}),403
-    if n not in USERS: USERS[n]={"password":d.get("password",""),"wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{}}
+    if n not in USERS:
+        USERS[n]={"password":d.get("password",""),"wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{},"registered_at":time.time()}
     if "history" not in USERS[n]: USERS[n]["history"]={}
-    w=int(d.get("wins",0))
-    if w>=500: st=4
-    elif w>=300: st=3
-    elif w>=150: st=2
-    elif w>=50: st=1
-    else: st=0
-    USERS[n]["wins"]=w; USERS[n]["losses"]=int(d.get("losses",0)); USERS[n]["last_seen"]=time.time(); USERS[n]["stage"]=st; USERS[n]["logged_out"]=False
-    if d.get("password"): USERS[n]["password"]=d.get("password")
-    return jsonify({"ok":True,"capacity":cap})
+    if "friends" not in USERS[n]: USERS[n]["friends"]=[]
+    if "requests" not in USERS[n]: USERS[n]["requests"]=[]
+    # RESTORE: if this is just a restore (page refresh), DON'T reset wins - keep existing wins if higher
+    is_restore = d.get("restore", False)
+    incoming_w = int(d.get("wins",0))
+    incoming_l = int(d.get("losses",0))
+    if is_restore:
+        # Keep max - never wipe on refresh
+        USERS[n]["wins"] = max(USERS[n].get("wins",0), incoming_w)
+        USERS[n]["losses"] = max(USERS[n].get("losses",0), incoming_l)
+        # Restore does NOT make you online - you are still offline until real login
+        # Keep logged_out as is, don't update last_seen to now
+    else:
+        w=incoming_w
+        if w>=500: st=4
+        elif w>=300: st=3
+        elif w>=150: st=2
+        elif w>=50: st=1
+        else: st=0
+        # NEVER overwrite with 0 if server already has wins (protects Neema case)
+        # Only update if incoming is >= stored OR it's a real login with same user
+        # For login/register, incoming wins come from localStorage which may be 0 for new device - protect:
+        # If stored wins > incoming and stored wins > 0, keep stored
+        if USERS[n].get("wins",0) > w and USERS[n].get("wins",0) > 0 and d.get("password","") != USERS[n].get("password",""):
+            # Different device / wrong password case - keep stored, don't wipe
+            pass
+        else:
+            # Real update: take max to never lose wins
+            USERS[n]["wins"]=max(USERS[n].get("wins",0), w)
+            USERS[n]["losses"]=max(USERS[n].get("losses",0), incoming_l)
+            USERS[n]["stage"]=st
+        USERS[n]["last_seen"]=time.time(); USERS[n]["logged_out"]=False
+        if d.get("password"): USERS[n]["password"]=d.get("password")
+    save_users()
+    return jsonify({"ok":True,"capacity":cap,"wins":USERS[n]["wins"],"losses":USERS[n]["losses"]})
 @app.route("/api/history")
 def get_history():
     n=request.args.get("name","")
@@ -267,7 +254,7 @@ def get_history():
 def record_answer():
     d=request.get_json() or {}; n=d.get("name"); q=d.get("question","")
     if not n or not q: return jsonify({"ok":False}),400
-    if n not in USERS: USERS[n]={"password":"","wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{}}
+    if n not in USERS: USERS[n]={"password":"","wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{},"registered_at":time.time()}
     if "history" not in USERS[n]: USERS[n]["history"]={}
     h=USERS[n]["history"].get(q, {"asked":0,"correct":0,"wrong":0,"last":0,"cat":"","mode":""})
     h["asked"]=h.get("asked",0)+1
@@ -278,6 +265,7 @@ def record_answer():
     if d.get("mode"): h["mode"]=d.get("mode")
     USERS[n]["history"][q]=h
     USERS[n]["last_seen"]=time.time()
+    save_users()
     return jsonify({"ok":True,"asked":h["asked"],"correct":h["correct"],"wrong":h["wrong"]})
 @app.route("/api/logout", methods=["POST"])
 def logout():
@@ -286,12 +274,16 @@ def logout():
         try: d=request.get_json(force=True, silent=True) or {}
         except: d={}
     n=d.get("name")
-    if n in USERS: USERS[n]["logged_out"]=True; USERS[n]["last_seen"]=0
+    # *** LOGOUT NEVER DELETES! Only flips to OFFLINE, name stays FOREVER! ***
+    if n in USERS:
+        USERS[n]["logged_out"]=True
+        USERS[n]["last_seen"]=0
+        save_users()
     return jsonify({"ok":True})
 @app.route("/api/online", methods=["POST"])
 def online():
     d=request.get_json() or {}; n=d.get("name")
-    if n in USERS: USERS[n]["last_seen"]=time.time(); USERS[n]["logged_out"]=False
+    if n in USERS: USERS[n]["last_seen"]=time.time(); USERS[n]["logged_out"]=False; save_users()
     return jsonify({"ok":True})
 @app.route("/api/notif")
 def notif():
@@ -304,16 +296,17 @@ def notif():
 @app.route("/api/friend", methods=["POST"])
 def friend():
     d=request.get_json() or {}; frm=d.get("from"); to=d.get("to")
-    if to in USERS and frm not in USERS[to]["requests"] and frm not in USERS[to].get("friends",[]):
-        USERS[to]["requests"].append(frm)
+    if to in USERS and frm not in USERS[to].get("requests",[]) and frm not in USERS[to].get("friends",[]):
+        USERS[to]["requests"].append(frm); save_users()
     return jsonify({"ok":True})
 @app.route("/api/respond", methods=["POST"])
 def respond():
     d=request.get_json() or {}; me=d.get("me"); frm=d.get("from"); act=d.get("action")
-    if me in USERS and frm in USERS[me]["requests"]: USERS[me]["requests"].remove(frm)
+    if me in USERS and frm in USERS[me].get("requests",[]): USERS[me]["requests"].remove(frm)
     if act=="accept" and me in USERS and frm in USERS:
-        if frm not in USERS[me]["friends"]: USERS[me]["friends"].append(frm)
-        if me not in USERS[frm]["friends"]: USERS[frm]["friends"].append(me)
+        if frm not in USERS[me].get("friends",[]): USERS[me]["friends"].append(frm)
+        if me not in USERS[frm].get("friends",[]): USERS[frm]["friends"].append(me)
+    if me in USERS: save_users()
     return jsonify({"ok":True})
 @app.route("/webhook", methods=["GET","POST"])
 def webhook():
