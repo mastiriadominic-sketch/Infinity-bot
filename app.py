@@ -407,7 +407,7 @@ def friend():
     d=request.get_json() or {}
     frm=d.get("from")
     to=norm(d.get("to"))
-    if    if to in USERS and frm not in USERS[to].get("requests",[]) and frm not in USERS[to].get("friends",[]):
+    if to in USERS and frm not in USERS[to].get("requests",[]) and frm not in USERS[to].get("friends",[]):
         USERS[to]["requests"].append(frm)
         save_users()
     return jsonify({"ok":True})
