@@ -45,7 +45,6 @@ def send_whatsapp(to,text):
 HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT</title>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
 <style>*{box-sizing:border-box}body{margin:0;font-family:Poppins,Arial;color:white;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px}.profile{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff;cursor:pointer;position:relative;box-shadow:0 0 20px #ff006e}.notif{position:absolute;top:-6px;right:-6px;background:red;color:white;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px;filter:drop-shadow(0 0 30px gold)}.enterBtn{margin-top:20px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);color:#000;box-shadow:0 0 40px #ff006e;cursor:pointer}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer}.box span{font-size:38px;display:block}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0;cursor:pointer}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0;cursor:pointer}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:white;font-weight:700;cursor:pointer;text-align:left}input{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000}.hidden{display:none}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.dot{width:12px;height:12px;border-radius:50%;display:inline-block}.green{background:#00ff00;box-shadow:0 0 10px #00ff00}.red{background:#ff2222;box-shadow:0 0 10px #ff2222}.badge{display:inline-block;padding:5px 10px;border-radius:20px;background:rgba(0,0,0,.5);border:1px solid #ffd700;font-size:12px;margin:3px}.count{font-size:60px;font-weight:900;color:#ffd700}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:99;max-width:90%;text-align:center}.regInput{font-size:18px;text-align:center;letter-spacing:2px}.msgFab{position:fixed;right:16px;bottom:16px;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700,#00e5ff);display:flex;align-items:center;justify-content:center;font-size:30px;border:3px solid #fff;box-shadow:0 0 25px #ff006e;cursor:pointer;z-index:50}.backFab{position:fixed;left:16px;bottom:16px;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#1a1a2e,#3a0a5e);display:none;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#ffd700;border:3px solid #ffd700;box-shadow:0 0 20px rgba(255,215,0,.6);cursor:pointer;z-index:60}.chatRow{display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,0,0,.45);border-radius:16px;margin:8px 0}.chatBtn{width:36px;height:36px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#00e5ff,#ff006e);display:inline-flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;margin-left:6px}.chatBox{background:#1a1a2e;border-radius:20px;padding:12px;min-height:320px;max-height:380px;overflow-y:auto}.bubble{max-width:80%;padding:10px 14px;border-radius:18px;margin:6px 0;font-size:14px}.mine{background:#ffd700;color:#000;margin-left:auto}.theirs{background:rgba(255,255,255,.2);color:#fff}.msgBarWrap{display:flex;align-items:center;gap:8px;margin-top:12px}.msgBar{flex:1;display:flex;align-items:center;gap:10px;background:#2b2b33;border-radius:999px;padding:10px 12px}.msgBar .emojiBtn{font-size:22px;background:none;border:none;cursor:pointer}.msgBar input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px;padding:0;margin:0}.msgBar input::placeholder{color:#aaa}.msgBar .attachBtn{font-size:20px;background:none;border:none;cursor:pointer}.micBtn{width:52px;height:52px;min-width:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#c39bff,#9a6bff);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}.sendBtnSmall{width:44px;height:44px;border-radius:50%;border:none;background:#ffd700;font-size:20px;cursor:pointer;display:none}.catTimeTop{font-size:11px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:4px 8px;border-radius:20px;display:inline-block}.timer{position:absolute;top:10px;right:12px;background:#ff2222;color:#fff;padding:6px 12px;border-radius:20px;font-weight:900;font-size:18px}.topRight{display:flex;align-items:center;gap:6px}.soundSmall{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}.leaderScroll{max-height:480px;overflow-y:auto;scroll-behavior:smooth}.myRankBar{position:sticky;bottom:0;background:linear-gradient(90deg,#ffd700,#ff006e);color:#000;padding:12px;border-radius:16px;font-weight:900;text-align:center;cursor:pointer;margin-top:10px;border:2px solid #fff}.myRankBar small{font-weight:400}
-/* GAME POPUPS - NOT browser */
 .gameOverlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
 .gamePopup{background:linear-gradient(160deg,#2b005e,#12002b);border:3px solid #ffd700;border-radius:28px;padding:22px 18px;max-width:420px;width:100%;text-align:center;box-shadow:0 0 40px #ff006e,0 0 80px rgba(255,215,0,.5);animation:popIn .35s ease, shake .4s ease .1s, glowPulse 1s infinite}
 @keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
@@ -55,7 +54,7 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 .gamePopup.closing{animation:popOut .35s ease forwards}
 .warnIcon{font-size:54px;filter:drop-shadow(0 0 15px #ff2222);animation:glowPulse 1s infinite}
 .choiceRow{display:flex;gap:12px;margin-top:16px}
-.choiceBox{flex:1;padding:18px 8px;border-radius:20px;cursor:pointer;font-weight:900;font-size:18px;border:3px solid #fff;transition:transform .15s}
+.choiceBox{flex:1;padding:18px 8px;border-radius:20px;cursor:pointer;font-weight:900;font-size:18px;border:3px solid #fff;transition:transform .15s;user-select:none;-webkit-tap-highlight-color:transparent}
 .choiceBox:active{transform:scale(.95)}
 .choiceNo{background:linear-gradient(135deg,#ff2222,#ff6b6b);color:#fff;box-shadow:0 0 20px rgba(255,34,34,.6)}
 .choiceYes{background:linear-gradient(135deg,#00cc44,#00ff88);color:#000;box-shadow:0 0 20px rgba(0,255,136,.6)}
@@ -65,12 +64,12 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 </style></head><body>
 <audio id="enterAudio" src="https://cdn.pixabay.com/audio/2025/07/09/audio_121db7b43f.mp3" preload="auto" playsinline></audio>
 <audio id="dashAudio" src="https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3" preload="auto" playsinline></audio>
+<audio id="popupAudio" src="https://cdn.pixabay.com/audio/2024/11/15/audio_1870869738.mp3" preload="auto" playsinline></audio>
+<audio id="warnAudio" src="https://cdn.pixabay.com/audio/2026/06/02/audio_26933dce5c.mp3" preload="auto" playsinline></audio>
 <div class="topbar"><div><span class="catTimeTop" id="catTime">🕐 Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">👑 INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn">🔊</div><div class="profile" id="profileBtn">👤<span id="notifBadge" class="notif hidden">1</span></div></div></div>
 <div id="toast" class="toast hidden"></div>
-<!-- GAME WARNING POPUP -->
 <div id="gameWarnOverlay" class="gameOverlay hidden"><div class="gamePopup" id="gameWarnBox"><div class="warnIcon">⚠️</div><h2 style="margin:8px 0">⚠️ Warning ⚠️</h2><p id="gameWarnText" style="font-size:16px;line-height:1.5">Account not found, try again or Register</p><div class="warnBar"><div class="warnBarFill"></div></div><p style="font-size:12px;opacity:.7;margin:6px 0 0">Closing automatically in 5 seconds...</p></div></div>
-<!-- FIRST TIME POPUP -->
-<div id="welcomeOverlay" class="gameOverlay hidden"><div class="gamePopup"><div style="font-size:56px">👑</div><h2 style="margin:8px 0">Welcome to Infinity Bot!</h2><p style="font-size:18px;font-weight:700">Do you already have an account?</p><div class="choiceRow"><div class="choiceBox choiceNo" onclick="welcomeChoice('no')">❌<br>No</div><div class="choiceBox choiceYes" onclick="welcomeChoice('yes')">✅<br>Yes</div></div><p style="font-size:12px;opacity:.7;margin-top:12px">📦 Choose one — Yes = Login • No = Stay to Register</p></div></div>
+<div id="welcomeOverlay" class="gameOverlay hidden"><div class="gamePopup"><div style="font-size:56px">👑</div><h2 style="margin:8px 0">Welcome to Infinity Game Play Bot</h2><p style="font-size:18px;font-weight:700">Do you already have an account?</p><div class="choiceRow"><div class="choiceBox choiceNo" id="choiceNoBtn" onclick="welcomeChoice('no')">❌<br>No</div><div class="choiceBox choiceYes" id="choiceYesBtn" onclick="welcomeChoice('yes')">✅<br>Yes</div></div><p style="font-size:12px;opacity:.7;margin-top:12px">📦 Choose one — Yes = Login • No = Stay to Register</p></div></div>
 <div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p></div>
 <div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px"><div class="card" style="text-align:center"><div style="font-size:60px">👑</div><h1 class="cursive" style="font-size:48px;margin:5px">Register</h1><p id="regSub">Create your Infinity account 👑</p><div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="Your Name" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="••••" maxlength="4" inputmode="numeric" type="password" class="regInput"><p style="font-size:12px;color:#ffd700">⚠️ Do NOT use 1234 or 0000 - Too easy!</p><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div><div id="loginForm" class="hidden"><label style="text-align:left;display:block">Your Name:</label><input id="loginName" placeholder="Your Name"><label style="text-align:left;display:block">4-Digit Password:</label><input id="loginPass" placeholder="••••" maxlength="4" inputmode="numeric" type="password" class="regInput"><button class="btn" onclick="doLogin()">🔓 LOGIN</button><p style="font-size:13px;opacity:.8">New here? <b style="color:#ffd700;cursor:pointer" onclick="showRegister()">Click here to Register</b></p></div></div></div>
 <div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span></div><div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div><div class="card"><h3 style="text-align:center;margin:0">🏆 TOP 3 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="openFullLeader()">👀 View Full Leaderboard</button></div></div>
@@ -98,38 +97,54 @@ function rebuildAskedSet(){ askedSet=new Set(); for(var k in playerHistory){ if(
 function loadLocalHistory(){ try{ var h=JSON.parse(localStorage.getItem('inf_history')||'{}'); if(h&&typeof h==='object') playerHistory=h; }catch(e){ playerHistory={}; } rebuildAskedSet(); }
 function saveLocalHistory(){ try{ localStorage.setItem('inf_history',JSON.stringify(playerHistory)); }catch(e){} }
 loadLocalHistory();
-// *** GAME POPUPS ***
+// *** SOUNDS FOR POPUPS ***
+function playPopupSound(){ try{ var a=document.getElementById('popupAudio'); if(!a) return; a.currentTime=0; a.volume=0.7; var p=a.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
+function playWarnSound(){ try{ var a=document.getElementById('warnAudio'); if(!a) return; a.currentTime=0; a.volume=0.85; var p=a.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
 var warnTimer=null;
 function showGameWarn(msg){
+  playWarnSound();
   var ov=document.getElementById('gameWarnOverlay'); var txt=document.getElementById('gameWarnText'); var box=document.getElementById('gameWarnBox');
   txt.innerHTML=msg||'⚠️ Warning ⚠️<br>Account not found, try again or Register';
   ov.classList.remove('hidden'); box.classList.remove('closing');
-  // Restart bar animation
   var bar=ov.querySelector('.warnBarFill'); if(bar){ bar.style.animation='none'; void bar.offsetWidth; bar.style.animation=''; }
   if(warnTimer) clearTimeout(warnTimer);
   warnTimer=setTimeout(function(){ box.classList.add('closing'); setTimeout(function(){ ov.classList.add('hidden'); },350); },5000);
 }
-function welcomeChoice(choice){
+// *** FIXED YES/NO - hide overlay FIRST, then switch form, force re-render ***
+window.welcomeChoice=function(choice){
   try{ localStorage.setItem('inf_seen_welcome','yes'); }catch(e){}
-  document.getElementById('welcomeOverlay').classList.add('hidden');
-  if(choice==='yes'){ showLogin(); document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; if(user){ document.getElementById('loginName').value=user.name; } }
-  else { showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; }
-}
+  var ov=document.getElementById('welcomeOverlay');
+  if(ov){ ov.classList.add('hidden'); ov.style.display='none'; }
+  // Small delay so overlay is fully gone before switching
+  setTimeout(function(){
+    if(choice==='yes'){
+      showLogin();
+      document.getElementById('regSub').innerText='Welcome back! Please Login 👑';
+      var ln=document.getElementById('loginName'); if(ln && user) ln.value=user.name; if(ln) ln.focus();
+    } else {
+      showRegister();
+      document.getElementById('regSub').innerText='Create your Infinity account 👑';
+      var rn=document.getElementById('regName'); if(rn) rn.focus();
+    }
+    // Ensure register page is visible
+    var rp=document.getElementById('page-register'); if(rp) rp.classList.remove('hidden');
+    window.scrollTo(0,0);
+  },80);
+};
 function maybeShowWelcome(){
   var seen=null; try{ seen=localStorage.getItem('inf_seen_welcome'); }catch(e){}
   if(seen) { showLogin(); return; }
-  // First time on THIS app/browser: show after 1 second on register page
-  setTimeout(function(){ if(currentPage==='page-register' && !loggedIn){ document.getElementById('welcomeOverlay').classList.remove('hidden'); } },1000);
+  setTimeout(function(){
+    if(currentPage==='page-register' && !loggedIn){
+      var ov=document.getElementById('welcomeOverlay');
+      if(ov){ ov.classList.remove('hidden'); ov.style.display='flex'; playPopupSound(); }
+    }
+  },1000);
 }
 function restoreFromServer(){
   if(!user) return;
   fetch('/api/player?name='+encodeURIComponent(user.name)+'&password='+encodeURIComponent(user.password||'')).then(function(r){return r.json();}).then(function(d){
-    if(d && d.found){
-      wins=d.wins||0; losses=d.losses||0; stageIdx=d.stage||computeStageFromWins(wins);
-      if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); }
-      try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){}
-      fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password||'',wins:wins,losses:losses,stage:stageIdx,restore:true})}).catch(function(){});
-    }
+    if(d && d.found){ wins=d.wins||0; losses=d.losses||0; stageIdx=d.stage||computeStageFromWins(wins); if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); } try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password||'',wins:wins,losses:losses,stage:stageIdx,restore:true})}).catch(function(){}); }
     loadLeader();
   }).catch(function(){ loadLeader(); });
 }
@@ -192,25 +207,14 @@ function doRegister(){
   if(isBannedPassword(pw)){ showGameWarn('⚠️ Warning ⚠️<br>Password is too easy!<br>Use ANY except 1234 or 0000!'); return; }
   playEnterSound();
   fetch('/api/player?name='+encodeURIComponent(n)).then(function(r){return r.json();}).then(function(d){
-    if(d && d.found){
-      // OLD ACCOUNT FOUND - do NOT overwrite, send to Login, and restore their data there
-      showGameWarn('⚠️ Warning ⚠️<br>This name already has an account!<br>Please LOGIN to load your old data.<br>Your wins are safe!');
-      setTimeout(function(){ showLogin(); document.getElementById('loginName').value=n; document.getElementById('regSub').innerText='Account found! Please Login 👑'; },800);
-      return;
-    }
-    // NEW - but keep old local wins if this phone had them (old account recovery)
-    var localW=wins, localL=losses; var localH=playerHistory;
+    if(d && d.found){ showGameWarn('⚠️ Warning ⚠️<br>This name already has an account!<br>Please LOGIN to load your old data.<br>Your wins are safe!'); setTimeout(function(){ showLogin(); document.getElementById('loginName').value=n; document.getElementById('regSub').innerText='Account found! Please Login 👑'; },800); return; }
+    var localW=wins, localL=losses;
     user={name:n,password:pw};
-    // If local wins >0 and same name as before, keep them (old phone recovery)
-    if(localW>0){ wins=localW; losses=localL; stageIdx=computeStageFromWins(wins); }
-    else { wins=0; losses=0; stageIdx=0; playerHistory={}; askedSet=new Set(); }
+    if(localW>0){ wins=localW; losses=localL; stageIdx=computeStageFromWins(wins); } else { wins=0; losses=0; stageIdx=0; playerHistory={}; askedSet=new Set(); }
     lastRoundQs=new Set(); saveLocalHistory();
-    // Save to BOT storage immediately
     fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:pw,wins:wins,losses:losses,stage:stageIdx})}).catch(function(){});
     save(); enterDashboard('Welcome '+welcomeName()+'! Registered 👑');
-  }).catch(function(){
-    user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); enterDashboard('Welcome '+welcomeName()+'! Registered 👑');
-  });
+  }).catch(function(){ user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); enterDashboard('Welcome '+welcomeName()+'! Registered 👑'); });
 }
 function doLogin(){
   var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim();
@@ -219,23 +223,10 @@ function doLogin(){
   if(isBannedPassword(pw)){ showGameWarn('⚠️ Warning ⚠️<br>Password is too easy!'); return; }
   playEnterSound();
   fetch('/api/player?name='+encodeURIComponent(n)+'&password='+encodeURIComponent(pw)).then(function(r){return r.json();}).then(function(d){
-    if(d && d.found && d.password_ok){
-      user={name:d.display_name||n,password:pw}; applyServerData(d);
-      try{ localStorage.setItem('inf_user',JSON.stringify(user)); }catch(e){}
-      fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:pw,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); fetchServerHistory(); }).catch(function(){});
-      enterDashboard('Welcome back '+welcomeName()+' 👑 - Your data loaded! '+wins+' Wins!');
-    } else if(d && d.found && d.recovered){
-      // OLD ACCOUNT with empty / old password - recovered!
-      user={name:d.display_name||n,password:pw}; applyServerData(d);
-      try{ localStorage.setItem('inf_user',JSON.stringify(user)); }catch(e){}
-      fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:pw,wins:wins,losses:losses,stage:stageIdx})}).catch(function(){});
-      enterDashboard('Welcome back '+welcomeName()+' 👑 - Old account recovered! '+wins+' Wins!');
-    } else if(d && d.found && !d.password_ok){
-      showGameWarn('⚠️ Warning ⚠️<br>Account not found, try again or Register<br>Wrong password for this name!');
-    } else {
-      showGameWarn('⚠️ Warning ⚠️<br>Account not found, try again or Register<br>No account for "'+n+'"<br>Please Register first!');
-      setTimeout(function(){ showRegister(); document.getElementById('regName').value=n; },1200);
-    }
+    if(d && d.found && d.password_ok){ user={name:d.display_name||n,password:pw}; applyServerData(d); try{ localStorage.setItem('inf_user',JSON.stringify(user)); }catch(e){} fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:pw,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); fetchServerHistory(); }).catch(function(){}); enterDashboard('Welcome back '+welcomeName()+' 👑 - Your data loaded! '+wins+' Wins!'); }
+    else if(d && d.found && d.recovered){ user={name:d.display_name||n,password:pw}; applyServerData(d); try{ localStorage.setItem('inf_user',JSON.stringify(user)); }catch(e){} fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:pw,wins:wins,losses:losses,stage:stageIdx})}).catch(function(){}); enterDashboard('Welcome back '+welcomeName()+' 👑 - Old account recovered! '+wins+' Wins!'); }
+    else if(d && d.found && !d.password_ok){ showGameWarn('⚠️ Warning ⚠️<br>Account not found, try again or Register<br>Wrong password for this name!'); }
+    else { showGameWarn('⚠️ Warning ⚠️<br>Account not found, try again or Register<br>No account for "'+n+'"<br>Please Register first!'); setTimeout(function(){ showRegister(); document.getElementById('regName').value=n; },1200); }
   }).catch(function(){ showGameWarn('⚠️ Warning ⚠️<br>Network error - try again!'); });
 }
 function updateMe(){ if(!user) return; refreshStageFromWins(); document.getElementById('welcomeText').innerText='Welcome '+welcomeName(); document.getElementById('myStage').innerText=stageName(); }
@@ -272,7 +263,7 @@ function answerQ(i){ clearQTimer(); var q=qList[qIndex]; var wasCorrect=(i===q.a
 function finishRound(){ clearQTimer(); document.getElementById('gameBody').innerHTML='<h3 style="text-align:center">⏳ Calculating...</h3><p style="text-align:center">Bot calculating...<br>Press PLAY AGAIN for NEW questions!</p><div class="count" style="text-align:center"><span id="coolT">5</span></div><p style="text-align:center">Score: '+score+'/10 • Wins +'+roundWins+' • Losses +'+roundLoss+'<br>Current Stage: '+stageName()+'</p>'; var t=5; var iv=setInterval(function(){ t--; document.getElementById('coolT').innerText=t; if(t<=0){ clearInterval(iv); showResult(); } },1000); }
 function showResult(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=sortPlayers(arr); var nr=0; for(var i=0;i<s.length;i++){ if(user&&eqName(s[i].name,user.name)) nr=i+1; } var move=nr<prevRank?'📈 MOVED UP! 👑':nr>prevRank?'📉 Moved DOWN':'➡️ Same rank'; document.getElementById('gameBody').innerHTML='<h2 style="text-align:center">🏁 DONE!</h2><p style="text-align:center;font-size:22px">Marks: <b>'+score+'/10</b></p><p style="text-align:center">Rank: #'+nr+'<br>'+move+'<br>Now: '+stageName()+'</p><button class="btn" onclick="continueHarder()">🔁 PLAY AGAIN - NEW 10 QUESTIONS!</button><button class="btn2" onclick="openRiddles()">Change Riddle Type</button><button class="btn2" onclick="openBible()">Change Bible Type</button><button class="btn2" onclick="goDash()">🏠 Dashboard</button>'; prevRank=nr; }); }
 function openComing(name){ showPage('page-coming'); document.getElementById('comingName').innerText=name+' - COMING SOON'; var t=5; document.getElementById('countDown').innerText=t; var iv=setInterval(function(){ t--; document.getElementById('countDown').innerText=t; if(t<=0){ clearInterval(iv); goDash(); } },1000); }
-try{ document.getElementById('enterBtn').addEventListener('click',function(){ goRegister(); }); document.getElementById('profileBtn').addEventListener('click',function(){ openMyProfile(); }); document.getElementById('soundBtn').addEventListener('click',function(){ toggleSound(); }); document.getElementById('msgFab').addEventListener('click',function(){ openMessages(); }); document.getElementById('backFab').addEventListener('click',function(){ goBack(); }); }catch(e){}
+try{ document.getElementById('enterBtn').addEventListener('click',function(){ goRegister(); }); document.getElementById('profileBtn').addEventListener('click',function(){ openMyProfile(); }); document.getElementById('soundBtn').addEventListener('click',function(){ toggleSound(); }); document.getElementById('msgFab').addEventListener('click',function(){ openMessages(); }); document.getElementById('backFab').addEventListener('click',function(){ goBack(); }); var yb=document.getElementById('choiceYesBtn'); if(yb) yb.addEventListener('click',function(){ welcomeChoice('yes'); }); var nb=document.getElementById('choiceNoBtn'); if(nb) nb.addEventListener('click',function(){ welcomeChoice('no'); }); }catch(e){}
 showPage('page-home'); try{ loadLeader(); }catch(e){}
 </script></body></html>"""
 @app.route("/")
@@ -289,7 +280,6 @@ def get_player():
     n=norm(request.args.get("name","")); pw=request.args.get("password","")
     if n not in USERS: return jsonify({"found":False})
     u=USERS[n]; stored=str(u.get("password","") or "")
-    # OLD ACCOUNT FIX: if stored password is empty / missing, accept ANY 4-digit password and SAVE it as new password
     if not stored and pw and len(str(pw))==4 and str(pw).isdigit():
         u["password"]=str(pw); u["last_seen"]=time.time(); u["logged_out"]=False; save_users()
         return jsonify({"found":True,"password_ok":True,"recovered":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{})})
@@ -308,15 +298,12 @@ def score():
     if "friends" not in u: u["friends"]=[]
     if "requests" not in u: u["requests"]=[]
     iw=int(d.get("wins",0)); il=int(d.get("losses",0))
-    if d.get("restore"):
-        u["wins"]=max(u.get("wins",0),iw); u["losses"]=max(u.get("losses",0),il)
+    if d.get("restore"): u["wins"]=max(u.get("wins",0),iw); u["losses"]=max(u.get("losses",0),il)
     else:
-        # NEVER wipe: MAX wins, and if password was empty, save incoming password (old account recovery)
         u["wins"]=max(u.get("wins",0),iw); u["losses"]=max(u.get("losses",0),il)
         w=u["wins"]; u["stage"]=4 if w>=500 else 3 if w>=300 else 2 if w>=150 else 1 if w>=50 else 0
         u["last_seen"]=time.time(); u["logged_out"]=False
         if d.get("password") and not u.get("password"): u["password"]=d.get("password")
-        elif d.get("password") and u.get("password")==d.get("password"): pass
     save_users(); return jsonify({"ok":True,"capacity":cap})
 @app.route("/api/history")
 def get_history():
