@@ -26,7 +26,7 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 </style></head><body>
 <div class="topbar"><div><span class="catTimeTop" id="catTime">🕐 Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">👑 INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn">🔊</div><div class="profile" id="profileBtn">👤<span id="notifBadge" class="notif hidden">1</span></div></div></div>
 <div id="toast" class="toast hidden"></div>
-<div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login<br>📶 Low Data • Soft Piano • ~10MB / 2hrs</p></div>
+<div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p></div>
 <div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px">
 <div class="card" style="text-align:center"><div style="font-size:60px">👑</div><h1 class="cursive" style="font-size:48px;margin:5px">Register</h1><p id="regSub">Create your Infinity account 👑</p>
 <div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="e.g. Chikondi" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="e.g. 5678 - NOT 1234 or 0000" maxlength="4" inputmode="numeric" type="password" class="regInput"><p style="font-size:12px;color:#ffd700">⚠️ Do NOT use 1234 or 0000 - Too easy!</p><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div>
@@ -35,7 +35,7 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span></div>
 <div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div>
 <div class="card"><h3 style="text-align:center;margin:0">🏆 TOP 3 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="openFullLeader()">👀 View Full Leaderboard</button></div></div>
-<div id="page-leader" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h3 style="text-align:center;margin:0">🏆 FULL LEADERBOARD 🏆</h3><p style="text-align:center;font-size:12px;opacity:.8">All players • Online + Offline • Scroll for more</p><div class="leaderScroll" id="fullLeaderList">Loading...</div><div id="myRankJump"></div><button class="btn2" onclick="loadMoreLeader()">⬇️ Load More (Next 20)</button></div></div>
+<div id="page-leader" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h3 style="text-align:center;margin:0">🏆 FULL LEADERBOARD 🏆</h3><p style="text-align:center;font-size:12px;opacity:.8">All players • Online + Offline • Scroll for more</p><div class="leaderScroll" id="fullLeaderList">Loading...</div><div id="myRankJump"></div></div></div>
 <div id="page-game" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="position:relative"><h2 id="gameTitle" style="text-align:center">🧩 RIDDLES</h2><div id="gameBody"></div></div></div>
 <div id="page-coming" class="hidden" style="max-width:520px;margin:0 auto;padding:40px 20px;text-align:center"><div style="font-size:80px">🚀</div><h1 class="cursive" style="font-size:54px">Coming Soon</h1><h2 id="comingName">SCI-FI</h2><p>Launching on<br><b>25th December 2026</b></p><p>Returning in:</p><div class="count" id="countDown">5</div></div>
 <div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p>🏆 Wins: <b id="profWins">0</b> | ❌ Losses: <b id="profLoss">0</b></p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p></div>
@@ -55,9 +55,6 @@ var wins=parseInt(localStorage.getItem('inf_wins')||'0')||0, losses=parseInt(loc
 var stageIdx=parseInt(localStorage.getItem('inf_stage')||'0')||0;
 var loggedIn=false;
 var STAGES=['Beginner','Intermediate','Advanced','Expert','Professional'];
-// *** RANK RULES - HIDDEN IN BACKGROUND! ***
-// Beginner -> Intermediate = 50 correct, Intermediate -> Advanced = 150, Advanced -> Expert = 300, Expert -> Professional = 500
-// Nobody sees these numbers!
 function computeStageFromWins(w){
   if(w>=500) return 4;
   if(w>=300) return 3;
@@ -74,7 +71,7 @@ function stageName(){ refreshStageFromWins(); return STAGES[Math.min(stageIdx, S
 function getDiff(){ return (Math.pow(1.3, stageIdx)).toFixed(2); }
 var currentMode='',currentCat='',qIndex=0,qList=[],score=0,roundWins=0,roundLoss=0,prevRank=999, lastNotif='', chatFriend='';
 var currentPage='page-home';
-var fullLeaderData=[], leaderShown=20;
+var fullLeaderData=[];
 function isBannedPassword(pw){ return pw==='1234' || pw==='0000'; }
 var playerHistory={};
 var askedSet=new Set();
@@ -124,11 +121,6 @@ function isLocked(){ var now=catNow(); var unlock=new Date(2027,0,24,12,0,0); re
 function blockedFeature(name){ if(isLocked()){ alert('🔒 '+name+' is locked!\nAvailable on 24 January 2027 at 12:00hrs CAT'); } else { alert('✅ '+name+' is now unlocked!'); } }
 function addEmoji(){ var inp=document.getElementById('msgInput'); inp.value+='😊'; inp.focus(); toggleSend(); }
 function toggleSend(){ var v=document.getElementById('msgInput').value.trim(); document.getElementById('micBtn').style.display=v?'none':'flex'; document.getElementById('sendBtnSmall').style.display=v?'block':'none'; }
-// ============================================================
-// *** SOFT PIANO RELAXING MIX - LOW, SOFT, CALM ***
-// No YouTube! Pure soft piano, notes mixing slowly!
-// Very low volume, relaxing like sleeping music!
-// ============================================================
 var audioCtx=null, soundOn=true, pianoTimer=null, pianoStarted=false, pianoMaster=null;
 function unlockAudio(){
   try{
@@ -149,7 +141,6 @@ function playPianoNote(freq, vol, dur){
     g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
     o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(pianoMaster);
     o1.start(); o2.start(); o1.stop(audioCtx.currentTime+dur+0.1); o2.stop(audioCtx.currentTime+dur+0.1);
-    // Soft echo - relaxing mix
     try{
       var dly=audioCtx.createDelay(); dly.delayTime.value=0.45;
       var fb=audioCtx.createGain(); fb.gain.value=0.18;
@@ -164,7 +155,6 @@ function startDashboardSound(){
     unlockAudio();
     stopDashboardSound();
     pianoMaster=audioCtx.createGain(); pianoMaster.gain.value=0.35; pianoMaster.connect(audioCtx.destination);
-    // Soft Piano Relaxing Mix - C Major pentatonic, very low, very slow, notes blend together
     var notes=[261.63,293.66,329.63,392.00,440.00,523.25,587.33,659.25,392.00,329.63,261.63,329.63,440.00,523.25,440.00,392.00,329.63,293.66,261.63,0,523.25,659.25,587.33,523.25,440.00,0,392.00,440.00,523.25,0];
     var chords=[[130.81,196.00,261.63],[174.61,220.00,261.63],[146.83,196.00,246.94],[130.81,164.81,196.00]];
     var ni=0, ci=0;
@@ -258,7 +248,6 @@ function loadLeader(){ fetch('/api/leaderboard').then(function(r){ return r.json
  var sorted=sortPlayers(d.players||d);
  var idx=-1; for(var i=0;i<sorted.length;i++){ if(user && loggedIn && sorted[i].name===user.name) idx=i; }
  document.getElementById('myRank').innerText=idx>=0?'#'+(idx+1):'#-'; prevRank=idx>=0?idx+1:999;
- // Dashboard: ONLY TOP 3!
  var top3=sorted.slice(0,3);
  var medals=['🥇','🥈','🥉'];
  var html=''; if(!top3.length) html='<p style="text-align:center">No players yet</p>';
@@ -266,7 +255,7 @@ function loadLeader(){ fetch('/api/leaderboard').then(function(r){ return r.json
  if(idx>=3 && user){ html+='<div class="leadRow" style="border:2px solid #ffd700" onclick="openFullLeader()"><span>👤 Your Rank: #'+(idx+1)+'</span><span>Tap to see full →</span></div>'; }
  document.getElementById('leaderList').innerHTML=html;
  }).catch(function(){}); }
-function openFullLeader(){ if(!requireLogin()) return; showPage('page-leader'); leaderShown=20; loadFullLeader(); }
+function openFullLeader(){ if(!requireLogin()) return; showPage('page-leader'); loadFullLeader(); }
 function loadFullLeader(){
   fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){
     fullLeaderData=sortPlayers(d.players||d);
@@ -275,18 +264,16 @@ function loadFullLeader(){
 }
 function renderFullLeader(){
   var box=document.getElementById('fullLeaderList');
-  var show=fullLeaderData.slice(0,leaderShown);
+  // *** NO Load More! Just list ALL players down! If less than 20, just list them! ***
   var html='';
-  if(!show.length) html='<p style="text-align:center">No players yet</p>';
-  show.forEach(function(p,i){
+  if(!fullLeaderData.length) html='<p style="text-align:center">No players yet</p>';
+  fullLeaderData.forEach(function(p,i){
     var dot=p.online?'<span class="dot green"></span>':'<span class="dot red"></span>';
     var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
     var isMe=(user && p.name===user.name);
     html+='<div class="leadRow" id="rank-'+(i+1)+'" '+(isMe?'style="border:2px solid #ffd700;background:rgba(255,215,0,.25)"':'')+' onclick="openOther(\''+p.name+'\')"><span>'+dot+' '+medal+' '+(i+1)+'. '+p.name+(isMe?' 👈 YOU':'')+'</span><span><b>'+p.wins+'</b> Win | <b>'+p.losses+'</b> Lose</span></div>';
   });
-  if(leaderShown<fullLeaderData.length) html+='<p style="text-align:center;font-size:12px;opacity:.7">Showing '+leaderShown+' of '+fullLeaderData.length+' • Scroll / Load More</p>';
   box.innerHTML=html;
-  // Your Rank bar at bottom - clickable to jump to you!
   var myIdx=-1; for(var i=0;i<fullLeaderData.length;i++){ if(user && fullLeaderData[i].name===user.name) myIdx=i; }
   var jump=document.getElementById('myRankJump');
   if(myIdx>=0){
@@ -294,12 +281,9 @@ function renderFullLeader(){
     jump.innerHTML='<div class="myRankBar" onclick="jumpToMyRank()">👤 YOUR RANK: #'+(myIdx+1)+' • '+me.wins+' Win | '+me.losses+' Lose<br><small>Tap to jump to your rank →</small></div>';
   } else { jump.innerHTML=''; }
 }
-function loadMoreLeader(){ leaderShown+=20; if(leaderShown>fullLeaderData.length) leaderShown=fullLeaderData.length; renderFullLeader(); }
 function jumpToMyRank(){
   var myIdx=-1; for(var i=0;i<fullLeaderData.length;i++){ if(user && fullLeaderData[i].name===user.name) myIdx=i; }
   if(myIdx<0) return;
-  // Ensure your rank is loaded - expand list to include you!
-  if(myIdx+1>leaderShown){ leaderShown=myIdx+1; renderFullLeader(); }
   setTimeout(function(){
     var el=document.getElementById('rank-'+(myIdx+1));
     if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.boxShadow='0 0 20px #ffd700'; setTimeout(function(){ el.style.boxShadow=''; },2000); toast('👤 You are Rank #'+(myIdx+1)+'!'); }
@@ -382,7 +366,6 @@ def score():
     if n not in USERS: USERS[n]={"password":d.get("password",""),"wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{}}
     if "history" not in USERS[n]: USERS[n]["history"]={}
     w=int(d.get("wins",0))
-    # Server also enforces hidden rank rules!
     if w>=500: st=4
     elif w>=300: st=3
     elif w>=150: st=2
