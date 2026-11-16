@@ -24,9 +24,12 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 .msgBarWrap{display:flex;align-items:center;gap:8px;margin-top:12px}.msgBar{flex:1;display:flex;align-items:center;gap:10px;background:#2b2b33;border-radius:999px;padding:10px 12px}.msgBar .emojiBtn{font-size:22px;background:none;border:none;cursor:pointer}.msgBar input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px;padding:0;margin:0}.msgBar input::placeholder{color:#aaa}.msgBar .attachBtn{font-size:20px;background:none;border:none;cursor:pointer}.micBtn{width:52px;height:52px;min-width:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#c39bff,#9a6bff);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}.sendBtnSmall{width:44px;height:44px;border-radius:50%;border:none;background:#ffd700;font-size:20px;cursor:pointer;display:none}.catTimeTop{font-size:11px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:4px 8px;border-radius:20px;display:inline-block}.timer{position:absolute;top:10px;right:12px;background:#ff2222;color:#fff;padding:6px 12px;border-radius:20px;font-weight:900;font-size:18px}.topRight{display:flex;align-items:center;gap:6px}.soundSmall{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
 .leaderScroll{max-height:480px;overflow-y:auto;scroll-behavior:smooth}.myRankBar{position:sticky;bottom:0;background:linear-gradient(90deg,#ffd700,#ff006e);color:#000;padding:12px;border-radius:16px;font-weight:900;text-align:center;cursor:pointer;margin-top:10px;border:2px solid #fff}.myRankBar small{font-weight:400}
 </style></head><body>
-<!-- *** PIANO SOUND - PLAYS IMMEDIATELY ON LOGIN / REGISTER *** -->
+<!-- *** SOUND 1: ENTER / LOGIN / REGISTER - PLAYS ONCE *** -->
 <!-- https://cdn.pixabay.com/audio/2025/07/09/audio_121db7b43f.mp3 -->
-<audio id="pianoAudio" src="https://cdn.pixabay.com/audio/2025/07/09/audio_121db7b43f.mp3" loop preload="auto" playsinline></audio>
+<audio id="enterAudio" src="https://cdn.pixabay.com/audio/2025/07/09/audio_121db7b43f.mp3" preload="auto" playsinline></audio>
+<!-- *** SOUND 2: DASHBOARD PIANO BACKGROUND - LOOPS FOREVER *** -->
+<!-- https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3 -->
+<audio id="dashAudio" src="https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3" loop preload="auto" playsinline></audio>
 <div class="topbar"><div><span class="catTimeTop" id="catTime">🕐 Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">👑 INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn">🔊</div><div class="profile" id="profileBtn">👤<span id="notifBadge" class="notif hidden">1</span></div></div></div>
 <div id="toast" class="toast hidden"></div>
 <div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p></div>
@@ -92,27 +95,35 @@ function isLocked(){ var now=catNow(); var unlock=new Date(2027,0,24,12,0,0); re
 function blockedFeature(name){ if(isLocked()){ alert('🔒 '+name+' is locked!\nAvailable on 24 January 2027 at 12:00hrs CAT'); } else { alert('✅ '+name+' is now unlocked!'); } }
 function addEmoji(){ var inp=document.getElementById('msgInput'); inp.value+='😊'; inp.focus(); toggleSend(); }
 function toggleSend(){ var v=document.getElementById('msgInput').value.trim(); document.getElementById('micBtn').style.display=v?'none':'flex'; document.getElementById('sendBtnSmall').style.display=v?'block':'none'; }
-// *** PIANO SOUND FIXED - REAL MP3, PLAYS IMMEDIATELY ON LOGIN/REGISTER ***
+// *** 2 SOUNDS - ENTER vs DASHBOARD ***
 var soundOn=true;
-function getPiano(){ return document.getElementById('pianoAudio'); }
+function playEnterSound(){
+  if(!soundOn) return;
+  try{
+    var dash=document.getElementById('dashAudio'); if(dash) dash.pause();
+    var a=document.getElementById('enterAudio'); if(!a) return;
+    a.currentTime=0; a.volume=0.45; a.loop=false; a.muted=false;
+    var p=a.play(); if(p && p.catch) p.catch(function(){});
+  }catch(e){}
+}
 function startDashboardSound(){
   if(!soundOn) return;
   try{
-    var a=getPiano(); if(!a) return;
+    var e=document.getElementById('enterAudio'); if(e) e.pause();
+    var a=document.getElementById('dashAudio'); if(!a) return;
     a.volume=0.35; a.loop=true; a.muted=false;
     var p=a.play(); if(p && p.catch) p.catch(function(){});
     var b=document.getElementById('soundBtn'); if(b) b.innerText='🔊';
   }catch(e){}
 }
-function stopDashboardSound(){ try{ var a=getPiano(); if(a) a.pause(); }catch(e){} }
+function stopDashboardSound(){ try{ var a=document.getElementById('dashAudio'); if(a) a.pause(); var e=document.getElementById('enterAudio'); if(e) e.pause(); }catch(e){} }
 function playTick(){}
 function toggleSound(){
   soundOn=!soundOn;
   var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇';
-  if(soundOn){ startDashboardSound(); toast('🎹 Piano Playing ON'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); }
+  if(soundOn){ startDashboardSound(); toast('🎹 Piano Background ON'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); }
 }
-document.addEventListener('click', function(){ if(soundOn && loggedIn){ startDashboardSound(); } }, true);
-document.addEventListener('touchstart', function(){ if(soundOn && loggedIn){ startDashboardSound(); } }, {passive:true});
+document.addEventListener('click', function(){ if(soundOn && loggedIn){ var d=document.getElementById('dashAudio'); if(d && d.paused) startDashboardSound(); } }, true);
 function autoLogout(){ stopDashboardSound(); loggedIn=false; if(!user) return; try{ var data=JSON.stringify({name:user.name}); if(navigator.sendBeacon){ navigator.sendBeacon('/api/logout', new Blob([data], {type:'application/json'})); } else { fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:data,keepalive:true}).catch(function(){}); } }catch(e){} try{ localStorage.setItem('inf_needs_login','yes'); localStorage.setItem('inf_page','page-home'); }catch(e){} }
 try{ document.addEventListener('visibilitychange', function(){ if(document.hidden){ autoLogout(); } }); window.addEventListener('pagehide', function(){ autoLogout(); }); window.addEventListener('beforeunload', function(){ autoLogout(); }); }catch(e){}
 function toast(m){ var t=document.getElementById('toast'); t.innerText=m; t.classList.remove('hidden'); setTimeout(function(){ t.classList.add('hidden'); },4500); }
@@ -125,13 +136,13 @@ function save(){ try{ localStorage.setItem('inf_user',JSON.stringify(user)); loc
 function forceSync(){ if(!user || !loggedIn) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); fetchServerHistory(); }).catch(function(){ loadLeader(); fetchServerHistory(); }); }
 function sync(){ if(!user || !loggedIn) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); }).catch(function(){}); }
 setInterval(function(){ checkNotif(); },60000);
-function goRegister(){ if(user){ showPage('page-register'); showLogin(); document.getElementById('loginName').value=user.name; document.getElementById('regSub').innerText='Welcome back '+user.name+' 👑 Enter password to Login'; } else { showPage('page-register'); showRegister(); } }
+function goRegister(){ playEnterSound(); if(user){ showPage('page-register'); showLogin(); document.getElementById('loginName').value=user.name; document.getElementById('regSub').innerText='Welcome back '+user.name+' 👑 Enter password to Login'; } else { showPage('page-register'); showRegister(); } }
 function showRegister(){ document.getElementById('registerForm').classList.remove('hidden'); document.getElementById('loginForm').classList.add('hidden'); document.getElementById('regSub').innerText='Create your Infinity account 👑'; }
 function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('regSub').innerText='Login to your account 👑'; }
-function doRegister(){ var n=document.getElementById('regName').value.trim(); var pw=document.getElementById('regPass').value.trim(); if(!n){ alert('Please enter your name!'); return; } if(!pw || pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits! e.g. 5678'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!\nExample: 5678, 2468, 1357'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); lastRoundQs=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); startDashboardSound(); }
-function doLogin(){ var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ loggedIn=true; try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} toast('Welcome back '+welcomeName()+' 👑 - Nothing reset! History kept!'); updateMe(); showPage('page-dash'); forceSync(); startDashboardSound(); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); lastRoundQs=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); startDashboardSound(); } }
+function doRegister(){ var n=document.getElementById('regName').value.trim(); var pw=document.getElementById('regPass').value.trim(); if(!n){ alert('Please enter your name!'); return; } if(!pw || pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits! e.g. 5678'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!\nExample: 5678, 2468, 1357'); return; } playEnterSound(); user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); lastRoundQs=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); setTimeout(function(){ startDashboardSound(); },1200); }
+function doLogin(){ var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ playEnterSound(); loggedIn=true; try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} toast('Welcome back '+welcomeName()+' 👑 - Nothing reset! History kept!'); updateMe(); showPage('page-dash'); forceSync(); setTimeout(function(){ startDashboardSound(); },1200); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\nPlease enter ANY password EXCEPT 1234 or 0000!'); return; } playEnterSound(); user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; loggedIn=true; playerHistory={}; askedSet=new Set(); lastRoundQs=new Set(); saveLocalHistory(); try{ localStorage.setItem('inf_needs_login','no'); }catch(e){} save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); setTimeout(function(){ startDashboardSound(); },1200); } }
 function updateMe(){ if(!user) return; refreshStageFromWins(); document.getElementById('welcomeText').innerText='Welcome '+welcomeName(); document.getElementById('myStage').innerText=stageName(); }
-function goDash(){ if(!requireLogin()) return; showPage('page-dash'); updateMe(); loadLeader(); }
+function goDash(){ if(!requireLogin()) return; showPage('page-dash'); updateMe(); loadLeader(); startDashboardSound(); }
 function sortPlayers(arr){ return arr.slice().sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); }); }
 function loadLeader(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var sorted=sortPlayers(d.players||d); var idx=-1; for(var i=0;i<sorted.length;i++){ if(user && loggedIn && sorted[i].name===user.name) idx=i; } document.getElementById('myRank').innerText=idx>=0?'#'+(idx+1):'#-'; prevRank=idx>=0?idx+1:999; var top3=sorted.slice(0,3); var medals=['🥇','🥈','🥉']; var html=''; if(!top3.length) html='<p style="text-align:center">No players yet</p>'; top3.forEach(function(p,i){ var dot=p.online?'<span class="dot green"></span>':'<span class="dot red"></span>'; html+='<div class="leadRow" onclick="openOther(\''+p.name+'\')"><span>'+dot+' '+medals[i]+' '+(i+1)+'. '+p.name+'</span><span><b>'+p.wins+'</b> Win | <b>'+p.losses+'</b> Lose</span></div>'; }); if(idx>=3 && user){ html+='<div class="leadRow" style="border:2px solid #ffd700" onclick="openFullLeader()"><span>👤 Your Rank: #'+(idx+1)+'</span><span>Tap to see full →</span></div>'; } document.getElementById('leaderList').innerHTML=html; }).catch(function(){}); }
 function openFullLeader(){ if(!requireLogin()) return; showPage('page-leader'); loadFullLeader(); }
