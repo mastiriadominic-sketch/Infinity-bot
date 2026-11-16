@@ -1,5 +1,4 @@
-# INFINITY BOT v7.0 - ALL DATA LOADS TOGETHER + BACKUP + AUTO-SAVE EVERY 10 SEC
-# START: pip install gunicorn -q && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+
 from flask import Flask, request, jsonify
 import os, requests, time, datetime, json, threading, shutil
 app = Flask(__name__)
