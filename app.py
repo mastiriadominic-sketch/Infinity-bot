@@ -21,7 +21,7 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p></div>
 <div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px"><button class="btn2" onclick="showPage('page-home')">← Back</button>
 <div class="card" style="text-align:center"><div style="font-size:60px">👑</div><h1 class="cursive" style="font-size:48px;margin:5px">Register</h1><p id="regSub">Create your Infinity account 👑</p>
-<div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="e.g. Chikondi" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="e.g. 1234" maxlength="4" inputmode="numeric" type="password" class="regInput"><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div>
+<div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="e.g. Chikondi" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="e.g. 5678 - NOT 1234 or 0000" maxlength="4" inputmode="numeric" type="password" class="regInput"><p style="font-size:12px;color:#ffd700">⚠️ Do NOT use 1234 or 0000 - Too easy!</p><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div>
 <div id="loginForm" class="hidden"><label style="text-align:left;display:block">Your Name:</label><input id="loginName" placeholder="Your registered name"><label style="text-align:left;display:block">4-Digit Password:</label><input id="loginPass" placeholder="****" maxlength="4" inputmode="numeric" type="password" class="regInput"><button class="btn" onclick="doLogin()">🔓 LOGIN</button><p style="font-size:13px;opacity:.8">New here? <b style="color:#ffd700;cursor:pointer" onclick="showRegister()">Click here to Register</b></p></div>
 <p style="font-size:12px;opacity:.7">Chikondi = My Princess 👸<br>Chimwemwe = Her Majesty 👑</p></div></div>
 <div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">🏆 Wins: <b id="myWins">0</b></span><span class="badge">❌ Losses: <b id="myLoss">0</b></span><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><br><span class="badge">👥 Friends: <b id="myFriends">0</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span></div>
@@ -29,7 +29,7 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <div class="card"><h3 style="text-align:center;margin:0">🏆 LEADERBOARD 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="loadLeader()">🔄 Refresh</button></div></div>
 <div id="page-game" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back to Dashboard</button><div class="card" style="position:relative"><h2 id="gameTitle" style="text-align:center">🧩 RIDDLES</h2><div id="gameBody"></div></div></div>
 <div id="page-coming" class="hidden" style="max-width:520px;margin:0 auto;padding:40px 20px;text-align:center"><div style="font-size:80px">🚀</div><h1 class="cursive" style="font-size:54px">Coming Soon</h1><h2 id="comingName">SCI-FI</h2><p>Launching on<br><b>25th December 2026</b></p><p>Returning in:</p><div class="count" id="countDown">5</div></div>
-<div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back</button><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p><b id="profWins">0</b> Win | <b id="profLoss">0</b> Lose</p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p><button class="btn2" onclick="doLogout()">🚪 LOGOUT (Go Offline - Name Stays - No Reset)</button></div>
+<div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back</button><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p><b id="profWins">0</b> Win | <b id="profLoss">0</b> Lose</p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p><p style="font-size:12px;opacity:.7">You go Offline automatically when you exit the bot 🔴<br>Name stays on leaderboard - No Reset</p></div>
 <div class="card"><h3>📩 Friend Requests</h3><div id="reqList"><p>No requests</p></div></div>
 <div class="card"><h3>👥 My Friends</h3><div id="friendList"></div></div></div>
 <div id="page-other" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back</button><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="otherName">Player</h2><p><span id="otherDot" class="dot green"></span> <span id="otherStatus">Online</span></p><p>⭐ Rank: <b id="otherRank">#-</b></p><p><b id="otherWins">0</b> Win | <b id="otherLoss">0</b> Lose</p><div id="otherActions"></div></div></div>
@@ -39,10 +39,7 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <p style="text-align:center;font-size:11px;opacity:.7">📎 Picture • 🎤 Voice • 📞 Call unlock 24 Jan 2027 12:00 CAT</p></div></div>
 <div class="msgFab" id="msgFab">💬</div>
 <script>
-// SAFE START - Even if one part fails, ENTER still works!
-try{
-if(!localStorage.getItem('inf_version')){ localStorage.setItem('inf_version','v6-final'); }
-}catch(e){}
+try{ if(!localStorage.getItem('inf_version')){ localStorage.setItem('inf_version','v6-final'); } }catch(e){}
 var user=null; try{ user=JSON.parse(localStorage.getItem('inf_user')||'null'); }catch(e){ user=null; }
 var wins=parseInt(localStorage.getItem('inf_wins')||'0')||0, losses=parseInt(localStorage.getItem('inf_loss')||'0')||0;
 var stageIdx=parseInt(localStorage.getItem('inf_stage')||'0')||0;
@@ -50,6 +47,8 @@ var STAGES=['Beginner','Intermediate','Advanced','Expert','Professional'];
 function stageName(){ return STAGES[Math.min(stageIdx, STAGES.length-1)] + (stageIdx>=5 ? ' +' : ''); }
 function getDiff(){ return (Math.pow(1.3, stageIdx)).toFixed(2); }
 var currentMode='',currentCat='',qIndex=0,qList=[],score=0,roundWins=0,roundLoss=0,prevRank=999, lastNotif='', chatFriend='';
+// *** PASSWORD RULE: Old 1234 users KEEP it! New users CANNOT use 1234 or 0000 ***
+function isBannedPassword(pw){ return pw==='1234' || pw==='0000'; }
 function getAskedMap(){ try{ return JSON.parse(localStorage.getItem('inf_asked_qs')||'{}'); }catch(e){ return {}; } }
 function saveAskedMap(m){ try{ localStorage.setItem('inf_asked_qs', JSON.stringify(m)); }catch(e){} }
 function markAsked(qText){ var m=getAskedMap(); m[qText]=Date.now(); saveAskedMap(m); }
@@ -61,22 +60,6 @@ function gamblePick(list, count){
   var picked=pool.slice(0,count);
   picked.forEach(function(q){ markAsked(q.q); });
   return picked;
-}
-var deferredPrompt=null;
-try{ window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferredPrompt=e; }); }catch(e){}
-function askShortcut(){
-  try{
-  var last=parseInt(localStorage.getItem('inf_shortcut_last')||'0');
-  var daysSince=(Date.now()-last)/(1000*60*60*24);
-  if(last && daysSince<6){ return; }
-  localStorage.setItem('inf_shortcut_last', Date.now().toString());
-  setTimeout(function(){
-    if(confirm('👑 Do you want to create a shortcut to put INFINITY BOT on your phone homepage?\n\nPress OK = Add Automatically!\nCancel = Don\'t add - I will ask again in 5-7 days ❤️')){
-      if(deferredPrompt){ deferredPrompt.prompt(); }
-      else { alert('To finish adding:\n\nAndroid: Tap ⋮ → Add to Home screen → Add\nIphone: Tap Share → Add to Home Screen → Add'); }
-    }
-  },900);
-  }catch(e){}
 }
 function catNow(){ try{ return new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lusaka'})); }catch(e){ return new Date(); } }
 function updateCatTime(){ try{ var d=catNow(); var timeStr=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); var dateStr=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); var el=document.getElementById('catTime'); if(el) el.innerText='🕐 '+timeStr+' • '+dateStr+' CAT'; var c2=document.getElementById('chatCatTime'); if(c2) c2.innerText=timeStr+' • '+dateStr; }catch(e){} }
@@ -106,15 +89,37 @@ function startDashboardSound(){
 }
 function stopDashboardSound(){ try{ soundNodes.forEach(function(n){ try{ if(n.isTimer) clearInterval(n.id); else if(n.stop) n.stop(); else if(n.disconnect) n.disconnect(); }catch(e){} }); soundNodes=[]; if(audioCtx) audioCtx.suspend(); }catch(e){} }
 function toggleSound(){ soundOn=!soundOn; var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇'; if(soundOn) startDashboardSound(); else stopDashboardSound(); }
-// EXIT = STOP SOUND IMMEDIATELY
+function autoLogout(){
+  stopDashboardSound();
+  if(!user) return;
+  try{
+    var data=JSON.stringify({name:user.name});
+    if(navigator.sendBeacon){ navigator.sendBeacon('/api/logout', new Blob([data], {type:'application/json'})); }
+    else { fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:data,keepalive:true}).catch(function(){}); }
+  }catch(e){}
+}
 try{
-document.addEventListener('visibilitychange', function(){ if(document.hidden){ stopDashboardSound(); } });
-window.addEventListener('pagehide', function(){ stopDashboardSound(); });
-window.addEventListener('beforeunload', function(){ stopDashboardSound(); });
+document.addEventListener('visibilitychange', function(){ if(document.hidden){ autoLogout(); } });
+window.addEventListener('pagehide', function(){ autoLogout(); });
+window.addEventListener('beforeunload', function(){ autoLogout(); });
 window.addEventListener('blur', function(){ stopDashboardSound(); });
 }catch(e){}
 function toast(m){ var t=document.getElementById('toast'); t.innerText=m; t.classList.remove('hidden'); setTimeout(function(){ t.classList.add('hidden'); },4500); }
-function showPage(id){ ['page-home','page-register','page-dash','page-game','page-coming','page-profile','page-other','page-messages','page-chat'].forEach(function(p){ document.getElementById(p).classList.add('hidden'); }); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
+function showPage(id){
+  ['page-home','page-register','page-dash','page-game','page-coming','page-profile','page-other','page-messages','page-chat'].forEach(function(p){ document.getElementById(p).classList.add('hidden'); });
+  document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0);
+  try{ if(user && id!=='page-home'){ localStorage.setItem('inf_page', id); } else if(!user){ localStorage.setItem('inf_page','page-home'); } }catch(e){}
+}
+function restorePage(){
+  if(!user) { showPage('page-home'); return; }
+  var saved='page-dash'; try{ saved=localStorage.getItem('inf_page')||'page-dash'; }catch(e){}
+  if(saved==='page-home' || saved==='page-register') saved='page-dash';
+  if(saved==='page-dash'){ updateMe(); loadLeader(); showPage('page-dash'); }
+  else if(saved==='page-profile'){ showPage('page-dash'); openMyProfile(); }
+  else if(saved==='page-messages'){ showPage('page-dash'); openMessages(); }
+  else if(saved==='page-game'){ showPage('page-dash'); }
+  else { showPage('page-dash'); updateMe(); loadLeader(); }
+}
 function welcomeName(){ if(!user) return 'Player'; var n=user.name.trim().toLowerCase(); if(n.indexOf('chikondi')===0) return 'My Princess 👸'; if(n.indexOf('chimwemwe')===0) return 'Her Majesty 👑'; return user.name; }
 function save(){ try{ localStorage.setItem('inf_user',JSON.stringify(user)); localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} sync(); }
 function sync(){ if(!user) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); }).catch(function(){}); }
@@ -123,9 +128,8 @@ setInterval(function(){ heartbeat(); checkNotif(); },5000);
 function goRegister(){ if(user){ showPage('page-register'); showLogin(); document.getElementById('loginName').value=user.name; document.getElementById('regSub').innerText='Welcome back '+user.name+' 👑 Enter password to Login'; } else { showPage('page-register'); showRegister(); } }
 function showRegister(){ document.getElementById('registerForm').classList.remove('hidden'); document.getElementById('loginForm').classList.add('hidden'); document.getElementById('regSub').innerText='Create your Infinity account 👑'; }
 function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('regSub').innerText='Login to your account 👑'; }
-function doRegister(){ var n=document.getElementById('regName').value.trim(); var pw=document.getElementById('regPass').value.trim(); if(!n){ alert('Please enter your name!'); return; } if(!pw || pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits! e.g. 1234'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); }
-function doLogin(){ var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ toast('Welcome back '+welcomeName()+' 👑 - Nothing reset!'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); } }
-function doLogout(){ if(!user) return; var su=user, sw=wins, sl=losses, ss=stageIdx; fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name})}).then(function(){ user=su; wins=sw; losses=sl; stageIdx=ss; try{ localStorage.setItem('inf_user',JSON.stringify(user)); localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} toast(user.name+' logged out - 🔴 Offline - Name stays! Nothing reset!'); stopDashboardSound(); showPage('page-home'); loadLeader(); }); }
+function doRegister(){ var n=document.getElementById('regName').value.trim(); var pw=document.getElementById('regPass').value.trim(); if(!n){ alert('Please enter your name!'); return; } if(!pw || pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits! e.g. 5678'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\\nPlease enter ANY password EXCEPT 1234 or 0000!\\nExample: 5678, 2468, 1357'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); }
+function doLogin(){ var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ toast('Welcome back '+welcomeName()+' 👑 - Nothing reset!'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } if(isBannedPassword(pw)){ alert('❌ Password '+pw+' is too easy!\\nPlease enter ANY password EXCEPT 1234 or 0000!\\nExample: 5678, 2468, 1357'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); } }
 function updateMe(){ if(!user) return; document.getElementById('welcomeText').innerText='Welcome '+welcomeName(); document.getElementById('myWins').innerText=wins; document.getElementById('myLoss').innerText=losses; document.getElementById('myStage').innerText=stageName(); }
 function goDash(){ showPage('page-dash'); updateMe(); loadLeader(); }
 function loadLeader(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){
@@ -186,14 +190,13 @@ function answerQ(i){ clearQTimer(); var q=qList[qIndex]; if(i===q.a){ wins++; ro
 function finishRound(){ clearQTimer(); document.getElementById('gameBody').innerHTML='<h3 style="text-align:center">⏳ Calculating...</h3><p style="text-align:center">Bot calculating...<br>Press CONTINUE to go HARDER!</p><div class="count" style="text-align:center"><span id="coolT">5</span></div><p style="text-align:center">Score: '+score+'/10 • Wins +'+roundWins+' • Losses +'+roundLoss+'<br>Current Stage: '+stageName()+'</p>'; var t=5; var iv=setInterval(function(){ t--; document.getElementById('coolT').innerText=t; if(t<=0){ clearInterval(iv); showResult(); } },1000); }
 function showResult(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var s=d.sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); }); var nr=0; for(var i=0;i<s.length;i++){ if(user && s[i].name===user.name) nr=i+1; } var move=nr<prevRank?'📈 MOVED UP! 👑':nr>prevRank?'📉 Moved DOWN':'➡️ Same rank'; var nextStage=STAGES[Math.min(stageIdx+1, STAGES.length-1)]; document.getElementById('gameBody').innerHTML='<h2 style="text-align:center">🏁 DONE!</h2><p style="text-align:center;font-size:22px">Marks: <b>'+score+'/10</b></p><p style="text-align:center">Rank: #'+nr+'<br>'+move+'<br>Now: '+stageName()+' → Next if you Continue: <b>'+nextStage+'</b> 🔥</p><button class="btn" onclick="continueHarder()">🔁 CONTINUE - HARDER! ('+nextStage+')</button><button class="btn2" onclick="openRiddles()">Change Riddle Type</button><button class="btn2" onclick="openBible()">Change Bible Type</button><button class="btn2" onclick="goDash()">🏠 Dashboard</button>'; prevRank=nr; }); }
 function openComing(name){ showPage('page-coming'); document.getElementById('comingName').innerText=name+' - COMING SOON'; var t=5; document.getElementById('countDown').innerText=t; var iv=setInterval(function(){ t--; document.getElementById('countDown').innerText=t; if(t<=0){ clearInterval(iv); goDash(); } },1000); }
-// --- BUTTONS WIRED SAFELY - This is the fix! ---
 try{
 document.getElementById('enterBtn').addEventListener('click', function(){ goRegister(); });
 document.getElementById('profileBtn').addEventListener('click', function(){ openMyProfile(); });
 document.getElementById('soundBtn').addEventListener('click', function(){ toggleSound(); });
 document.getElementById('msgFab').addEventListener('click', function(){ openMessages(); });
 }catch(e){}
-if(user){ try{ updateMe(); }catch(e){} }
+if(user){ try{ updateMe(); heartbeat(); restorePage(); }catch(e){ showPage('page-dash'); } } else { showPage('page-home'); }
 try{ loadLeader(); }catch(e){}
 </script></body></html>"""
 @app.route("/")
@@ -214,7 +217,11 @@ def score():
     return jsonify({"ok":True})
 @app.route("/api/logout", methods=["POST"])
 def logout():
-    d=request.get_json() or {}; n=d.get("name")
+    d=request.get_json(silent=True) or {}
+    if not d:
+        try: d=request.get_json(force=True, silent=True) or {}
+        except: d={}
+    n=d.get("name")
     if n in USERS: USERS[n]["logged_out"]=True; USERS[n]["last_seen"]=0
     return jsonify({"ok":True})
 @app.route("/api/online", methods=["POST"])
