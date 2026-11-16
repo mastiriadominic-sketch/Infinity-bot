@@ -12,10 +12,10 @@ def send_whatsapp(to,text):
 def handle_command(s,t):
     return "👑 INFINITY BOT ONLINE! Play on website - Press ENTER 👑"
 HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT</title>
-<link rel="manifest" href="data:application/json,{%22name%22:%22Infinity Bot%22,%22short_name%22:%22Infinity%22,%22display%22:%22standalone%22,%22start_url%22:%22/%22}">
+<link rel="manifest" href="data:application/json,[STRIPPED] Bot%22,%22short_name%22:%22Infinity%22,%22display%22:%22standalone%22,%22start_url%22:%22/%22}">
 <meta name="theme-color" content="#12002b"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
-<style>*{box-sizing:border-box}body{margin:0;font-family:Poppins,Arial;color:white;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px}.profile{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff;cursor:pointer;position:relative;box-shadow:0 0 20px #ff006e}.notif{position:absolute;top:-6px;right:-6px;background:red;color:white;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px;filter:drop-shadow(0 0 30px gold);animation:float 2s infinite alternate}@keyframes float{from{transform:translateY(0)}to{transform:translateY(-12px)}}.enterBtn{margin-top:20px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);color:#000;box-shadow:0 0 40px #ff006e;cursor:pointer}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer}.box span{font-size:38px;display:block}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0;cursor:pointer}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0;cursor:pointer}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:white;font-weight:700;cursor:pointer;text-align:left}input{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000}.hidden{display:none}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.dot{width:12px;height:12px;border-radius:50%;display:inline-block}.green{background:#00ff00;box-shadow:0 0 10px #00ff00}.red{background:#ff2222;box-shadow:0 0 10px #ff2222}.badge{display:inline-block;padding:5px 10px;border-radius:20px;background:rgba(0,0,0,.5);border:1px solid #ffd700;font-size:12px;margin:3px}.count{font-size:60px;font-weight:900;color:#ffd700}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:99;max-width:90%;text-align:center;box-shadow:0 0 20px #000}.regInput{font-size:18px;text-align:center;letter-spacing:2px}
+<style>*{box-sizing:border-box}body{margin:0;font-family:Poppins,Arial;color:white;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px}.profile{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff;cursor:pointer;position:relative;box-shadow:0 0 20px #ff006e}.notif{position:absolute;top:-6px;right:-6px;background:red;color:white;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px;filter:drop-shadow(0 0 30px gold);animation:float 2s infinite alternate}@keyframes float{from{transform:translateY(0)}to{transform:translateY(-12px)}}.enterBtn{margin-top:20px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);color:#000;box-shadow:0 0 40px #ff006e;cursor:pointer}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer}.box span{font-size:38px;display:block}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0;cursor:pointer}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0;cursor:pointer}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:white;font-weight:700;cursor:pointer;text-align:left}input{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000}.hidden{display:none}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.dot{width:12px;height:12px;border-radius:50%;display:inline-block}.green{background:#00ff00;box-shadow:0 0 10px #00ff00}.red{background:#ff2222;box-shadow:0 0 10px #ff2222}.badge{display:inline-block;padding:5px 10px;border-radius:20px;background:rgba(0,0,0,.5);border:1px solid #ffd700;font-size:12px;margin:3px}.count{font-size:60px;font-weight:900;color:#ffd700}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:99;max-width:90%;text-align:center;box-shadow:0 0 20px #000}.regInput{font-size:18px;text-align:center;letter-spacing:2px}
 .msgFab{position:fixed;right:16px;bottom:16px;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700,#00e5ff);display:flex;align-items:center;justify-content:center;font-size:30px;border:3px solid #fff;box-shadow:0 0 25px #ff006e,0 0 40px #ffd700;cursor:pointer;z-index:50;animation:float 2s infinite alternate}
 .chatRow{display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,0,0,.45);border-radius:16px;margin:8px 0}
 .chatBtn{width:36px;height:36px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#00e5ff,#ff006e);display:inline-flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;margin-left:6px}
@@ -31,11 +31,12 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 .msgBar .attachBtn{font-size:20px;background:none;border:none;cursor:pointer;color:#aaa}
 .micBtn{width:52px;height:52px;min-width:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#c39bff,#9a6bff);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;box-shadow:0 0 15px rgba(179,136,255,.6)}
 .sendBtnSmall{width:44px;height:44px;border-radius:50%;border:none;background:#ffd700;font-size:20px;cursor:pointer;display:none}
-.catTime{font-size:12px;background:rgba(0,0,0,.5);border:1px solid #ffd700;padding:6px 10px;border-radius:20px;display:inline-block}
+.catTimeTop{font-size:11px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:4px 8px;border-radius:20px;display:inline-block}
 .timer{position:absolute;top:10px;right:12px;background:#ff2222;color:#fff;padding:6px 12px;border-radius:20px;font-weight:900;font-size:18px;box-shadow:0 0 15px #ff2222}
-.soundBtn{position:fixed;left:14px;bottom:16px;width:50px;height:50px;border-radius:50%;background:rgba(0,0,0,.6);border:2px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;z-index:50}
+.topRight{display:flex;align-items:center;gap:6px}
+.soundSmall{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
 </style></head><body>
-<div class="topbar"><div style="font-weight:900">👑 INFINITY BOT</div><div class="profile" onclick="openMyProfile()">👤<span id="notifBadge" class="notif hidden">1</span></div></div>
+<div class="topbar"><div><span class="catTimeTop" id="catTime">🕐 Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">👑 INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn" onclick="toggleSound()" title="Yeshua Instrumental - On/Off">🔊</div><div class="profile" onclick="openMyProfile()">👤<span id="notifBadge" class="notif hidden">1</span></div></div></div>
 <div id="toast" class="toast hidden"></div>
 <div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" onclick="goRegister()">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p></div>
 <div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px"><button class="btn2" onclick="showPage('page-home')">← Back</button>
@@ -45,10 +46,10 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <p style="font-size:12px;opacity:.7">Chikondi = My Princess 👸<br>Chimwemwe = Her Majesty 👑</p></div></div>
 <div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">🏆 Wins: <b id="myWins">0</b></span><span class="badge">❌ Losses: <b id="myLoss">0</b></span><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><br><span class="badge">👥 Friends: <b id="myFriends">0</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span></div>
 <div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div>
-<div class="card"><div style="text-align:left"><span class="catTime" id="catTime">🕐 Loading CAT Time...</span></div><h3 style="text-align:center;margin:8px 0 0">🏆 LEADERBOARD 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="loadLeader()">🔄 Refresh</button></div></div>
+<div class="card"><h3 style="text-align:center;margin:0">🏆 LEADERBOARD 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="loadLeader()">🔄 Refresh</button></div></div>
 <div id="page-game" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back to Dashboard</button><div class="card" style="position:relative"><h2 id="gameTitle" style="text-align:center">🧩 RIDDLES</h2><div id="gameBody"></div></div></div>
 <div id="page-coming" class="hidden" style="max-width:520px;margin:0 auto;padding:40px 20px;text-align:center"><div style="font-size:80px">🚀</div><h1 class="cursive" style="font-size:54px">Coming Soon</h1><h2 id="comingName">SCI-FI</h2><p>Launching on<br><b>25th December 2026</b></p><p>Returning in:</p><div class="count" id="countDown">5</div></div>
-<div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back</button><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p><b id="profWins">0</b> Win | <b id="profLoss">0</b> Lose</p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p><button class="btn2" onclick="doLogout()">🚪 LOGOUT (Go Offline - Name Stays)</button></div>
+<div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back</button><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p><b id="profWins">0</b> Win | <b id="profLoss">0</b> Lose</p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p><button class="btn2" onclick="doLogout()">🚪 LOGOUT (Go Offline - Name Stays - No Reset)</button></div>
 <div class="card"><h3>📩 Friend Requests</h3><div id="reqList"><p>No requests</p></div></div>
 <div class="card"><h3>👥 My Friends</h3><div id="friendList"></div></div></div>
 <div id="page-other" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><button class="btn2" onclick="goDash()">← Back</button><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="otherName">Player</h2><p><span id="otherDot" class="dot green"></span> <span id="otherStatus">Online</span></p><p>⭐ Rank: <b id="otherRank">#-</b></p><p><b id="otherWins">0</b> Win | <b id="otherLoss">0</b> Lose</p><div id="otherActions"></div></div></div>
@@ -57,7 +58,6 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <div class="msgBarWrap"><div class="msgBar"><button class="emojiBtn" onclick="addEmoji()">😊</button><input id="msgInput" placeholder="Message" oninput="toggleSend()"><button class="attachBtn" onclick="blockedFeature('Picture')">📎</button><button class="attachBtn" onclick="blockedFeature('Picture')">📷</button></div><button class="micBtn" id="micBtn" onclick="blockedFeature('Voice Note')">🎤</button><button class="sendBtnSmall" id="sendBtnSmall" onclick="sendMsg()">➤</button></div>
 <p style="text-align:center;font-size:11px;opacity:.7">📎 Picture • 🎤 Voice • 📞 Call unlock 24 Jan 2027 12:00 CAT</p></div></div>
 <div class="msgFab" onclick="openMessages()">💬</div>
-<div class="soundBtn" id="soundBtn" onclick="toggleSound()">🔊</div>
 <script>
 // KEEP PROFILES - v6-final - NO RESET!
 if(!localStorage.getItem('inf_version')){ localStorage.setItem('inf_version','v6-final'); }
@@ -68,15 +68,32 @@ let STAGES=['Beginner','Intermediate','Advanced','Expert','Professional'];
 function stageName(){ return STAGES[Math.min(stageIdx, STAGES.length-1)] + (stageIdx>=5 ? ' +' : ''); }
 function getDiff(){ return (Math.pow(1.3, stageIdx)).toFixed(2); }
 let currentMode='',currentCat='',qIndex=0,qList=[],score=0,roundWins=0,roundLoss=0,prevRank=999, lastNotif='', chatFriend='';
+// --- MAMBO GAMBLE + NO REPEAT FOR 5-7 DAYS ---
+function getAskedMap(){ try{ return JSON.parse(localStorage.getItem('inf_asked_qs')||'{}'); }catch(e){ return {}; } }
+function saveAskedMap(m){ localStorage.setItem('inf_asked_qs', JSON.stringify(m)); }
+function markAsked(qText){ let m=getAskedMap(); m[qText]=Date.now(); saveAskedMap(m); }
+function isFresh(qText){ let m=getAskedMap(); let last=m[qText]; if(!last) return true; let days=(Date.now()-last)/(1000*60*60*24); return days>=6; }
+function gamblePick(list, count){
+  let fresh=list.filter(q=>isFresh(q.q));
+  let pool=fresh.length>=count?fresh:list.slice().sort((a,b)=>(getAskedMap()[a.q]||0)-(getAskedMap()[b.q]||0));
+  for(let k=0;k<3;k++){ for(let i=pool.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; } }
+  let picked=pool.slice(0,count);
+  picked.forEach(q=>markAsked(q.q));
+  return picked;
+}
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
 function askShortcut(){
+  let last=parseInt(localStorage.getItem('inf_shortcut_last')||'0');
+  let daysSince=(Date.now()-last)/(1000*60*60*24);
+  if(last && daysSince<6){ return; }
+  localStorage.setItem('inf_shortcut_last', Date.now().toString());
   setTimeout(()=>{
-    if(confirm('👑 Do you want to create a shortcut to put INFINITY BOT on your phone homepage?\\n\\nPress OK to add it to Home Screen!')){
-      if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; }); }
-      else { alert('To add shortcut:\\n\\n📱 Android Chrome: Tap ⋮ Menu → Add to Home screen → Add\\n🍎 iPhone Safari: Tap Share ⬆️ → Add to Home Screen → Add\\n\\nThen INFINITY BOT will be on your homepage like an app! 👑'); }
+    if(confirm('👑 Do you want to create a shortcut to put INFINITY BOT on your phone homepage?\\n\\nPress OK = Add Automatically!\\nCancel = Don\\'t add - I will ask again in 5-7 days ❤️')){
+      if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then((c)=>{ if(c.outcome==='accepted'){ toast('✅ Added to Homepage! 👑'); } }); }
+      else { alert('To finish adding automatically:\\n\\n📱 Android: Tap ⋮ → Add to Home screen → Add\\n🍎 iPhone: Tap Share ⬆️ → Add to Home Screen → Add\\n\\nDone! Infinity Bot will be on your homepage! 👑'); }
     }
-  },800);
+  },900);
 }
 function catNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lusaka'})); }
 function updateCatTime(){ let d=catNow(); let timeStr=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); let dateStr=d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear(); let el=document.getElementById('catTime'); if(el) el.innerText='🕐 '+timeStr+' • '+dateStr+' CAT'; let c2=document.getElementById('chatCatTime'); if(c2) c2.innerText=timeStr+' • '+dateStr; }
@@ -85,16 +102,8 @@ function isLocked(){ let now=catNow(); let unlock=new Date(2027,0,24,12,0,0); re
 function blockedFeature(name){ if(isLocked()){ alert('🔒 '+name+' is locked!\\nAvailable on 24 January 2027 at 12:00hrs CAT'); } else { alert('✅ '+name+' is now unlocked!'); } }
 function addEmoji(){ let inp=document.getElementById('msgInput'); inp.value+='😊'; inp.focus(); toggleSend(); }
 function toggleSend(){ let v=document.getElementById('msgInput').value.trim(); document.getElementById('micBtn').style.display=v?'none':'flex'; document.getElementById('sendBtnSmall').style.display=v?'block':'none'; }
-// --- DASHBOARD SOUND: Smooth Tune + Waterfall + Rain + Keyboard Piano at 15% volume (10-20%) ---
 let audioCtx=null, soundOn=true, soundNodes=[];
-function playTick(){
-  try{
-    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    let o=audioCtx.createOscillator(), g=audioCtx.createGain();
-    o.type='sine'; o.frequency.value=1200; g.gain.value=0.08;
-    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.08);
-  }catch(e){}
-}
+function playTick(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); let o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.value=1200; g.gain.value=0.08; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.08); }catch(e){} }
 function startDashboardSound(){
   if(!soundOn) return;
   try{
@@ -102,35 +111,27 @@ function startDashboardSound(){
     if(audioCtx.state==='suspended') audioCtx.resume();
     stopDashboardSound();
     let master=audioCtx.createGain(); master.gain.value=0.15; master.connect(audioCtx.destination); soundNodes.push(master);
-    // Rain + Waterfall: filtered white noise, very low
     let len=audioCtx.sampleRate*2; let buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate); let d=buf.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
     let noise=audioCtx.createBufferSource(); noise.buffer=buf; noise.loop=true;
-    let filt=audioCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=800;
-    let ng=audioCtx.createGain(); ng.gain.value=0.35;
+    let filt=audioCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=700;
+    let ng=audioCtx.createGain(); ng.gain.value=0.25;
     noise.connect(filt); filt.connect(ng); ng.connect(master); noise.start(); soundNodes.push(noise);
-    // Waterfall drops: random sine drops
-    let dropTimer=setInterval(()=>{
-      if(!soundOn) return;
-      let o=audioCtx.createOscillator(), g=audioCtx.createGain();
-      o.type='sine'; o.frequency.setValueAtTime(800+Math.random()*600, audioCtx.currentTime);
-      o.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime+0.4);
-      g.gain.setValueAtTime(0.12, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.4);
-      o.connect(g); g.connect(master); o.start(); o.stop(audioCtx.currentTime+0.45);
-    }, 900); soundNodes.push({isTimer:true, id:dropTimer});
-    // Keyboard Piano smooth tune: soft notes loop
-    let notes=[523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 440];
+    let dropTimer=setInterval(()=>{ if(!soundOn) return; let o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.setValueAtTime(800+Math.random()*600, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime+0.4); g.gain.setValueAtTime(0.10, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.4); o.connect(g); g.connect(master); o.start(); o.stop(audioCtx.currentTime+0.45); }, 1100); soundNodes.push({isTimer:true, id:dropTimer});
+    let yeshua=[523.25, 659.25, 783.99, 659.25, 587.33, 659.25, 523.25, 0, 440, 523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 0, 392, 440, 523.25, 659.25, 587.33, 440, 523.25];
     let ni=0;
-    let pianoTimer=setInterval(()=>{
-      if(!soundOn) return;
-      let o=audioCtx.createOscillator(), g=audioCtx.createGain();
-      o.type='triangle'; o.frequency.value=notes[ni % notes.length]; ni++;
-      g.gain.setValueAtTime(0.18, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+1.2);
-      o.connect(g); g.connect(master); o.start(); o.stop(audioCtx.currentTime+1.2);
-    }, 1400); soundNodes.push({isTimer:true, id:pianoTimer});
+    let pianoTimer=setInterval(()=>{ if(!soundOn) return; let f=yeshua[ni % yeshua.length]; ni++; if(f===0) return; let o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(0.22, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+1.8); o.connect(g); g.connect(master); o.start(); o.stop(audioCtx.currentTime+1.8);
+      let o2=audioCtx.createOscillator(), g2=audioCtx.createGain(); o2.type='sine'; o2.frequency.value=f/2; g2.gain.setValueAtTime(0.08, audioCtx.currentTime); g2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+1.8); o2.connect(g2); g2.connect(master); o2.start(); o2.stop(audioCtx.currentTime+1.8);
+    }, 1500); soundNodes.push({isTimer:true, id:pianoTimer});
   }catch(e){}
 }
-function stopDashboardSound(){ soundNodes.forEach(n=>{ try{ if(n.isTimer) clearInterval(n.id); else if(n.stop) n.stop(); else if(n.disconnect) n.disconnect(); }catch(e){} }); soundNodes=[]; }
+function stopDashboardSound(){ soundNodes.forEach(n=>{ try{ if(n.isTimer) clearInterval(n.id); else if(n.stop) n.stop(); else if(n.disconnect) n.disconnect(); }catch(e){} }); soundNodes=[]; try{ if(audioCtx) audioCtx.suspend(); }catch(e){} }
 function toggleSound(){ soundOn=!soundOn; document.getElementById('soundBtn').innerText=soundOn?'🔊':'🔇'; if(soundOn) startDashboardSound(); else stopDashboardSound(); }
+// *** EXIT BOT = STOP SOUND IMMEDIATELY! ***
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ stopDashboardSound(); } });
+window.addEventListener('pagehide', ()=>{ stopDashboardSound(); });
+window.addEventListener('beforeunload', ()=>{ stopDashboardSound(); });
+window.addEventListener('blur', ()=>{ stopDashboardSound(); });
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && soundOn && document.getElementById('page-dash') && !document.getElementById('page-dash').classList.contains('hidden')){ startDashboardSound(); } });
 function toast(m){let t=document.getElementById('toast');t.innerText=m;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),4500);}
 function showPage(id){['page-home','page-register','page-dash','page-game','page-coming','page-profile','page-other','page-messages','page-chat'].forEach(p=>document.getElementById(p).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');window.scrollTo(0,0);}
 function welcomeName(){ if(!user) return 'Player'; let n=user.name.trim().toLowerCase(); if(n.startsWith('chikondi')) return 'My Princess 👸'; if(n.startsWith('chimwemwe')) return 'Her Majesty 👑'; return user.name; }
@@ -142,8 +143,8 @@ function goRegister(){ if(user){ showPage('page-register'); showLogin(); documen
 function showRegister(){ document.getElementById('registerForm').classList.remove('hidden'); document.getElementById('loginForm').classList.add('hidden'); document.getElementById('regSub').innerText='Create your Infinity account 👑'; }
 function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('regSub').innerText='Login to your account 👑'; }
 function doRegister(){ let n=document.getElementById('regName').value.trim(); let pw=document.getElementById('regPass').value.trim(); if(!n){ alert('Please enter your name!'); return; } if(!pw || pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits! e.g. 1234'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); }
-function doLogin(){ let n=document.getElementById('loginName').value.trim(); let pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ toast('Welcome back '+welcomeName()+' 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); } }
-function doLogout(){ if(!user) return; fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name})}).then(()=>{ toast(user.name+' logged out - You are now Offline 🔴 Name stays on leaderboard!'); stopDashboardSound(); showPage('page-home'); loadLeader(); }); }
+function doLogin(){ let n=document.getElementById('loginName').value.trim(); let pw=document.getElementById('loginPass').value.trim(); if(!n || !pw){ alert('Enter name + password!'); return; } if(user && n===user.name && pw===user.password){ toast('Welcome back '+welcomeName()+' 👑 - Nothing reset!'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); } else if(user && n===user.name){ alert('Wrong password! Try again'); } else { if(pw.length!==4 || isNaN(pw)){ alert('Password must be exactly 4 digits!'); return; } user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); toast('Welcome '+welcomeName()+'! Registered 👑'); updateMe(); showPage('page-dash'); loadLeader(); heartbeat(); startDashboardSound(); askShortcut(); } }
+function doLogout(){ if(!user) return; let savedUser=user, savedWins=wins, savedLosses=losses, savedStage=stageIdx; fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name})}).then(()=>{ user=savedUser; wins=savedWins; losses=savedLosses; stageIdx=savedStage; localStorage.setItem('inf_user',JSON.stringify(user)); localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); toast(user.name+' logged out - 🔴 Offline - Name stays! Nothing reset!'); stopDashboardSound(); showPage('page-home'); loadLeader(); }); }
 function updateMe(){ if(!user) return; document.getElementById('welcomeText').innerText='Welcome '+welcomeName(); document.getElementById('myWins').innerText=wins; document.getElementById('myLoss').innerText=losses; document.getElementById('myStage').innerText=stageName(); }
 function goDash(){ showPage('page-dash'); updateMe(); loadLeader(); }
 function loadLeader(){ fetch('/api/leaderboard').then(r=>r.json()).then(d=>{
@@ -179,10 +180,13 @@ const BIBLE={'Random Bible':[{q:'Who built Ark?',o:['Noah','Moses','David']},{q:
 const HARD={'riddle':[{q:'[ADVANCED] I have cities but no houses, forests but no trees, water but no fish. What am I?',o:['Map','Earth','Book']},{q:'[ADVANCED] What comes after 1, 1, 2, 3, 5, 8, 13?',o:['21','18','20']},{q:'[EXPERT] If 5 machines make 5 parts in 5 mins, 100 machines make 100 parts in?',o:['5 mins','100 mins','20 mins']},{q:'[EXPERT] What is 7 x 8 + (12 / 3) - 5?',o:['55','60','51']},{q:'[PROFESSIONAL] I am taken from a mine and shut in a wooden case, never released, used by all. What am I?',o:['Pencil lead','Gold','Coal']},{q:'[PROFESSIONAL] What is the 100th prime number?',o:['541','521','551']}],'bible':[{q:'[ADVANCED] Who was the father of John the Baptist?',o:['Zechariah','Joseph','Simeon']},{q:'[ADVANCED] How many books in Old Testament?',o:['39','27','66']},{q:'[EXPERT] Who was first king of Israel?',o:['Saul','David','Solomon']},{q:'[EXPERT] In which city was Paul born?',o:['Tarsus','Jerusalem','Antioch']},{q:'[PROFESSIONAL] What is shortest verse?',o:['Jesus wept','God is love','Pray always']},{q:'[PROFESSIONAL] Who wrote Hebrews? (Traditionally debated)',o:['Unknown / Paul','Moses','David']}]};
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function prepareQuestions(list, mode){
-  let base = list.map(q=>{ let opts=[...q.o]; let correct=opts[0]; shuffleArray(opts); return {q:q.q, o:opts, a:opts.indexOf(correct)}; });
+  let picked=gamblePick(list, 10);
+  let base = picked.map(q=>{ let opts=[...q.o]; let correct=opts[0]; shuffleArray(opts); return {q:q.q, o:opts, a:opts.indexOf(correct)}; });
   if(stageIdx>=1){
     let hardPool = HARD[mode] || [];
-    let hardQs = hardPool.map(q=>{ let opts=[...q.o]; let correct=opts[0]; shuffleArray(opts); return {q:q.q, o:opts, a:opts.indexOf(correct)}; });
+    let hardFresh = hardPool.filter(q=>isFresh(q.q));
+    let hardUse = hardFresh.length?hardFresh:hardPool;
+    let hardQs = gamblePick(hardUse, Math.min(2+stageIdx*2,6)).map(q=>{ let opts=[...q.o]; let correct=opts[0]; shuffleArray(opts); return {q:q.q, o:opts, a:opts.indexOf(correct)}; });
     shuffleArray(base); shuffleArray(hardQs);
     let replaceCount = Math.min(2 + stageIdx*2, 8);
     base = hardQs.slice(0,replaceCount).concat(base.slice(0,10-replaceCount));
@@ -195,11 +199,7 @@ function continueHarder(){ stageIdx++; save(); updateMe(); toast('🔥 Harder no
 function clearQTimer(){ if(qTimer) clearInterval(qTimer); qTimer=null; }
 function showQuestion(){ clearQTimer(); if(qIndex>=10){finishRound();return;} let q=qList[qIndex]; qTimeLeft=21;
  document.getElementById('gameBody').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span><b>Q ${qIndex+1}/10</b> • ${currentCat}</span><span class="timer" id="qTimer">⏰ ${qTimeLeft}</span></div><p>🎯 ${stageName()} • ${getDiff()}x Harder</p><p style="font-size:18px"><b>${q.q}</b></p>`+q.o.map((o,i)=>`<button class="opt" onclick="answerQ(${i})">${['A','B','C'][i]}) ${o}</button>`).join('')+`<p>✅ ${roundWins} • ❌ ${roundLoss}</p>`;
- qTimer=setInterval(()=>{
-   qTimeLeft--; let el=document.getElementById('qTimer'); if(el) el.innerText='⏰ '+qTimeLeft;
-   if(qTimeLeft<=5 && qTimeLeft>0) playTick();
-   if(qTimeLeft<=0){ clearQTimer(); losses++; roundLoss++; save(); updateMe(); alert('⏰ TIME UP! Question VOID - Moving to next!'); qIndex++; showQuestion(); }
- },1000);
+ qTimer=setInterval(()=>{ qTimeLeft--; let el=document.getElementById('qTimer'); if(el) el.innerText='⏰ '+qTimeLeft; if(qTimeLeft<=5 && qTimeLeft>0) playTick(); if(qTimeLeft<=0){ clearQTimer(); losses++; roundLoss++; save(); updateMe(); alert('⏰ TIME UP! Question VOID - Moving to next!'); qIndex++; showQuestion(); } },1000);
 }
 function answerQ(i){ clearQTimer(); let q=qList[qIndex]; if(i===q.a){wins++;roundWins++;score++;alert('✅ CORRECT! +1 WIN 👑');}else{losses++;roundLoss++;alert('❌ WRONG! Correct: '+q.o[q.a]);} save(); updateMe(); qIndex++; showQuestion(); }
 function finishRound(){ clearQTimer(); document.getElementById('gameBody').innerHTML=`<h3 style="text-align:center">⏳ Calculating...</h3><p style="text-align:center">Bot calculating...<br>Press CONTINUE to go HARDER!</p><div class="count" style="text-align:center"><span id="coolT">5</span></div><p style="text-align:center">Score: ${score}/10 • Wins +${roundWins} • Losses +${roundLoss}<br>Current Stage: ${stageName()}</p>`; let t=5; let iv=setInterval(()=>{t--;document.getElementById('coolT').innerText=t; if(t<=0){clearInterval(iv);showResult();}},1000); }
@@ -213,7 +213,6 @@ def home(): return HOME
 def lb():
     now=time.time(); arr=[]
     for n,v in USERS.items():
-        # Name NEVER removed - only dot changes. Online if seen in last 15s AND not logged out
         online = v.get("logged_out", False)==False and (now - v.get("last_seen",0)) < 15
         arr.append({"name":n,"wins":v["wins"],"losses":v["losses"],"online":online,"friends":v.get("friends",[]),"stage":v.get("stage",0)})
     return jsonify(arr)
