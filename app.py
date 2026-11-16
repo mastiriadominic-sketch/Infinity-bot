@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 import os, requests, time, datetime, json, threading, shutil
 app = Flask(__name__)
@@ -14,18 +13,20 @@ MSG_BACKUP = os.path.join(BASE, "messages.json.backup")
 USERS = {}
 MESSAGES = {}
 _lock = threading.Lock()
-def norm(n): return str(n or "").strip().lower()
+def norm(n):
+    return str(n or "").strip().lower()
 def load_json_safe(path):
     try:
         if os.path.exists(path):
             with open(path,"r") as f:
                 d=json.load(f)
-                if isinstance(d,dict): return d
-    except: pass
+                if isinstance(d,dict):
+                    return d
+    except:
+        pass
     return {}
 def load_users():
     global USERS
-    # Try Main -> Backup1 -> Backup2
     for p in [LEADER_FILE, BACKUP1, BACKUP2]:
         d=load_json_safe(p)
         if d:
@@ -43,26 +44,22 @@ def load_users():
             USERS=new
             print(f"LOADED {len(USERS)} players from {p}")
             return
-    print("No players found - starting fresh, backup will be created")
+    print("No players - fresh start")
 def load_messages():
     global MESSAGES
     for p in [MSG_FILE, MSG_BACKUP]:
         d=load_json_safe(p)
         if d:
             MESSAGES=d
-            print(f"LOADED {len(MESSAGES)} chat histories from {p}")
+            print(f"LOADED {len(MESSAGES)} chats")
             return
 def save_users():
     try:
         with _lock:
             data=json.dumps(USERS)
-            # Main
             with open(LEADER_FILE,"w") as f: f.write(data)
-            # Backup 1 - Duplicate
             with open(BACKUP1,"w") as f: f.write(data)
-            # Backup 2 - Duplicate in backup_storage.json
             with open(BACKUP2,"w") as f: f.write(data)
-            # Extra copy with timestamp
             try: shutil.copy(LEADER_FILE, os.path.join(BASE,"leaderboard_last_save.json"))
             except: pass
     except Exception as e: print("Save failed:",e)
@@ -75,26 +72,26 @@ def save_messages():
     except Exception as e: print("Save msg failed:",e)
 load_users()
 load_messages()
-# AUTO-SAVE EVERY 10 SECONDS - Duplicated + Backup
 def auto_save_loop():
     while True:
         time.sleep(10)
         try:
             save_users()
             save_messages()
-            print(f"AUTO-SAVED {len(USERS)} players + {len(MESSAGES)} chats at {datetime.datetime.now()}")
+            print(f"AUTO-SAVED AFTER 10s: {len(USERS)} players + {len(MESSAGES)} chats - Backup Updated")
         except Exception as e: print("Auto-save error:",e)
 threading.Thread(target=auto_save_loop, daemon=True).start()
 def get_capacity():
     try:
-        now=datetime.datetime.now(); upgrade=datetime.datetime(2026,12,25,0,0,0)
+        now=datetime.datetime.now()
+        upgrade=datetime.datetime(2026,12,25,0,0,0)
         return 10000 if now>=upgrade else 1000
     except: return 1000
 def send_whatsapp(to,text):
     if not WHATSAPP_TOKEN or not PHONE_ID: return
     try: requests.post(f"https://graph.facebook.com/v21.0/{PHONE_ID}/messages",headers={"Authorization":f"Bearer {WHATSAPP_TOKEN}","Content-Type":"application/json"},json={"messaging_product":"whatsapp","to":to,"type":"text","text":{"body":text}},timeout=10)
     except: pass
-HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT v7.0</title>
+HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT v8.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
 <style>*{box-sizing:border-box}body{margin:0;font-family:Poppins,Arial;color:white;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px}.profile{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff;cursor:pointer;position:relative;box-shadow:0 0 20px #ff006e}.notif{position:absolute;top:-6px;right:-6px;background:red;color:white;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px;filter:drop-shadow(0 0 30px gold)}.enterBtn{margin-top:20px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);color:#000;box-shadow:0 0 40px #ff006e;cursor:pointer}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer}.box span{font-size:38px;display:block}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0;cursor:pointer}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0;cursor:pointer}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:white;font-weight:700;cursor:pointer;text-align:left}input{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000}.hidden{display:none}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.dot{width:12px;height:12px;border-radius:50%;display:inline-block}.green{background:#00ff00;box-shadow:0 0 10px #00ff00}.red{background:#ff2222;box-shadow:0 0 10px #ff2222}.badge{display:inline-block;padding:5px 10px;border-radius:20px;background:rgba(0,0,0,.5);border:1px solid #ffd700;font-size:12px;margin:3px}.count{font-size:60px;font-weight:900;color:#ffd700}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:400;max-width:90%;text-align:center}.regInput{font-size:18px;text-align:center;letter-spacing:2px}.msgFab{position:fixed;right:16px;bottom:16px;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700,#00e5ff);display:flex;align-items:center;justify-content:center;font-size:30px;border:3px solid #fff;box-shadow:0 0 25px #ff006e;cursor:pointer;z-index:50}.backFab{position:fixed;left:16px;bottom:16px;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#1a1a2e,#3a0a5e);display:none;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#ffd700;border:3px solid #ffd700;box-shadow:0 0 20px rgba(255,215,0,.6);cursor:pointer;z-index:60}.chatRow{display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,0,0,.45);border-radius:16px;margin:8px 0}.chatBtn{width:36px;height:36px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#00e5ff,#ff006e);display:inline-flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;margin-left:6px}.chatBox{background:#1a1a2e;border-radius:20px;padding:12px;min-height:320px;max-height:380px;overflow-y:auto}.bubble{max-width:80%;padding:10px 14px;border-radius:18px;margin:6px 0;font-size:14px}.mine{background:#ffd700;color:#000;margin-left:auto}.theirs{background:rgba(255,255,255,.2);color:#fff}.msgBarWrap{display:flex;align-items:center;gap:8px;margin-top:12px}.msgBar{flex:1;display:flex;align-items:center;gap:10px;background:#2b2b33;border-radius:999px;padding:10px 12px}.msgBar .emojiBtn{font-size:22px;background:none;border:none;cursor:pointer}.msgBar input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px;padding:0;margin:0}.msgBar input::placeholder{color:#aaa}.msgBar .attachBtn{font-size:20px;background:none;border:none;cursor:pointer}.micBtn{width:52px;height:52px;min-width:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#c39bff,#9a6bff);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}.sendBtnSmall{width:44px;height:44px;border-radius:50%;border:none;background:#ffd700;font-size:20px;cursor:pointer;display:none}.catTimeTop{font-size:11px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:4px 8px;border-radius:20px;display:inline-block}.timer{position:absolute;top:10px;right:12px;background:#ff2222;color:#fff;padding:6px 12px;border-radius:20px;font-weight:900;font-size:18px}.topRight{display:flex;align-items:center;gap:6px}.soundSmall{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}.leaderScroll{max-height:480px;overflow-y:auto;scroll-behavior:smooth}.myRankBar{position:sticky;bottom:0;background:linear-gradient(90deg,#ffd700,#ff006e);color:#000;padding:12px;border-radius:16px;font-weight:900;text-align:center;cursor:pointer;margin-top:10px;border:2px solid #fff}.myRankBar small{font-weight:400}
 .gameOverlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -125,16 +122,16 @@ HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-
 <div id="toast" class="toast hidden"></div>
 <div id="loadingOverlay" class="gameOverlay hidden" style="display:none;z-index:500"><div class="gamePopup"><div style="font-size:50px">⏳</div><h2>Loading All Data...</h2><p id="loadingText">Loading your data + Leaderboard + Friends + Chats...</p><div class="loadingBar"><div class="loadingFill" id="loadingFill"></div></div><p style="font-size:12px;opacity:.7">Please wait...</p></div></div>
 <div id="gameWarnOverlay" class="gameOverlay hidden" style="display:none"><div class="gamePopup" id="gameWarnBox"><div class="warnIcon">⚠️</div><h2 style="margin:8px 0">⚠️ Warning ⚠️</h2><p id="gameWarnText" style="font-size:16px;line-height:1.5">Account not found, try again or Register</p><div class="warnBar"><div class="warnBarFill"></div></div><p style="font-size:12px;opacity:.7;margin:6px 0 0">Closing automatically in 5 seconds...</p></div></div>
-<div id="welcomeOverlay" class="gameOverlay hidden" style="display:none"><div class="gamePopup"><div style="font-size:56px">👑</div><h2 style="margin:8px 0">Welcome to Infinity Game Play Bot</h2><p style="font-size:18px;font-weight:700">Do you already have an account?</p><div class="choiceRow"><div class="choiceBox choiceNo" id="choiceNoBtn">❌<br>No</div><div class="choiceBox choiceYes" id="choiceYesBtn">✅<br>Yes</div></div><p style="font-size:12px;opacity:.7;margin-top:12px">📦 Choose one — Yes = Login • No = Stay to Register</p></div></div>
+<div id="welcomeOverlay" class="gameOverlay hidden" style="display:none"><div class="gamePopup"><div style="font-size:56px">👑</div><h2 style="margin:8px 0">Welcome to Infinity Game Play Bot</h2><p style="font-size:18px;font-weight:700">Do you already have an account?</p><div class="choiceRow"><div class="choiceBox choiceNo" id="choiceNoBtn">❌<br>No</div><div class="choiceBox choiceYes" id="choiceYesBtn">✅<br>Yes</div></div><p style="font-size:12px;opacity:.7;margin-top:12px">Yes = Login • No = Stay to Register</p></div></div>
 <div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Register / Login</p></div>
 <div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px"><div class="card" style="text-align:center"><div style="font-size:60px">👑</div><h1 class="cursive" style="font-size:48px;margin:5px">Register</h1><p id="regSub">Create your Infinity account 👑</p><div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="Your Name" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="••••" maxlength="4" inputmode="numeric" type="password" class="regInput"><p style="font-size:12px;color:#ffd700">⚠️ Do NOT use 1234 or 0000 - Too easy!</p><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div><div id="loginForm" class="hidden"><label style="text-align:left;display:block">Your Name:</label><input id="loginName" placeholder="Your Name"><label style="text-align:left;display:block">4-Digit Password:</label><input id="loginPass" placeholder="••••" maxlength="4" inputmode="numeric" type="password" class="regInput"><button class="btn" onclick="doLogin()">🔓 LOGIN</button><p style="font-size:13px;opacity:.8">New here? <b style="color:#ffd700;cursor:pointer" onclick="showRegister()">Click here to Register</b></p></div></div></div>
-<div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span><br><span class="badge" style="background:#00cc00;color:#fff">💾 Auto-Save Every 10s • Backup ON</span></div><div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div><div class="card"><h3 style="text-align:center;margin:0">🏆 TOP 3 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="openFullLeader()">👀 View Full Leaderboard</button></div></div>
-<div id="page-leader" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h3 style="text-align:center;margin:0">🏆 FULL LEADERBOARD 🏆</h3><p style="text-align:center;font-size:12px;opacity:.8">All players • Forever • Even if offline 10 years • Auto-saved every 10s</p><div class="leaderScroll" id="fullLeaderList">Loading...</div><div id="myRankJump"></div></div></div>
+<div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span><br><span class="badge" style="background:#00cc00;color:#fff">💾 Auto-Save 10s • Backup ON • Update 20s</span></div><div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div><div class="card"><h3 style="text-align:center;margin:0">🏆 TOP 3 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="openFullLeader()">👀 View Full Leaderboard</button></div></div>
+<div id="page-leader" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h3 style="text-align:center;margin:0">🏆 FULL LEADERBOARD 🏆</h3><p style="text-align:center;font-size:12px;opacity:.8">All players • Forever • Auto-saved 10s • Updated 20s</p><div class="leaderScroll" id="fullLeaderList">Loading...</div><div id="myRankJump"></div></div></div>
 <div id="page-game" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="position:relative"><h2 id="gameTitle" style="text-align:center">🧩 RIDDLES</h2><div id="gameBody"></div></div></div>
 <div id="page-coming" class="hidden" style="max-width:520px;margin:0 auto;padding:40px 20px;text-align:center"><div style="font-size:80px">🚀</div><h1 class="cursive" style="font-size:54px">Coming Soon</h1><h2 id="comingName">SCI-FI</h2><p>Launching on<br><b>25th December 2026</b></p><p>Returning in:</p><div class="count" id="countDown">5</div></div>
 <div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p>🏆 Wins: <b id="profWins">0</b> | ❌ Losses: <b id="profLoss">0</b></p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p></div><div class="card"><h3>📩 Friend Requests</h3><div id="reqList"><p>No requests</p></div></div><div class="card"><h3>👥 My Friends</h3><div id="friendList"></div></div></div>
 <div id="page-other" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="otherName">Player</h2><p><span id="otherDot" class="dot green"></span> <span id="otherStatus">Online</span></p><p>⭐ Rank: <b id="otherRank">#-</b></p><p><b id="otherWins">0</b> Win | <b id="otherLoss">0</b> Lose</p><div id="otherActions"></div></div></div>
-<div id="page-messages" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h1 style="text-align:center;margin:0;font-size:34px">Message</h1><p style="text-align:center;margin:2px 0 12px;opacity:.8;font-size:14px">chats • Saved on server + Backup</p><div id="chatFriendList"></div></div></div>
+<div id="page-messages" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h1 style="text-align:center;margin:0;font-size:34px">Message</h1><p style="text-align:center;margin:2px 0 12px;opacity:.8;font-size:14px">chats • Saved + Backup</p><div id="chatFriendList"></div></div></div>
 <div id="page-chat" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h2 style="text-align:center;margin:0">💬 <span id="chatWith">Friend</span></h2><p style="text-align:center;font-size:12px;opacity:.8">Africa Central Time • <span id="chatCatTime"></span> • Saved + Backup</p><div class="chatBox" id="chatBox"></div><div class="msgBarWrap"><div class="msgBar"><button class="emojiBtn" onclick="addEmoji()">😊</button><input id="msgInput" placeholder="Message" oninput="toggleSend()"><button class="attachBtn" onclick="blockedFeature('Picture')">📎</button><button class="attachBtn" onclick="blockedFeature('Picture')">📷</button></div><button class="micBtn" id="micBtn" onclick="blockedFeature('Voice Note')">🎤</button><button class="sendBtnSmall" id="sendBtnSmall" onclick="sendMsg()">➤</button></div><p style="text-align:center;font-size:11px;opacity:.7">📎 Picture • 🎤 Voice • 📞 Call unlock 24 Jan 2027 12:00 CAT</p></div></div>
 <div class="msgFab" id="msgFab">💬</div><div class="backFab" id="backFab">←</div>
 <script>
@@ -146,7 +143,7 @@ var STAGES=['Beginner','Intermediate','Advanced','Expert','Professional'];
 function computeStageFromWins(w){ if(w>=500) return 4; if(w>=300) return 3; if(w>=150) return 2; if(w>=50) return 1; return 0; }
 function refreshStageFromWins(){ var ns=computeStageFromWins(wins); if(ns!==stageIdx){ var old=stageIdx; stageIdx=ns; if(ns>old && loggedIn){ setTimeout(function(){ toast('🎉 LEVEL UP! You are now '+stageName()+'! Harder questions unlocked! 👑'); },600); } } return stageIdx; }
 function stageName(){ refreshStageFromWins(); return STAGES[Math.min(stageIdx, STAGES.length-1)]; }
-var currentMode='',currentCat='',qIndex=0,qList=[],score=0,roundWins=0,roundLoss=0,prevRank=999,lastNotif='',chatFriend=''; var currentPage='page-register'; var fullLeaderData=[]; var lastRoundQs=new Set();
+var currentMode='',currentCat='',qIndex=0,qList=[],score=0,roundWins=0,roundLoss=0,prevRank=999,lastNotif='',chatFriend=''; var currentPage='page-home'; var fullLeaderData=[]; var lastRoundQs=new Set();
 var allFriends=[]; var allChats={};
 function isBannedPassword(pw){ return pw==='1234'||pw==='0000'; }
 var playerHistory={}; var askedSet=new Set();
@@ -169,37 +166,12 @@ function hideWarnNow(){ var ov=document.getElementById('gameWarnOverlay'); if(ov
 function hideWelcomeNow(){ var ov=document.getElementById('welcomeOverlay'); if(ov){ ov.classList.add('hidden'); ov.style.display='none'; } }
 function showLoading(text, pct){ var ov=document.getElementById('loadingOverlay'); if(ov){ ov.classList.remove('hidden'); ov.style.display='flex'; } if(text) document.getElementById('loadingText').innerText=text; if(pct!==undefined) document.getElementById('loadingFill').style.width=pct+'%'; }
 function hideLoading(){ var ov=document.getElementById('loadingOverlay'); if(ov){ ov.classList.add('hidden'); ov.style.display='none'; } }
-// V7 - LOAD ALL DATA TOGETHER: User + Leaderboard + Friends + Chats + History
-function loadAllDataTogether(){
-  if(!user || !user.name) return Promise.resolve();
-  showLoading('Loading your data + Leaderboard + Friends + Chats...', 10);
-  return fetch('/api/load_all?name='+encodeURIComponent(user.name)+'&password='+encodeURIComponent(user.password||''))
-    .then(function(r){return r.json();})
-    .then(function(d){
-      showLoading('Loading Leaderboard...', 40);
-      if(d && d.found){
-        wins=d.wins||0; losses=d.losses||0; stageIdx=d.stage!=null?d.stage:computeStageFromWins(wins);
-        if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); }
-        allFriends=d.friends||[];
-        allChats=d.chats||{};
-        try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){}
-      }
-      showLoading('Loading Friends + Chats...', 70);
-      return fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(lb){
-        fullLeaderData=sortPlayers(lb.players||[]);
-        showLoading('Almost done...', 90);
-        setTimeout(function(){ hideLoading(); },400);
-        loadLeader();
-        return d;
-      });
-    }).catch(function(){ hideLoading(); loadLeader(); });
-}
-function showGameWarn(msg, goToLogin){ if(goToLogin===undefined) goToLogin=true; hideWelcomeNow(); playWarnSound(); var ov=document.getElementById('gameWarnOverlay'); var txt=document.getElementById('gameWarnText'); var box=document.getElementById('gameWarnBox'); txt.innerHTML=msg||'⚠️ Warning ⚠️<br>Account not found, try again or Register'; ov.classList.remove('hidden'); ov.style.display='flex'; box.classList.remove('closing'); var bar=ov.querySelector('.warnBarFill'); if(bar){ var nb=bar.cloneNode(true); bar.parentNode.replaceChild(nb,bar); } if(warnTimer) clearTimeout(warnTimer); warnTimer=setTimeout(function(){ box.classList.add('closing'); setTimeout(function(){ hideWarnNow(); if(goToLogin){ showPage('page-register'); if(hasLoggedInBefore()){ showLogin(); if(user) document.getElementById('loginName').value=user.name; } else { showRegister(); } document.getElementById('regSub').innerText=hasLoggedInBefore()?'Welcome back! Please Login 👑':'Create your Infinity account 👑'; try{ document.getElementById('loginPass').value=''; }catch(e){} window.scrollTo(0,0); } },350); },5000); }
-function showWelcomePopup(){ if(hasLoggedInBefore()){ return; } hideWarnNow(); var ov=document.getElementById('welcomeOverlay'); if(!ov) return; ov.classList.remove('hidden'); ov.style.display='flex'; playPopupSound(); }
-window.welcomeChoice=function(choice){ markHasAccount(); hideWelcomeNow(); hideWarnNow(); setTimeout(function(){ if(choice==='yes'){ showLogin(); document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; var ln=document.getElementById('loginName'); if(ln && user) ln.value=user.name; if(ln) ln.focus(); } else { showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; var rn=document.getElementById('regName'); if(rn) rn.focus(); } var rp=document.getElementById('page-register'); if(rp) rp.classList.remove('hidden'); window.scrollTo(0,0); },80); };
-function scheduleWelcomePopup(){ if(hasLoggedInBefore()){ return; } if(welcomeTimer) clearTimeout(welcomeTimer); welcomeTimer=setTimeout(function(){ if(currentPage==='page-register' && !loggedIn && !hasLoggedInBefore()){ showWelcomePopup(); } },5000); }
+function loadAllDataTogether(){ if(!user || !user.name) return Promise.resolve(); showLoading('Loading your data + Leaderboard + Friends + Chats...', 10); return fetch('/api/load_all?name='+encodeURIComponent(user.name)+'&password='+encodeURIComponent(user.password||'')).then(function(r){return r.json();}).then(function(d){ showLoading('Loading Leaderboard...', 40); if(d && d.found){ wins=d.wins||0; losses=d.losses||0; stageIdx=d.stage!=null?d.stage:computeStageFromWins(wins); if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); } allFriends=d.friends||[]; allChats=d.chats||{}; try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} } showLoading('Loading Friends + Chats...', 70); return fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(lb){ fullLeaderData=sortPlayers(lb.players||[]); showLoading('Almost done...', 90); setTimeout(function(){ hideLoading(); },400); loadLeader(); return d; }); }).catch(function(){ hideLoading(); loadLeader(); }); }
+function showGameWarn(msg, goToLogin){ if(goToLogin===undefined) goToLogin=true; hideWelcomeNow(); playWarnSound(); var ov=document.getElementById('gameWarnOverlay'); var txt=document.getElementById('gameWarnText'); var box=document.getElementById('gameWarnBox'); txt.innerHTML=msg||'⚠️ Warning ⚠️<br>Account not found, try again or Register'; ov.classList.remove('hidden'); ov.style.display='flex'; box.classList.remove('closing'); var bar=ov.querySelector('.warnBarFill'); if(bar){ var nb=bar.cloneNode(true); bar.parentNode.replaceChild(nb,bar); } if(warnTimer) clearTimeout(warnTimer); warnTimer=setTimeout(function(){ box.classList.add('closing'); setTimeout(function(){ hideWarnNow(); if(goToLogin){ showPage('page-register'); showLogin(); document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; try{ document.getElementById('loginPass').value=''; }catch(e){} window.scrollTo(0,0); } },350); },5000); }
+function showWelcomePopup(){ hideWarnNow(); var ov=document.getElementById('welcomeOverlay'); if(!ov) return; ov.classList.remove('hidden'); ov.style.display='flex'; playPopupSound(); }
+function scheduleWelcomePopup(){ if(welcomeTimer) clearTimeout(welcomeTimer); welcomeTimer=setTimeout(function(){ if(currentPage==='page-register' && !loggedIn){ showWelcomePopup(); } },5000); }
+window.welcomeChoice=function(choice){ hideWelcomeNow(); hideWarnNow(); if(choice==='yes'){ setTimeout(function(){ showLogin(); document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; var ln=document.getElementById('loginName'); if(ln && user) ln.value=user.name; if(ln) ln.focus(); window.scrollTo(0,0); },1000); } else { showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; var rn=document.getElementById('regName'); if(rn) rn.focus(); window.scrollTo(0,0); } };
 function restoreFromServer(){ if(!user) return; loadAllDataTogether(); }
-try{ if(user) setTimeout(restoreFromServer,500); }catch(e){}
 function fetchServerHistory(){ if(!user||!loggedIn) return; fetch('/api/history?name='+encodeURIComponent(user.name)).then(function(r){return r.json();}).then(function(d){ if(d.history){ var ch=false; for(var k in d.history){ if(!playerHistory[k]){ playerHistory[k]=d.history[k]; ch=true; } else { playerHistory[k].asked=Math.max(playerHistory[k].asked||0,d.history[k].asked||0); playerHistory[k].correct=(playerHistory[k].correct||0)+(d.history[k].correct||0); playerHistory[k].wrong=(playerHistory[k].wrong||0)+(d.history[k].wrong||0); } } if(ch) rebuildAskedSet(); saveLocalHistory(); } }).catch(function(){}); }
 function recordAnswer(qText,wasCorrect,cat,mode){ if(!playerHistory[qText]) playerHistory[qText]={asked:0,correct:0,wrong:0,last:0,cat:cat||'',mode:mode||''}; playerHistory[qText].asked++; if(wasCorrect) playerHistory[qText].correct++; else playerHistory[qText].wrong++; playerHistory[qText].last=Date.now(); askedSet.add(qText); saveLocalHistory(); if(user&&loggedIn){ fetch('/api/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,question:qText,correct:wasCorrect,cat:cat,mode:mode})}).catch(function(){}); } }
 function getAskedMap(){ try{ return JSON.parse(localStorage.getItem('inf_asked_qs')||'{}'); }catch(e){ return {}; } }
@@ -245,11 +217,11 @@ function welcomeName(){ if(!user) return 'Player'; var n=user.name.trim().toLowe
 function save(){ try{ localStorage.setItem('inf_user',JSON.stringify(user)); localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} markHasAccount(); sync(); }
 function forceSync(){ if(!user||!loggedIn) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); fetchServerHistory(); }).catch(function(){ loadLeader(); fetchServerHistory(); }); }
 function sync(){ if(!user||!loggedIn) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); }).catch(function(){}); }
-// V7 - AUTO-SAVE CLIENT SIDE EVERY 10 SECONDS TOO
 setInterval(function(){ if(loggedIn && user){ sync(); } },10000);
-setInterval(function(){ if(loggedIn && (currentPage==='page-dash'||currentPage==='page-leader')){ loadLeader(); if(currentPage==='page-leader') loadFullLeader(); } },10000);
+setInterval(function(){ if(loggedIn){ loadAllDataTogether(); } },20000);
+setInterval(function(){ if(loggedIn && (currentPage==='page-dash'||currentPage==='page-leader')){ loadLeader(); if(currentPage==='page-leader') loadFullLeader(); } },20000);
 setInterval(function(){ checkNotif(); },60000);
-function goRegister(){ unlockAudio(); playEnterSound(); showPage('page-register'); if(hasLoggedInBefore()){ showLogin(); if(user) document.getElementById('loginName').value=user.name; document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; } else { showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; scheduleWelcomePopup(); } }
+function goRegister(){ unlockAudio(); playEnterSound(); showPage('page-register'); showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; scheduleWelcomePopup(); }
 function showRegister(){ document.getElementById('registerForm').classList.remove('hidden'); document.getElementById('loginForm').classList.add('hidden'); document.getElementById('regSub').innerText='Create your Infinity account 👑'; }
 function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('regSub').innerText='Login to your account 👑'; }
 function applyServerData(d){ wins=d.wins||0; losses=d.losses||0; stageIdx=d.stage!=null?d.stage:computeStageFromWins(wins); if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); } try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} }
@@ -291,18 +263,20 @@ function finishRound(){ clearQTimer(); document.getElementById('gameBody').inner
 function showResult(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=sortPlayers(arr); var nr=0; for(var i=0;i<s.length;i++){ if(user&&eqName(s[i].name,user.name)) nr=i+1; } var move=nr<prevRank?'📈 MOVED UP! 👑':nr>prevRank?'📉 Moved DOWN':'➡️ Same rank'; document.getElementById('gameBody').innerHTML='<h2 style="text-align:center">🏁 DONE!</h2><p style="text-align:center;font-size:22px">Marks: <b>'+score+'/10</b></p><p style="text-align:center">Rank: #'+nr+'<br>'+move+'<br>Now: '+stageName()+'</p><button class="btn" onclick="continueHarder()">🔁 PLAY AGAIN - NEW 10 QUESTIONS!</button><button class="btn2" onclick="openRiddles()">Change Riddle Type</button><button class="btn2" onclick="openBible()">Change Bible Type</button><button class="btn2" onclick="goDash()">🏠 Dashboard</button>'; prevRank=nr; }); }
 function openComing(name){ showPage('page-coming'); document.getElementById('comingName').innerText=name+' - COMING SOON'; var t=5; document.getElementById('countDown').innerText=t; var iv=setInterval(function(){ t--; document.getElementById('countDown').innerText=t; if(t<=0){ clearInterval(iv); goDash(); } },1000); }
 try{ document.getElementById('enterBtn').addEventListener('click',function(){ goRegister(); }); document.getElementById('profileBtn').addEventListener('click',function(){ openMyProfile(); }); document.getElementById('soundBtn').addEventListener('click',function(){ toggleSound(); }); document.getElementById('msgFab').addEventListener('click',function(){ openMessages(); }); document.getElementById('backFab').addEventListener('click',function(){ goBack(); }); document.getElementById('choiceYesBtn').addEventListener('click',function(){ welcomeChoice('yes'); }); document.getElementById('choiceNoBtn').addEventListener('click',function(){ welcomeChoice('no'); }); }catch(e){}
-(function autoStart(){ hideWarnNow(); hideWelcomeNow(); hideLoading(); showPage('page-register'); if(hasLoggedInBefore()){ showLogin(); document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; if(user && user.name){ try{ document.getElementById('loginName').value=user.name; document.getElementById('loginPass').focus(); }catch(e){} } } else { showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; scheduleWelcomePopup(); } try{ loadLeader(); }catch(e){} })();
+(function autoStart(){ hideWarnNow(); hideWelcomeNow(); hideLoading(); showPage('page-home'); try{ loadLeader(); }catch(e){} })();
 </script></body></html>"""
 @app.route("/")
-def home(): return HOME
+def home():
+    return HOME
 @app.route("/api/load_all")
 def load_all():
-    n=norm(request.args.get("name","")); pw=request.args.get("password","")
-    if n not in USERS: return jsonify({"found":False})
+    n=norm(request.args.get("name",""))
+    pw=request.args.get("password","")
+    if n not in USERS:
+        return jsonify({"found":False})
     u=USERS[n]
     if pw and str(u.get("password","")) and str(u.get("password",""))!=str(pw):
         return jsonify({"found":True,"password_ok":False})
-    # Get all chats for this user
     user_chats={}
     for k,v in MESSAGES.items():
         parts=k.split("|")
@@ -311,7 +285,8 @@ def load_all():
     return jsonify({"found":True,"password_ok":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"requests":u.get("requests",[]),"history":u.get("history",{}),"chats":user_chats,"total_players":len(USERS)})
 @app.route("/api/leaderboard")
 def lb():
-    now=time.time(); arr=[]
+    now=time.time()
+    arr=[]
     for k,v in USERS.items():
         online = v.get("logged_out",False)==False and (now-v.get("last_seen",0))<300
         arr.append({"name":v.get("display_name",k),"wins":v.get("wins",0),"losses":v.get("losses",0),"online":online,"friends":v.get("friends",[]),"stage":v.get("stage",0)})
@@ -319,48 +294,71 @@ def lb():
     return jsonify({"capacity":get_capacity(),"players":arr[:get_capacity()],"total":len(arr)})
 @app.route("/api/player")
 def get_player():
-    n=norm(request.args.get("name","")); pw=request.args.get("password","")
-    if n not in USERS: return jsonify({"found":False})
-    u=USERS[n]; stored=str(u.get("password","") or "")
+    n=norm(request.args.get("name",""))
+    pw=request.args.get("password","")
+    if n not in USERS:
+        return jsonify({"found":False})
+    u=USERS[n]
+    stored=str(u.get("password","") or "")
     if not stored and pw and len(str(pw))==4 and str(pw).isdigit():
-        u["password"]=str(pw); u["last_seen"]=time.time(); u["logged_out"]=False; save_users()
+        u["password"]=str(pw)
+        u["last_seen"]=time.time()
+        u["logged_out"]=False
+        save_users()
         return jsonify({"found":True,"password_ok":True,"recovered":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{})})
     if pw:
-        if stored!=str(pw): return jsonify({"found":True,"password_ok":False,"display_name":u.get("display_name")})
+        if stored!=str(pw):
+            return jsonify({"found":True,"password_ok":False,"display_name":u.get("display_name")})
     else:
         return jsonify({"found":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{}),"password_ok":True})
     return jsonify({"found":True,"password_ok":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{}),"registered_at":u.get("registered_at")})
 @app.route("/api/score", methods=["POST"])
 def score():
-    d=request.get_json() or {}; raw=d.get("name","Player"); n=norm(raw); cap=get_capacity()
-    if n not in USERS and len(USERS)>=cap: return jsonify({"ok":False,"error":"Capacity full"}),403
+    d=request.get_json() or {}
+    raw=d.get("name","Player")
+    n=norm(raw)
+    cap=get_capacity()
+    if n not in USERS and len(USERS)>=cap:
+        return jsonify({"ok":False,"error":"Capacity full"}),403
     if n not in USERS:
-        # NEW PLAYER - Goes straight to Leaderboard FOREVER
         USERS[n]={"display_name":raw.strip(),"password":d.get("password",""),"wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{},"registered_at":time.time(),"is_new":True}
-        print(f"NEW PLAYER REGISTERED: {raw} - Added to Leaderboard FOREVER")
-    u=USERS[n]; u["display_name"]=u.get("display_name",raw.strip())
+        print(f"NEW PLAYER: {raw} - Added to Leaderboard FOREVER")
+    u=USERS[n]
+    u["display_name"]=u.get("display_name",raw.strip())
     if "history" not in u: u["history"]={}
     if "friends" not in u: u["friends"]=[]
     if "requests" not in u: u["requests"]=[]
-    iw=int(d.get("wins",0)); il=int(d.get("losses",0))
-    if d.get("restore"): u["wins"]=max(u.get("wins",0),iw); u["losses"]=max(u.get("losses",0),il)
+    iw=int(d.get("wins",0))
+    il=int(d.get("losses",0))
+    if d.get("restore"):
+        u["wins"]=max(u.get("wins",0),iw)
+        u["losses"]=max(u.get("losses",0),il)
     else:
-        u["wins"]=max(u.get("wins",0),iw); u["losses"]=max(u.get("losses",0),il)
-        w=u["wins"]; u["stage"]=4 if w>=500 else 3 if w>=300 else 2 if w>=150 else 1 if w>=50 else 0
-        u["last_seen"]=time.time(); u["logged_out"]=False
-        if d.get("password") and not u.get("password"): u["password"]=d.get("password")
-    save_users(); return jsonify({"ok":True,"capacity":cap,"total_players":len(USERS)})
+        u["wins"]=max(u.get("wins",0),iw)
+        u["losses"]=max(u.get("losses",0),il)
+        w=u["wins"]
+        u["stage"]=4 if w>=500 else 3 if w>=300 else 2 if w>=150 else 1 if w>=50 else 0
+        u["last_seen"]=time.time()
+        u["logged_out"]=False
+        if d.get("password") and not u.get("password"):
+            u["password"]=d.get("password")
+    save_users()
+    return jsonify({"ok":True,"capacity":cap,"total_players":len(USERS)})
 @app.route("/api/history")
 def get_history():
     n=norm(request.args.get("name",""))
-    if n in USERS: return jsonify({"history":USERS[n].get("history",{}),"total":len(USERS[n].get("history",{}))})
+    if n in USERS:
+        return jsonify({"history":USERS[n].get("history",{}),"total":len(USERS[n].get("history",{}))})
     return jsonify({"history":{},"total":0})
-@app```python
 @app.route("/api/answer", methods=["POST"])
 def record_answer():
-    d=request.get_json() or {}; n=norm(d.get("name")); q=d.get("question","")
-    if not n or not q: return jsonify({"ok":False}),400
-    if n not in USERS: USERS[n]={"display_name":d.get("name"),"password":"","wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{}}
+    d=request.get_json() or {}
+    n=norm(d.get("name"))
+    q=d.get("question","")
+    if not n or not q:
+        return jsonify({"ok":False}),400
+    if n not in USERS:
+        USERS[n]={"display_name":d.get("name"),"password":"","wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{}}
     if "history" not in USERS[n]: USERS[n]["history"]={}
     h=USERS[n]["history"].get(q,{"asked":0,"correct":0,"wrong":0,"last":0,"cat":"","mode":""})
     h["asked"]=h.get("asked",0)+1
@@ -369,7 +367,9 @@ def record_answer():
     h["last"]=time.time()
     if d.get("cat"): h["cat"]=d.get("cat")
     if d.get("mode"): h["mode"]=d.get("mode")
-    USERS[n]["history"][q]=h; USERS[n]["last_seen"]=time.time(); save_users()
+    USERS[n]["history"][q]=h
+    USERS[n]["last_seen"]=time.time()
+    save_users()
     return jsonify({"ok":True,"asked":h["asked"]})
 @app.route("/api/logout", methods=["POST"])
 def logout():
@@ -384,76 +384,91 @@ def logout():
     return jsonify({"ok":True})
 @app.route("/api/online", methods=["POST"])
 def online():
-    d=request.get_json() or {}; n=norm(d.get("name"))
-    if n in USERS: USERS[n]["last_seen"]=time.time(); USERS[n]["logged_out"]=False; save_users()
+    d=request.get_json() or {}
+    n=norm(d.get("name"))
+    if n in USERS:
+        USERS[n]["last_seen"]=time.time()
+        USERS[n]["logged_out"]=False
+        save_users()
     return jsonify({"ok":True})
 @app.route("/api/notif")
 def notif():
-    n=norm(request.args.get("name","")); reqs=[]
+    n=norm(request.args.get("name",""))
+    reqs=[]
     if n in USERS: reqs=USERS[n].get("requests",[])
-    now=time.time(); newOnline=""
+    now=time.time()
+    newOnline=""
     for k,v in USERS.items():
-        if k!=n and v.get("logged_out",False)==False and (now-v.get("last_seen",0))<300: newOnline=v.get("display_name",k)
+        if k!=n and v.get("logged_out",False)==False and (now-v.get("last_seen",0))<300:
+            newOnline=v.get("display_name",k)
     return jsonify({"requests":reqs,"newOnline":newOnline})
 @app.route("/api/friend", methods=["POST"])
 def friend():
-    d=request.get_json() or {}; frm=d.get("from"); to=norm(d.get("to"))
-    if to in USERS and frm not in USERS[to].get("requests",[]) and frm not in USERS[to].get("friends",[]):
-        USERS[to]["requests"].append(frm); save_users()
+    d=request.get_json() or {}
+    frm=d.get("from")
+    to=norm(d.get("to"))
+    if    if to in USERS and frm not in USERS[to].get("requests",[]) and frm not in USERS[to].get("friends",[]):
+        USERS[to]["requests"].append(frm)
+        save_users()
     return jsonify({"ok":True})
 @app.route("/api/respond", methods=["POST"])
 def respond():
-    d=request.get_json() or {}; me=norm(d.get("me")); frm_raw=d.get("from"); frm=norm(frm_raw); act=d.get("action")
-    if me in USERS and frm_raw in USERS[me].get("requests",[]): USERS[me]["requests"].remove(frm_raw)
+    d=request.get_json() or {}
+    me=norm(d.get("me"))
+    frm_raw=d.get("from")
+    frm=norm(frm_raw)
+    act=d.get("action")
+    if me in USERS and frm_raw in USERS[me].get("requests",[]):
+        USERS[me]["requests"].remove(frm_raw)
     if me in USERS and frm in USERS and act=="accept":
-        disp_me=USERS[me].get("display_name",d.get("me")); disp_frm=USERS[frm].get("display_name",frm_raw)
-        if disp_frm not in USERS[me]["friends"]: USERS[me]["friends"].append(disp_frm)
-        if disp_me not in USERS[frm]["friends"]: USERS[frm]["friends"].append(disp_me)
-    if me in USERS: save_users()
+        disp_me=USERS[me].get("display_name",d.get("me"))
+        disp_frm=USERS[frm].get("display_name",frm_raw)
+        if disp_frm not in USERS[me]["friends"]:
+            USERS[me]["friends"].append(disp_frm)
+        if disp_me not in USERS[frm]["friends"]:
+            USERS[frm]["friends"].append(disp_me)
+    if me in USERS:
+        save_users()
     return jsonify({"ok":True})
 @app.route("/api/send_message", methods=["POST"])
 def send_message():
     d=request.get_json() or {}
-    frm=norm(d.get("from")); to=norm(d.get("to")); txt=d.get("text","")
-    if not frm or not to or not txt: return jsonify({"ok":False}),400
+    frm=norm(d.get("from"))
+    to=norm(d.get("to"))
+    txt=d.get("text","")
+    if not frm or not to or not txt:
+        return jsonify({"ok":False}),400
     key="|".join(sorted([frm,to]))
-    if key not in MESSAGES: MESSAGES[key]=[]
+    if key not in MESSAGES:
+        MESSAGES[key]=[]
     MESSAGES[key].append({"from":d.get("from"),"to":d.get("to"),"text":txt,"time":d.get("time","")})
-    # Keep last 500 per chat
-    if len(MESSAGES[key])>500: MESSAGES[key]=MESSAGES[key][-500:]
-    save_messages(); save_users()
+    if len(MESSAGES[key])>500:
+        MESSAGES[key]=MESSAGES[key][-500:]
+    save_messages()
+    save_users()
     return jsonify({"ok":True,"total":len(MESSAGES[key])})
 @app.route("/api/get_messages")
 def get_messages():
-    a=norm(request.args.get("a","")); b=norm(request.args.get("b",""))
+    a=norm(request.args.get("a",""))
+    b=norm(request.args.get("b",""))
     key="|".join(sorted([a,b]))
     return jsonify({"messages":MESSAGES.get(key,[]),"total":len(MESSAGES.get(key,[]))})
 @app.route("/api/backup_status")
 def backup_status():
-    return jsonify({"total_players":len(USERS),"total_chats":len(MESSAGES),"main":os.path.exists(LEADER_FILE),"backup1":os.path.exists(BACKUP1),"backup2":os.path.exists(BACKUP2),"msg_backup":os.path.exists(MSG_BACKUP),"auto_save":"Every 10 seconds"})
+    return jsonify({"total_players":len(USERS),"total_chats":len(MESSAGES),"main":os.path.exists(LEADER_FILE),"backup1":os.path.exists(BACKUP1),"backup2":os.path.exists(BACKUP2),"msg_backup":os.path.exists(MSG_BACKUP),"auto_save":"Every 10 seconds","auto_update":"Every 20 seconds"})
 @app.route("/webhook", methods=["GET","POST"])
 def webhook():
     if request.method=="GET":
-        if request.args.get("hub.mode")=="subscribe" and request.args.get("hub.verify_token")==VERIFY_TOKEN: return request.args.get("hub.challenge"),200
+        if request.args.get("hub.mode")=="subscribe" and request.args.get("hub.verify_token")==VERIFY_TOKEN:
+            return request.args.get("hub.challenge"),200
         return "Forbidden",403
     data=request.get_json() or {}
     try:
         for m in data["entry"][0]["changes"][0]["value"].get("messages",[]):
-            if m.get("from") and m.get("text",{}).get("body"): send_whatsapp(m["from"], "Hi! Open Infinity Bot 👑")
-    except: pass
+            if m.get("from") and m.get("text",{}).get("body"):
+                send_whatsapp(m["from"], "Hi! Open Infinity Bot 👑")
+    except:
+        pass
     return "OK",200
-# GUNICORN ENTRY - Render will run: gunicorn app:app
 if __name__=="__main__":
-    try:
-        from gunicorn.app.base import BaseApplication
-        class App(BaseApplication):
-            def __init__(self, app, options=None):
-                self.options = options or {}; self.application = app; super().__init__()
-            def load_config(self):
-                for k,v in self.options.items():
-                    if k in self.cfg.settings and v is not None: self.cfg.set(k.lower(), v)
-            def load(self): return self.application
-        opts = {'bind': f"0.0.0.0:{os.environ.get('PORT',10000)}", 'workers': 1, 'timeout': 120}
-        App(app, opts).run()
-    except Exception:
-        app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
