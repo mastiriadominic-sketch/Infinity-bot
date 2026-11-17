@@ -452,7 +452,7 @@ def friend():
         USERS[to]["requests"].append(frm)
         save_users()
     return jsonify({"ok":True})
-@app.route("/api/respond", methods=["POST```python
+@app.route("/api/respond", methods=["POST
 def respond():
     d=request.get_json() or {}
     me=norm(d.get("me"))
