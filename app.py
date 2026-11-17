@@ -387,7 +387,6 @@ def score():
     save_users()
     return jsonify({"ok":True,"capacity":cap,"total_players":len(USERS)})
 @app.route("/api/history")
-```python
 def get_history():
     n=norm(request.args.get("name",""))
     if n in USERS:
