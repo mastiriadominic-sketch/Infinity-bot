@@ -317,3 +317,207 @@ function startSciFiCode(){ if(sciFiInterval) clearInterval(sciFiInterval); var l
 try{ document.getElementById('enterBtn').addEventListener('click',function(){ goRegister(); }); document.getElementById('profileBtn').addEventListener('click',function(){ openMyProfile(); }); document.getElementById('soundBtn').addEventListener('click',function(){ toggleSound(); }); document.getElementById('msgFab').addEventListener('click',function(){ openMessages(); }); document.getElementById('backFab').addEventListener('click',function(){ goBack(); }); document.getElementById('choiceYesBtn').addEventListener('click',function(){ welcomeChoice('yes'); }); document.getElementById('choiceNoBtn').addEventListener('click',function(){ welcomeChoice('no'); }); document.getElementById('menuBtn').addEventListener('click',function(e){ e.stopPropagation(); toggleMenu(); }); }catch(e){}
 (function autoStart(){ hideWarnNow(); hideWelcomeNow(); hideLoading(); showPage('page-home'); try{ loadLeader(); }catch(e){} })();
 </script></body></html>"""
+@app.route("/")
+def home():
+    return HOME
+@app.route("/api/load_all")
+def load_all():
+    n=norm(request.args.get("name",""))
+    pw=request.args.get("password","")
+    if n not in USERS:
+        return jsonify({"found":False})
+    u=USERS[n]
+    if pw and str(u.get("password","")) and str(u.get("password",""))!=str(pw):
+        return jsonify({"found":True,"password_ok":False})
+    user_chats={}
+    for k,v in MESSAGES.items():
+        parts=k.split("|")
+        if n in parts:
+            user_chats[k]=v
+    return jsonify({"found":True,"password_ok":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"requests":u.get("requests",[]),"history":u.get("history",{}),"chats":user_chats,"total_players":len(USERS)})
+@app.route("/api/leaderboard")
+def lb():
+    now=time.time()
+    arr=[]
+    for k,v in USERS.items():
+        online = v.get("logged_out",False)==False and (now-v.get("last_seen",0))<300
+        arr.append({"name":v.get("display_name",k),"wins":v.get("wins",0),"losses":v.get("losses",0),"online":online,"friends":v.get("friends",[]),"stage":v.get("stage",0)})
+    arr.sort(key=lambda x: (x["wins"]-x["losses"]), reverse=True)
+    return jsonify({"capacity":get_capacity(),"players":arr[:get_capacity()],"total":len(arr)})
+@app.route("/api/player")
+def get_player():
+    n=norm(request.args.get("name",""))
+    pw=request.args.get("password","")
+    if n not in USERS:
+        return jsonify({"found":False})
+    u=USERS[n]
+    stored=str(u.get("password","") or "")
+    if not stored and pw and len(str(pw))==4 and str(pw).isdigit():
+        u["password"]=str(pw)
+        u["last_seen"]=time.time()
+        u["logged_out"]=False
+        save_users()
+        return jsonify({"found":True,"password_ok":True,"recovered":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{})})
+    if pw:
+        if stored!=str(pw):
+            return jsonify({"found":True,"password_ok":False,"display_name":u.get("display_name")})
+    else:
+        return jsonify({"found":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{}),"password_ok":True})
+    return jsonify({"found":True,"password_ok":True,"display_name":u.get("display_name"),"wins":u.get("wins",0),"losses":u.get("losses",0),"stage":u.get("stage",0),"friends":u.get("friends",[]),"history":u.get("history",{}),"registered_at":u.get("registered_at")})
+@app.route("/api/score", methods=["POST"])
+def score():
+    d=request.get_json() or {}
+    raw=d.get("name","Player")
+    n=norm(raw)
+    cap=get_capacity()
+    if n not in USERS and len(USERS)>=cap:
+        return jsonify({"ok":False,"error":"Capacity full"}),403
+    if n not in USERS:
+        USERS[n]={"display_name":raw.strip(),"password":d.get("password",""),"wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{},"registered_at":time.time(),"is_new":True,"never_delete":True}
+        print(f"NEW PLAYER: {raw} - Added to Leaderboard FOREVER")
+    u=USERS[n]
+    u["display_name"]=u.get("display_name",raw.strip())
+    u["never_delete"]=True
+    if "history" not in u: u["history"]={}
+    if "friends" not in u: u["friends"]=[]
+    if "requests" not in u: u["requests"]=[]
+    iw=int(d.get("wins",0))
+    il=int(d.get("losses",0))
+    u["wins"]=max(u.get("wins",0),iw)
+    u["losses"]=max(u.get("losses",0),il)
+    w=u["wins"]
+    u["stage"]=4 if w>=500 else 3 if w>=300 else 2 if w>=150 else 1 if w>=50 else 0
+    u["last_seen"]=time.time()
+    u["logged_out"]=False
+    if d.get("password") and not u.get("password"):
+        u["password"]=d.get("password")
+    save_users()
+    return jsonify({"ok":True,"capacity":cap,"total_players":len(USERS)})
+@app.route("/api/history")
+def get_history():
+    n=norm(request.args.get("name",""))
+    if n in USERS:
+        return jsonify({"history":USERS[n].get("history",{}),"total":len(USERS[n].get("history",{}))})
+    return jsonify({"history":{},"total":0})
+@app.route("/api/answer", methods=["POST"])
+def record_answer():
+    d=request.get_json() or {}
+    n=norm(d.get("name"))
+    q=d.get("question","")
+    if not n or not q:
+        return jsonify({"ok":False}),400
+    if n not in USERS:
+        USERS[n]={"display_name":d.get("name"),"password":"","wins":0,"losses":0,"last_seen":time.time(),"friends":[],"requests":[],"stage":0,"logged_out":False,"history":{},"never_delete":True}
+    if "history" not in USERS[n]: USERS[n]["history"]={}
+    h=USERS[n]["history"].get(q,{"asked":0,"correct":0,"wrong":0,"last":0,"cat":"","mode":""})
+    h["asked"]=h.get("asked",0)+1
+    if d.get("correct"): h["correct"]=h.get("correct",0)+1
+    else: h["wrong"]=h.get("wrong",0)+1
+    h["last"]=time.time()
+    if d.get("cat"): h["cat"]=d.get("cat")
+    if d.get("mode"): h["mode"]=d.get("mode")
+    USERS[n]["history"][q]=h
+    USERS[n]["last_seen"]=time.time()
+    save_users()
+    return jsonify({"ok":True,"asked":h["asked"]})
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    d=request.get_json(silent=True) or {}
+    if not d:
+        try: d=request.get_json(force=True,silent=True) or {}
+        except: d={}
+    n=norm(d.get("name"))
+    if n in USERS:
+        USERS[n]["logged_out"]=True
+        save_users()
+    return jsonify({"ok":True})
+@app.route("/api/online", methods=["POST"])
+def online():
+    d=request.get_json() or {}
+    n=norm(d.get("name"))
+    if n in USERS:
+        USERS[n]["last_seen"]=time.time()
+        USERS[n]["logged_out"]=False
+        save_users()
+    return jsonify({"ok":True})
+@app.route("/api/notif")
+def notif():
+    n=norm(request.args.get("name",""))
+    reqs=[]
+    if n in USERS: reqs=USERS[n].get("requests",[])
+    now=time.time()
+    newOnline=""
+    for k,v in USERS.items():
+        if k!=n and v.get("logged_out",False)==False and (now-v.get("last_seen",0))<300:
+            newOnline=v.get("display_name",k)
+    return jsonify({"requests":reqs,"newOnline":newOnline})
+@app.route("/api/friend", methods=["POST"])
+def friend():
+    d=request.get_json() or {}
+    frm=d.get("from")
+    to=norm(d.get("to"))
+    if to in USERS and frm not in USERS[to].get("requests",[]) and frm not in USERS[to].get("friends",[]):
+        USERS[to]["requests"].append(frm)
+        save_users()
+    return jsonify({"ok":True})
+@app.route("/api/respond", methods=["POST"])
+def respond():
+    d=request.get_json() or {}
+    me=norm(d.get("me"))
+    frm_raw=d.get("from")
+    frm=norm(frm_raw)
+    act=d.get("action")
+    if me in USERS and frm_raw in USERS[me].get("requests",[]):
+        USERS[me]["requests"].remove(frm_raw)
+    if me in USERS and frm in USERS and act=="accept":
+        disp_me=USERS[me].get("display_name",d.get("me"))
+        disp_frm=USERS[frm].get("display_name",frm_raw)
+        if disp_frm not in USERS[me]["friends"]:
+            USERS[me]["friends"].append(disp_frm)
+        if disp_me not in USERS[frm]["friends"]:
+            USERS[frm]["friends"].append(disp_me)
+    if me in USERS:
+        save_users()
+    return jsonify({"ok":True})
+@app.route("/api/send_message", methods=["POST"])
+def send_message():
+    d=request.get_json() or {}
+    frm=norm(d.get("from"))
+    to=norm(d.get("to"))
+    txt=d.get("text","")
+    if not frm or not to or not txt:
+        return jsonify({"ok":False}),400
+    key="|".join(sorted([frm,to]))
+    if key not in MESSAGES:
+        MESSAGES[key]=[]
+    MESSAGES[key].append({"from":d.get("from"),"to":d.get("to"),"text":txt,"time":d.get("time","")})
+    if len(MESSAGES[key])>500:
+        MESSAGES[key]=MESSAGES[key][-500:]
+    save_messages()
+    save_users()
+    return jsonify({"ok":True,"total":len(MESSAGES[key])})
+@app.route("/api/get_messages")
+def get_messages():
+    a=norm(request.args.get("a",""))
+    b=norm(request.args.get("b",""))
+    key="|".join(sorted([a,b]))
+    return jsonify({"messages":MESSAGES.get(key,[]),"total":len(MESSAGES.get(key,[]))})
+@app.route("/api/backup_status")
+def backup_status():
+    return jsonify({"total_players":len(USERS),"total_chats":len(MESSAGES),"main":os.path.exists(LEADER_FILE),"backup1":os.path.exists(BACKUP1),"backup2":os.path.exists(BACKUP2),"msg_backup":os.path.exists(MSG_BACKUP),"auto_save":"Every 10 seconds","auto_update":"Every 20 seconds"})
+@app.route("/webhook", methods=["GET","POST"])
+def webhook():
+    if request.method=="GET":
+        if request.args.get("hub.mode")=="subscribe" and request.args.get("hub.verify_token")==VERIFY_TOKEN:
+            return request.args.get("hub.challenge"),200
+        return "Forbidden",403
+    data=request.get_json() or {}
+    try:
+        for m in data["entry"][0]["changes"][0]["value"].get("messages",[]):
+            if m.get("from") and m.get("text",{}).get("body"):
+                send_whatsapp(m["from"], "Hi! Open Infinity Bot 👑")
+    except:
+        pass
+    return "OK",200
+if __name__=="__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
