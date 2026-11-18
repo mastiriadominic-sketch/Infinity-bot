@@ -437,16 +437,16 @@ function fixClockNow(){
   if(el2) el2.innerText=txt;
 }
 fixClockNow();
-// FORCE ENTER FIX
+// FORCE ENTER FIX V2
 function forceEnter(){
-  var pages=['page-home','page-register','page-dash','page-leader','page-game','page-coming','page-profile','page-other','page-messages'];
-  for(var i=0;i<pages.length;i++){
-    var p=document.getElementById(pages[i]);
-    if(p) p.classList.add('hidden');
-  }
+  var allDivs=document.querySelectorAll('div[id^="page-"]');
+  for(var i=0;i<allDivs.length;i++){ allDivs[i].style.display='none'; }
   var reg=document.getElementById('page-register');
-  if(reg){ reg.classList.remove('hidden'); reg.style.display='block'; }
+  if(reg){ reg.style.display='block'; reg.style.visibility='visible'; reg.style.opacity='1'; }
+  var home=document.getElementById('page-home');
+  if(home) home.style.display='none';
   window.scrollTo(0,0);
+  alert('Going to Register...');
 }
 setTimeout(function(){
   var all=document.querySelectorAll('*');
@@ -456,17 +456,6 @@ setTimeout(function(){
     }
   }
 },1000);
-// CLOCK FIX
-function fixClockNow(){
-  var now=new Date();
-  var txt='🕐 '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+' • '+String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()+' CAT';
-  var ids=['clock','catClock','catTime','timeDisplay','clockDisplay'];
-  for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(el) el.innerText=txt; }
-  var all=document.querySelectorAll('*');
-  for(var j=0;j<all.length;j++){ if(all[j].innerText && all[j].innerText.trim()==='Loading CAT...' && all[j].children.length===0){ all[j].innerText=txt; } }
-}
-setInterval(fixClockNow,1000);
-fixClockNow();
 </script>
 </body>
 </html>
