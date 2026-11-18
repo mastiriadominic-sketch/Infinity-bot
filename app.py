@@ -275,7 +275,7 @@ function getRankByWins(w){ if(w>=102400) return "Godly Rank Classified"; if(w>=5
 function isClassified(w){ return w>=3200; }
 function isUnlocked25Dec(){ var now=catNow(); return now>=new Date(2026,11,25,0,0,0); }
 function catNow(){ return new Date(); }
-function updateCatTime(){ try{ var d=new Date(); var el=document.getElementById('catTime'); if(el){ el.textContent='CAT ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') + ':' + d.getSeconds().toString().padStart(2,'0'); } }catch(e){} }
+function updateCatTime(){ try{ var d=new Date(); var t='CAT ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0'); var els=document.querySelectorAll('span,div'); for(var i=0;i<els.length;i++){ if(els[i].textContent.indexOf('Loading CAT')>-1){ els[i].textContent=t; } var e=document.getElementById('catTime'); if(e){ e.textContent=t; } } }catch(e){} }
 setInterval(updateCatTime,1000); updateCatTime();
 function toast(m){ var t=document.getElementById('toast'); t.innerText=m; t.classList.remove('hidden'); setTimeout(function(){ t.classList.add('hidden'); },4500); }
 function hideWarnNow(){ var ov=document.getElementById('gameWarnOverlay'); if(ov){ ov.classList.add('hidden'); ov.style.display='none'; } }
