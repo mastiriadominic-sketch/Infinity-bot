@@ -115,7 +115,7 @@ def send_whatsapp(to,text):
     if not WHATSAPP_TOKEN or not PHONE_ID: return
     try: requests.post(f"https://graph.facebook.com/v21.0/{PHONE_ID}/messages",headers={"Authorization":f"Bearer {WHATSAPP_TOKEN}","Content-Type":"application/json"},json={"messaging_product":"whatsapp","to":to,"type":"text","text":{"body":text}},timeout=10)
     except: pass
-        @app.route("/")
+@app.route("/")
 def home(): return HOME
 @app.route("/api/earning_status")
 def earning_status():
