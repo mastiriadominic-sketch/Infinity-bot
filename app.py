@@ -274,8 +274,8 @@ function isDominic(){ return user && user.name && user.name.toLowerCase()==='dom
 function getRankByWins(w){ if(w>=102400) return "Godly Rank Classified"; if(w>=51200) return "SSS Classified"; if(w>=25600) return "SSS Rank"; if(w>=12800) return "SS Rank"; if(w>=6400) return "S Rank"; if(w>=3200) return "National"; if(w>=1600) return "Professional"; if(w>=800) return "Expert"; if(w>=400) return "Advanced"; if(w>=200) return "Intermediate"; return "Beginner"; }
 function isClassified(w){ return w>=3200; }
 function isUnlocked25Dec(){ var now=catNow(); return now>=new Date(2026,11,25,0,0,0); }
-function catNow(){ try{ return new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lusaka'})); }catch(e){ return new Date(); } }
-function updateCatTime(){ try{ var d=catNow(); var ts=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); var ds=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); var el=document.getElementById('catTime'); if(el) el.innerText='🕐 '+ts+' • '+ds+' CAT'; }catch(e){} }
+function catNow(){ return new Date(); }
+function updateCatTime(){ try{ var d=new Date(); var el=document.getElementById('catTime'); if(el){ el.textContent='CAT ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') + ':' + d.getSeconds().toString().padStart(2,'0'); } }catch(e){} }
 setInterval(updateCatTime,1000); updateCatTime();
 function toast(m){ var t=document.getElementById('toast'); t.innerText=m; t.classList.remove('hidden'); setTimeout(function(){ t.classList.add('hidden'); },4500); }
 function hideWarnNow(){ var ov=document.getElementById('gameWarnOverlay'); if(ov){ ov.classList.add('hidden'); ov.style.display='none'; } }
