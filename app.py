@@ -96,8 +96,6 @@ def get_rank(wins):
     if wins>=200: return "Intermediate"
     return "Beginner"
 def is_classified(wins): return wins>=3200
-@app.route("/")
-def home(): return HOME
 @app.route("/api/earning_status")
 def earning_status(): return jsonify({"earning_on":EARNING_ON,"active":is_earning_active(),"start":"2026-12-25"})
 @app.route("/api/toggle_earning", methods=["POST"])
@@ -352,5 +350,7 @@ function openMessages(){ openNotifs(); }
 window.onload=function(){ try{ var s=JSON.parse(localStorage.getItem('inf_user')||'null'); if(s&&s.name){ user={name:s.name,password:s.password||''}; wins=parseInt(localStorage.getItem('inf_wins')||'0')||0; losses=parseInt(localStorage.getItem('inf_loss')||'0')||0; myGold=parseInt(localStorage.getItem('inf_gold')||'0')||0; myGems=parseInt(localStorage.getItem('inf_gems')||'0')||0; myPlayerID=localStorage.getItem('inf_player_id')||''; myBankID=localStorage.getItem('inf_bank_id')||''; loggedIn=true; goDash(); } else { showPage('page-home'); } }catch(e){ showPage('page-home'); } };
 </script></body></html>
 """
-if __name__=="__main__":
+@app.route("/")
+def home(): return HOME
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
