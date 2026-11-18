@@ -230,7 +230,8 @@ def ex():
         v["gold"] = v.get("gold", 0) + amt * 100
     save()
     return jsonify({"ok": True, "gold": v["gold"], "gems": v["gems"]})
- @app.route("/api/loan_apply", methods=["POST"])
+
+@app.route("/api/loan_apply", methods=["POST"])
 def loan_apply():
     d = request.get_json() or {}
     v = getp(d.get("name"))
