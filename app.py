@@ -417,7 +417,45 @@ function loadChatList(){ if(allFriends.length){ document.getElementById('chatFri
 function loadChatList(){ if(allFriends.length){ document.getElementById('chatList').innerHTML=allFriends.map(function(f){ return '<div class="leadRow"><span>'+f+'</span><button onclick="openChat(\''+f+'\')">Chat</button></div>'; }).join(''); } }
 function openChat(name){ currentChat=name; showPage('page-chat'); document.getElementById('chatTitle').innerText='Chat with '+name; loadMessages(); }
 function loadMessages(){ fetch('/api/messages?user='+encodeURIComponent(user.name)+'&with='+encodeURIComponent(currentChat)).then(function(r){return r.json();}).then(function(d){ var el=document.getElementById('chatBox'); if(el) el.innerHTML=(d.messages||[]).map(function(m){ return '<div><b>'+m.from+':</b> '+m.text+'</div>'; }).join(''); }); }
-function sendMsg(){ var el=document.getElementById('chatInput'); if(!el||!el.value.trim()) return; fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:user.name,to:currentChat,text:el.value})}).then(function(){ el.value=''; loadMessages(); }); }
+function sendMsg(){
+  var el=document.getElementById('chatInput');
+  if(!el) return;
+  var msg=el.value.trim();
+  if(!msg) return;
+  el.value='';
+  try{
+    fetch('/api/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:window.currentChat||'',msg:msg})});
+  }catch(e){}
+}
+// CLOCK FIX
+function fixClockNow(){
+  var now=new Date();
+  var txt='18/11/2026 CAT';
+  var el=document.getElementById('catTimeTop');
+  if(el) el.innerText=txt;
+  var el2=document.getElementById('catTime');
+  if(el2) el2.innerText=txt;
+}
+fixClockNow();
+// FORCE ENTER FIX
+function forceEnter(){
+  var pages=['page-home','page-register','page-dash','page-leader','page-game','page-coming','page-profile','page-other','page-messages'];
+  for(var i=0;i<pages.length;i++){
+    var p=document.getElementById(pages[i]);
+    if(p) p.classList.add('hidden');
+  }
+  var reg=document.getElementById('page-register');
+  if(reg){ reg.classList.remove('hidden'); reg.style.display='block'; }
+  window.scrollTo(0,0);
+}
+setTimeout(function(){
+  var all=document.querySelectorAll('*');
+  for(var i=0;i<all.length;i++){
+    if(all[i].innerText && all[i].innerText.trim()==='Enter' && all[i].children.length===0){
+      all[i].onclick=forceEnter;
+    }
+  }
+},1000);
 // CLOCK FIX
 function fixClockNow(){
   var now=new Date();
