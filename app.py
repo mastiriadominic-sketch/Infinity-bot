@@ -315,7 +315,30 @@ var sciFiInterval=null;
 function startSciFiCode(){ if(sciFiInterval) clearInterval(sciFiInterval); var lines=['> INITIALIZING INFINITY_OS v8.5...','> LOADING ROBOTIC CORE... OK','> SCANNING GALAXY... 42%','> AI ONLINE // CODE RUNNING','> if (player.ready) { launchSciFi(); }','> CONNECTING TO SATELLITE... OK','> ROBOT READY FOR BATTLE']; var idx=0; sciFiInterval=setInterval(function(){ var el=document.getElementById('scifiCodeText'); if(!el) return; idx=(idx+1)%lines.length; el.innerText=lines.slice(0,4).join('\n')+'\n'+lines[idx]+'\n> _'; },900); }
 try{ document.getElementById('enterBtn').addEventListener('click',function(){ goRegister(); }); document.getElementById('profileBtn').addEventListener('click',function(){ openMyProfile(); }); document.getElementById('soundBtn').addEventListener('click',function(){ toggleSound(); }); document.getElementById('msgFab').addEventListener('click',function(){ openMessages(); }); document.getElementById('backFab').addEventListener('click',function(){ goBack(); }); document.getElementById('choiceYesBtn').addEventListener('click',function(){ welcomeChoice('yes'); }); document.getElementById('choiceNoBtn').addEventListener('click',function(){ welcomeChoice('no'); }); document.getElementById('menuBtn').addEventListener('click',function(e){ e.stopPropagation(); toggleMenu(); }); }catch(e){}
 (function autoStart(){ hideWarnNow(); hideWelcomeNow(); hideLoading(); showPage('page-home'); try{ loadLeader(); }catch(e){} })();
-</script></body></html>"""
+</script>
+<script>
+try{
+  function rescueClock(){
+    try{
+      var el=document.getElementById('catClock');
+      if(el){ var d=new Date(); el.innerText='🕐 '+d.toLocaleTimeString('en-GB')+' • '+d.toLocaleDateString('en-GB')+' CAT'; }
+    }catch(e){}
+  }
+  setInterval(rescueClock,1000); rescueClock();
+  var eb=document.getElementById('enterBtn');
+  if(eb){
+    eb.onclick=function(){
+      try{
+        var pages=document.querySelectorAll('[id^="page-"]');
+        for(var i=0;i<pages.length;i++){ pages[i].style.display='none'; }
+        var reg=document.getElementById('page-register');
+        if(reg){ reg.style.display='block'; }
+      }catch(e){}
+    };
+  }
+}catch(e){}
+</script>
+</body></html>"""
 @app.route("/")
 def home():
     return HOME
