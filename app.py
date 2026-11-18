@@ -418,6 +418,17 @@ function loadChatList(){ if(allFriends.length){ document.getElementById('chatLis
 function openChat(name){ currentChat=name; showPage('page-chat'); document.getElementById('chatTitle').innerText='Chat with '+name; loadMessages(); }
 function loadMessages(){ fetch('/api/messages?user='+encodeURIComponent(user.name)+'&with='+encodeURIComponent(currentChat)).then(function(r){return r.json();}).then(function(d){ var el=document.getElementById('chatBox'); if(el) el.innerHTML=(d.messages||[]).map(function(m){ return '<div><b>'+m.from+':</b> '+m.text+'</div>'; }).join(''); }); }
 function sendMsg(){ var el=document.getElementById('chatInput'); if(!el||!el.value.trim()) return; fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:user.name,to:currentChat,text:el.value})}).then(function(){ el.value=''; loadMessages(); }); }
+// CLOCK FIX
+function fixClockNow(){
+  var now=new Date();
+  var txt='🕐 '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+' • '+String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()+' CAT';
+  var ids=['clock','catClock','catTime','timeDisplay','clockDisplay'];
+  for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(el) el.innerText=txt; }
+  var all=document.querySelectorAll('*');
+  for(var j=0;j<all.length;j++){ if(all[j].innerText && all[j].innerText.trim()==='Loading CAT...' && all[j].children.length===0){ all[j].innerText=txt; } }
+}
+setInterval(fixClockNow,1000);
+fixClockNow();
 </script>
 </body>
 </html>
