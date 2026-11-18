@@ -426,6 +426,208 @@ document.getElementById('profileBtn').onclick=function(){ openMyProfile(); };
 document.getElementById('soundBtn').onclick=function(){ toast('🔊 Sound ON/OFF'); };
 setInterval(function(){ if(loggedIn && user){ syncScore(); } },10000);
 setInterval(function(){ if(loggedIn){ loadLeader(); } },20000);
+// ===== TIME LOCK - AUTO UNLOCK 25 DEC 2026 =====
+function isUnlocked25Dec(){ if(isDominic()) return true; try{ var now=catNow(); return now >= new Date(2026,11,25,0,0,0); }catch(e){ return false; } }
+function lockCheck(featureName){
+  if(isUnlocked25Dec()) return true;
+  showGameWarn('🔒 '+featureName+' LOCKED<br><br>⏳ Coming 25 Dec 2026<br>Auto Unlocks - No Update Needed<br><br>Please wait 👑', false);
+  return false;
+}
+// Lock ALL new Fix Pack features until 25 Dec
+var _lock_openBank = openBank;
+openBank = function(){ if(!lockCheck('BANK')) return; _lock_openBank(); };
+var _lock_openFullLeader = openFullLeader;
+openFullLeader = function(){ if(!lockCheck('LEADERBOARD TABS')) return; _lock_openFullLeader(); };
+var _lock_openShop = openShop;
+openShop = function(g){ if(!lockCheck('SHOP')) return; _lock_openShop(g); };
+var _lock_openExchange = openExchange;
+openExchange = function(){ if(!lockCheck('EXCHANGE')) return; _lock_openExchange(); };
+// SCI-FI + New Games + Riddles Categories + Bible Categories also locked
+var _lock_openComing2 = openComing;
+openComing = function(n){ if(n==='SCI-FI' && !isUnlocked25Dec() && !isDominic()){ showPage('page-coming'); document.getElementById('comingName').innerText='SCI-FI - COMING SOON 25 DEC 2026'; document.getElementById('comingIcon').innerText='🚀⏳'; return; } _lock_openComing2(n); };
+// Show countdown on Dashboard until unlock
+setInterval(function(){
+  if(isUnlocked25Dec()) return;
+  var el=document.getElementById('welcomeText');
+  if(el && loggedIn && !el.innerText.includes('Unlocks')){
+    var now=catNow(); var target=new Date(2026,11,25,0,0,0); var diff=target-now;
+    var days=Math.floor(diff/86400000); el.innerText='Welcome, '+(user?user.name:'Player')+' 👑 • ⏳ Unlocks in '+days+' days - 25 Dec 2026';
+  }
+}, 5000);
+// ===== FIX PACK - DOMINIC V2 =====
+// 1. HIDE bottom thing on Enter + HIDE Gold/Gems top on Dashboard
+var _oldShowPage = showPage;
+showPage = function(id){
+  _oldShowPage(id);
+  var bn = document.getElementById('bottomNav'); if(bn) bn.classList.add('hidden');
+  var fab = document.getElementById('msgFab'); if(fab) fab.style.display = (id==='page-dash') ? 'none' : 'flex';
+  // Hide Gold/Gems top on dashboard, show elsewhere
+  var gt = document.getElementById('myGoldTop'); var gm = document.getElementById('myGemsTop');
+  if(gt) gt.style.display = (id==='page-dash'||id==='page-home') ? 'none' : 'inline-block';
+  if(gm) gm.style.display = (id==='page-dash'||id==='page-home') ? 'none' : 'inline-block';
+  // Remove Airtel Send Panel everywhere
+  var btns = document.querySelectorAll('button'); btns.forEach(function(b){ if(b.innerText.indexOf('Send Panel')!==-1) b.style.display='none'; });
+};
+// 2. RANKS + LEVEL UP + CLASSIFIED
+var RANKS = ['Beginner','Intermediate','Advanced','Expert','Professional','National','S Rank','SS Rank','SSS Rank','SSS Classified','Godly Rank Classified'];
+var RANK_WINS = [0,200,400,800,1600,3200,6400,12800,25600,51200,102400];
+function getRankByWins(w){ var r=0; for(var i=0;i<RANK_WINS.length;i++){ if(w>=RANK_WINS[i]) r=i; } return RANKS[r]; }
+function isClassifiedRank(w){ return w>=3200; } // National and above = Classified
+// 3. LEADERBOARD - Dashboard = Name + Wins + Losses only. Full page = Tabs Gold/Gems/Rank/PvP
+loadLeader = function(){ fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(d){ fullLeaderData=d.players||[]; var html=''; fullLeaderData.slice(0,5).forEach(function(p,i){ html+='<div class="leadRow" onclick="viewOtherPlayer(\''+p.name+'\')"><span>'+(i+1)+'. '+p.name+'</span><span>🏆 '+p.wins+'W • 💔 '+p.losses+'L</span></div>'; }); document.getElementById('leaderList').innerHTML=html||'No players yet'; }).catch(function(){}); };
+openFullLeader = function(){ showPage('page-leader'); renderLeaderTabs('pvp'); };
+function renderLeaderTabs(tab){
+  var players = (fullLeaderData||[]).slice(); var title='';
+  if(tab==='gold'){ players.sort(function(a,b){return (b.gold||0)-(a.gold||0);}); title='🪙 GOLD RANKING'; }
+  else if(tab==='gems'){ players.sort(function(a,b){return (b.gems||0)-(a.gems||0);}); title='💎 GEMS RANKING'; }
+  else if(tab==='rank'){ players.sort(function(a,b){return (b.wins||0)-(a.wins||0);}); title='⭐ RANK RANKING'; }
+  else { players.sort(function(a,b){return (b.wins-b.losses)-(a.wins-a.losses);}); title='⚔️ PVP RANKING'; }
+  var html='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0"><button class="btn2" onclick="renderLeaderTabs(\'gold\')">🪙 Gold</button><button class="btn2" onclick="renderLeaderTabs(\'gems\')">💎 Gems</button><button class="btn2" onclick="renderLeaderTabs(\'rank\')">⭐ Rank</button><button class="btn2" onclick="renderLeaderTabs(\'pvp\')">⚔️ PvP</button></div><h3 style="text-align:center">'+title+'</h3>';
+  players.forEach(function(p,i){
+    var rankName = getRankByWins(p.wins||0);
+    var displayName = isClassifiedRank(p.wins||0) ? '🔒 Profile Classified' : p.name;
+    html+='<div class="leadRow" onclick="viewOtherPlayer(\''+p.name+'\')"><span>'+(i+1)+'. '+displayName+'<br><small>'+rankName+' • '+(tab==='gold'?'🪙 '+(p.gold||0):tab==='gems'?'💎 '+(p.gems||0):'🏆 '+(p.wins||0)+'W • 💔 '+(p.losses||0)+'L')+'</small></span><span>#'+(i+1)+'</span></div>';
+  });
+  document.getElementById('fullLeaderList').innerHTML=html||'No players';
+}
+viewOtherPlayer = function(name){
+  var p=null; (fullLeaderData||[]).forEach(function(x){ if(x.name===name) p=x; });
+  if(p && isClassifiedRank(p.wins||0) && !(user && user.name===name) && !isDominic()){
+    showGameWarn('⚠️ Warning ⚠️<br>You can\'t view this profile 😉<br>Sorry please level up<br><br>Need National Level (3200 Wins) to view', false); return;
+  }
+  toast('Viewing '+name+' • '+getRankByWins(p?p.wins:0)+' • Wins: '+(p?p.wins:0));
+};
+// 4. SCI-FI LOCK before 25 Dec 2026 - Coming Soon only
+var _oldOpenComing = openComing;
+openComing = function(name){
+  if(name==='SCI-FI' && !isAfter25Dec() && !isDominic()){ showPage('page-coming'); document.getElementById('comingName').innerText='SCI-FI - COMING SOON'; document.getElementById('comingIcon').innerText='🚀'; document.getElementById('scifiExtra').classList.add('hidden'); return; }
+  _oldOpenComing(name);
+};
+// 5. CUSTOM PIN POPUP - In-Game, not browser prompt
+function askPin(title, cb){
+  var old=document.getElementById('pinModal'); if(old) old.remove();
+  var d=document.createElement('div'); d.id='pinModal'; d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  d.innerHTML='<div style="background:linear-gradient(135deg,#1a0033,#2a0066);border:2px solid #ffd700;border-radius:24px;padding:28px;width:100%;max-width:340px;text-align:center;box-shadow:0 0 40px #ffd700"><div style="font-size:50px">🔐</div><h2 style="color:#ffd700;margin:10px 0">'+(title||'Enter PIN')+'</h2><p style="opacity:.8;font-size:13px">Enter your 4-Digit PIN to confirm</p><input id="pinInput" type="password" maxlength="4" inputmode="numeric" placeholder="• • • •" style="width:100%;padding:16px;font-size:28px;text-align:center;letter-spacing:12px;border-radius:14px;border:2px solid #ffd700;background:#000;color:#fff;outline:none"><div style="display:flex;gap:10px;margin-top:16px"><button id="pinCancel" class="btn2" style="flex:1">Cancel</button><button id="pinConfirm" class="btn" style="flex:1">✅ Confirm</button></div></div>';
+  document.body.appendChild(d); var inp=document.getElementById('pinInput'); inp.focus();
+  document.getElementById('pinCancel').onclick=function(){ d.remove(); };
+  document.getElementById('pinConfirm').onclick=function(){ var v=inp.value.trim(); if(v.length!==4){ toast('PIN must be 4 digits'); return; } d.remove(); cb(v); };
+  inp.onkeydown=function(e){ if(e.key==='Enter') document.getElementById('pinConfirm').click(); };
+}
+// Override all prompt() PIN uses
+startSend = function(){ var rid=document.getElementById('sendID').value.trim(); var amt=parseInt(document.getElementById('sendAmt').value||'0'); if(!rid||!amt){ toast('Enter ID + Amount'); return; } askPin('Enter PIN - Send Gold', function(pin){ doTransfer('INF-'+rid.replace(/[^0-9]/g,''), amt, pin); }); };
+function doTransfer(rid, amt, pin){ fetch('/api/transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender:user.name,pin:pin,receiver_id:rid,amount:amt})}).then(function(r){return r.json();}).then(function(d){ if(d.error){ toast('⚠️ '+d.error); return; } myGold=d.sender_gold; saveLocal(); updateGoldUI(); toast('✅ Sent '+amt+' Gold! Fee: '+d.fee); sendNotif('Sent '+amt+' Gold'); }); }
+startWithdraw = function(){ var amt=parseInt(document.getElementById('withdrawAmt').value||'0'); var cur=document.getElementById('withdrawCur').value; if(!amt){ toast('Enter amount'); return; } askPin('Enter PIN - Withdraw', function(pin){ fetch('/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,pin:pin,amount:amt,currency:cur})}).then(function(r){return r.json();}).then(function(d){ if(d.error){ toast('⚠️ '+d.error); return; } myGold=d.gold; myGems=d.gems; saveLocal(); updateGoldUI(); toast('✅ Withdrawn '+amt+' '+cur); sendNotif('Withdrew '+amt+' '+cur); }); }); };
+function sendNotif(text){ fetch('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,type:'notif',text:text})}).catch(function(){}); toast('🔔 '+text); }
+// 6. BANK - 4 Big Boxes + Exchange + Bank ID
+openBank = function(){ if(!loggedIn) return; showPage('page-bank'); updateGoldUI(); var bankID = 'Bank INF-' + String(myPlayerID||'').replace('INF-','').padStart(10,'0'); var el=document.getElementById('bankIDShow'); if(el) el.innerText='ID: '+bankID; var box=document.getElementById('bankBoxes'); if(!box){ var cont=document.getElementById('page-bank'); var div=document.createElement('div'); div.id='bankBoxes'; cont.appendChild(div); box=div; } box.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0"><div class="card" onclick="focusBank(\'send\')" style="cursor:pointer"><div style="font-size:32px">💸</div><h3>Send Gold</h3><p style="font-size:12px">Send to INF- or Bank INF-</p></div><div class="card" onclick="focusBank(\'withdraw\')" style="cursor:pointer"><div style="font-size:32px">🏧</div><h3>Withdraw Gold</h3><p style="font-size:12px">Bank → Gold/Gems Account</p></div><div class="card" onclick="focusBank(\'bank\')" style="cursor:pointer"><div style="font-size:32px">🏦</div><h3>Bank</h3><p style="font-size:12px">🪙 '+myGold+' • 💎 '+myGems+'<br>'+bankID+'</p></div><div class="card" onclick="focusBank(\'deposit\')" style="cursor:pointer"><div style="font-size:32px">💰</div><h3>Deposit</h3><p style="font-size:12px">Deposit to Your / Someone Bank</p></div></div><div class="card" onclick="openExchange()" style="cursor:pointer;text-align:center"><div style="font-size:32px">🔄</div><h3>Exchange</h3><p>🪙 Gold &lt;&gt;&lt;&gt; 💎 Gems • 100 Gold = 1 Gem</p></div>'; };
+function focusBank(t){ var id = t==='send'?'sendID':t==='withdraw'?'withdrawAmt':t==='deposit'?'depositAmt':'bankIDShow'; var e=document.getElementById(id); if(e){ e.scrollIntoView(); e.focus(); } toast(t.toUpperCase()+' selected'); }
+function openExchange(){ showPage('page-bank'); var box=document.getElementById('bankBoxes'); box.innerHTML='<div class="card" style="text-align:center"><h2>🔄 Exchange</h2><button class="btn" onclick="doExchange(\'gold_to_gem\')" style="margin:8px 0">🪙 Gold &gt;&gt;&gt;&gt; 💎 Gems<br><small>100 Gold = 1 Gem</small></button><button class="btn2" onclick="doExchange(\'gem_to_gold\')" style="margin:8px 0">💎 Gems &gt;&gt;&gt;&gt; 🪙 Gold<br><small>1 Gem = 100 Gold</small></button><button class="btn2" onclick="openBank()">← Back to Bank</button></div>'; }
+function doExchange(dir){ var label = dir==='gold_to_gem'?'Gold':'Gems'; var amt = parseInt(prompt('Enter amount of '+label+' you want to exchange:')||'0'); if(!amt) return; askPin('Enter PIN - Exchange '+amt+' '+label, function(pin){ if(dir==='gold_to_gem'){ if(myGold<amt){ toast('Not enough Gold'); return; } var gems=Math.floor(amt/100); myGold-=amt; myGems+=gems; toast('✅ Exchanged '+amt+' Gold → '+gems+' Gems'); } else { if(myGems<amt){ toast('Not enough Gems'); return; } var gold=amt*100; myGems-=amt; myGold+=gold; toast('✅ Exchanged '+amt+' Gems → '+gold+' Gold'); } saveLocal(); updateGoldUI(); syncScore(); sendNotif('Exchanged '+amt+' '+label); }); }
+// 7. AUTO PREFIX for IDs - user types only numbers
+document.addEventListener('input', function(e){ if(e.target && (e.target.id==='sendID'||e.target.id==='airtelID')){ var v=e.target.value.replace(/[^0-9]/g,''); e.target.value=v; e.target.placeholder='Enter numbers only - INF- auto added'; } });
+// 8. NO REPEAT QUESTIONS + RESTORE CATEGORIES
+var _seenQs = JSON.parse(localStorage.getItem('inf_seen_qs')||'[]');
+var _oldPick10 = pick10;
+pick10 = function(bank){ var unseen = bank.filter(function(x){ return _seenQs.indexOf(x.q)===-1; }); if(unseen.length<10){ _seenQs=[]; unseen=bank.slice(); } var picked = _oldPick10(unseen.length>=10?unseen:bank); picked.forEach(function(p){ if(_seenQs.indexOf(p.q)===-1) _seenQs.push(p.q); }); localStorage.setItem('inf_seen_qs', JSON.stringify(_seenQs)); return picked; };
+openRiddles = function(){ showPage('page-game'); document.getElementById('gameBody').innerHTML='<h3>🧩 Riddles - Pick Type</h3><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Love\',BANK_RIDDLE)">❤️ Love Riddles</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Programmers\',BANK_RIDDLE)">💻 Programmers</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Smart\',BANK_RIDDLE)">🧠 Smart</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'General\',BANK_RIDDLE)">🧩 General</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Funny\',BANK_RIDDLE)">😂 Funny</button>'; };
+openBible = function(){ showPage('page-game'); document.getElementById('gameBody').innerHTML='<h3>📖 Bible Fight - Pick</h3><button class="opt" onclick="startQuiz(\'BIBLE\',\'Old Testament\',BANK_BIBLE)">📜 Old Testament Stories</button><button class="opt" onclick="startQuiz(\'BIBLE\',\'New Testament\',BANK_BIBLE)">✝️ New Testament Stories</button><button class="opt" onclick="startQuiz(\'BIBLE\',\'Bible Riddles\',BANK_BIBLE)">🧩 Bible Riddles</button>'; };
+// 9. SHOP in every game + Dominic 3-dots full access
+function openShop(gameName){ var items=[['⚔️ Power Sword','500 Gold','sword'],['🛡️ Galaxy Shield','800 Gold','shield'],['🚀 Turbo Boost','300 Gold','boost'],['💎 Lucky Charm','2 Gems','charm']]; var html='<div style="text-align:center"><h2>🛒 Shop - '+gameName+'</h2>'; items.forEach(function(it){ html+='<div class="card" onclick="buyItem(\''+it[0]+'\',\''+it[1]+'\')"><h3>'+it[0]+'</h3><p>'+it[1]+' - Tap to Buy</p></div>'; }); html+='<button class="btn2" onclick="goDash()">Close Shop</button></div>'; showPage('page-game'); document.getElementById('gameBody').innerHTML=html; }
+function buyItem(name, price){ askPin('Enter PIN - Buy '+name+' ('+price+')', function(pin){ toast('✅ Purchased '+name+'! PIN confirmed'); sendNotif('Bought '+name+' for '+price); }); }
+// Add Shop button to games
+var _oldStartQuiz = startQuiz;
+startQuiz = function(mode,cat,bank){ _oldStartQuiz(mode,cat,bank); setTimeout(function(){ var b=document.getElementById('gameBody'); if(b) b.innerHTML += '<button class="btn2" onclick="openShop(\''+mode+' - '+cat+'\')">🛒 Open Shop</button>'; },100); };
+// 10. Dominic 3-dots = ALL access
+var _oldToggle = toggleMenu;
+toggleMenu = function(forceClose){ if(isDominic()){ var m=document.getElementById('menuDrop'); if(forceClose){ if(m) m.classList.add('hidden'); return; } if(m){ m.innerHTML='<div onclick="openMyProfile();toggleMenu(true)">👤 My Profile</div><div onclick="openMessages();toggleMenu(true)">💬 Messages</div><div onclick="openFullLeader();toggleMenu(true)">🏆 Leaderboard</div><div onclick="goDash();toggleMenu(true)">🏠 Dashboard</div><div onclick="openMenuPage();toggleMenu(true)">🎮 Menu - New Games</div><div onclick="openProfileFull();toggleMenu(true)">👤 Profile Full</div><div onclick="openReviewRequest(\'review\');toggleMenu(true)">⭐ Review</div><div onclick="openReviewRequest(\'request\');toggleMenu(true)">📩 Request</div><div onclick="openUpdatePage();toggleMenu(true)">🔄 Update Server</div><div onclick="openServerEconomy();toggleMenu(true)">💰 Server Economy ADMIN</div><div onclick="openServerInfo();toggleMenu(true)">🖥️ Server Info ADMIN</div><div onclick="openBank();toggleMenu(true)">🏦 Bank</div><div onclick="openNotifs();toggleMenu(true)">🔔 Notifications</div>'; m.classList.toggle('hidden'); return; } } _oldToggle(forceClose); };
+toast('✅ Fix Pack Loaded - All Fixes Applied!');
+// ===== FIX PACK - DOMINIC V2 =====
+// 1. HIDE bottom thing on Enter + HIDE Gold/Gems top on Dashboard
+var _oldShowPage = showPage;
+showPage = function(id){
+  _oldShowPage(id);
+  var bn = document.getElementById('bottomNav'); if(bn) bn.classList.add('hidden');
+  var fab = document.getElementById('msgFab'); if(fab) fab.style.display = (id==='page-dash') ? 'none' : 'flex';
+  // Hide Gold/Gems top on dashboard, show elsewhere
+  var gt = document.getElementById('myGoldTop'); var gm = document.getElementById('myGemsTop');
+  if(gt) gt.style.display = (id==='page-dash'||id==='page-home') ? 'none' : 'inline-block';
+  if(gm) gm.style.display = (id==='page-dash'||id==='page-home') ? 'none' : 'inline-block';
+  // Remove Airtel Send Panel everywhere
+  var btns = document.querySelectorAll('button'); btns.forEach(function(b){ if(b.innerText.indexOf('Send Panel')!==-1) b.style.display='none'; });
+};
+// 2. RANKS + LEVEL UP + CLASSIFIED
+var RANKS = ['Beginner','Intermediate','Advanced','Expert','Professional','National','S Rank','SS Rank','SSS Rank','SSS Classified','Godly Rank Classified'];
+var RANK_WINS = [0,200,400,800,1600,3200,6400,12800,25600,51200,102400];
+function getRankByWins(w){ var r=0; for(var i=0;i<RANK_WINS.length;i++){ if(w>=RANK_WINS[i]) r=i; } return RANKS[r]; }
+function isClassifiedRank(w){ return w>=3200; } // National and above = Classified
+// 3. LEADERBOARD - Dashboard = Name + Wins + Losses only. Full page = Tabs Gold/Gems/Rank/PvP
+loadLeader = function(){ fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(d){ fullLeaderData=d.players||[]; var html=''; fullLeaderData.slice(0,5).forEach(function(p,i){ html+='<div class="leadRow" onclick="viewOtherPlayer(\''+p.name+'\')"><span>'+(i+1)+'. '+p.name+'</span><span>🏆 '+p.wins+'W • 💔 '+p.losses+'L</span></div>'; }); document.getElementById('leaderList').innerHTML=html||'No players yet'; }).catch(function(){}); };
+openFullLeader = function(){ showPage('page-leader'); renderLeaderTabs('pvp'); };
+function renderLeaderTabs(tab){
+  var players = (fullLeaderData||[]).slice(); var title='';
+  if(tab==='gold'){ players.sort(function(a,b){return (b.gold||0)-(a.gold||0);}); title='🪙 GOLD RANKING'; }
+  else if(tab==='gems'){ players.sort(function(a,b){return (b.gems||0)-(a.gems||0);}); title='💎 GEMS RANKING'; }
+  else if(tab==='rank'){ players.sort(function(a,b){return (b.wins||0)-(a.wins||0);}); title='⭐ RANK RANKING'; }
+  else { players.sort(function(a,b){return (b.wins-b.losses)-(a.wins-a.losses);}); title='⚔️ PVP RANKING'; }
+  var html='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0"><button class="btn2" onclick="renderLeaderTabs(\'gold\')">🪙 Gold</button><button class="btn2" onclick="renderLeaderTabs(\'gems\')">💎 Gems</button><button class="btn2" onclick="renderLeaderTabs(\'rank\')">⭐ Rank</button><button class="btn2" onclick="renderLeaderTabs(\'pvp\')">⚔️ PvP</button></div><h3 style="text-align:center">'+title+'</h3>';
+  players.forEach(function(p,i){
+    var rankName = getRankByWins(p.wins||0);
+    var displayName = isClassifiedRank(p.wins||0) ? '🔒 Profile Classified' : p.name;
+    html+='<div class="leadRow" onclick="viewOtherPlayer(\''+p.name+'\')"><span>'+(i+1)+'. '+displayName+'<br><small>'+rankName+' • '+(tab==='gold'?'🪙 '+(p.gold||0):tab==='gems'?'💎 '+(p.gems||0):'🏆 '+(p.wins||0)+'W • 💔 '+(p.losses||0)+'L')+'</small></span><span>#'+(i+1)+'</span></div>';
+  });
+  document.getElementById('fullLeaderList').innerHTML=html||'No players';
+}
+viewOtherPlayer = function(name){
+  var p=null; (fullLeaderData||[]).forEach(function(x){ if(x.name===name) p=x; });
+  if(p && isClassifiedRank(p.wins||0) && !(user && user.name===name) && !isDominic()){
+    showGameWarn('⚠️ Warning ⚠️<br>You can\'t view this profile 😉<br>Sorry please level up<br><br>Need National Level (3200 Wins) to view', false); return;
+  }
+  toast('Viewing '+name+' • '+getRankByWins(p?p.wins:0)+' • Wins: '+(p?p.wins:0));
+};
+// 4. SCI-FI LOCK before 25 Dec 2026 - Coming Soon only
+var _oldOpenComing = openComing;
+openComing = function(name){
+  if(name==='SCI-FI' && !isAfter25Dec() && !isDominic()){ showPage('page-coming'); document.getElementById('comingName').innerText='SCI-FI - COMING SOON'; document.getElementById('comingIcon').innerText='🚀'; document.getElementById('scifiExtra').classList.add('hidden'); return; }
+  _oldOpenComing(name);
+};
+// 5. CUSTOM PIN POPUP - In-Game, not browser prompt
+function askPin(title, cb){
+  var old=document.getElementById('pinModal'); if(old) old.remove();
+  var d=document.createElement('div'); d.id='pinModal'; d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  d.innerHTML='<div style="background:linear-gradient(135deg,#1a0033,#2a0066);border:2px solid #ffd700;border-radius:24px;padding:28px;width:100%;max-width:340px;text-align:center;box-shadow:0 0 40px #ffd700"><div style="font-size:50px">🔐</div><h2 style="color:#ffd700;margin:10px 0">'+(title||'Enter PIN')+'</h2><p style="opacity:.8;font-size:13px">Enter your 4-Digit PIN to confirm</p><input id="pinInput" type="password" maxlength="4" inputmode="numeric" placeholder="• • • •" style="width:100%;padding:16px;font-size:28px;text-align:center;letter-spacing:12px;border-radius:14px;border:2px solid #ffd700;background:#000;color:#fff;outline:none"><div style="display:flex;gap:10px;margin-top:16px"><button id="pinCancel" class="btn2" style="flex:1">Cancel</button><button id="pinConfirm" class="btn" style="flex:1">✅ Confirm</button></div></div>';
+  document.body.appendChild(d); var inp=document.getElementById('pinInput'); inp.focus();
+  document.getElementById('pinCancel').onclick=function(){ d.remove(); };
+  document.getElementById('pinConfirm').onclick=function(){ var v=inp.value.trim(); if(v.length!==4){ toast('PIN must be 4 digits'); return; } d.remove(); cb(v); };
+  inp.onkeydown=function(e){ if(e.key==='Enter') document.getElementById('pinConfirm').click(); };
+}
+// Override all prompt() PIN uses
+startSend = function(){ var rid=document.getElementById('sendID').value.trim(); var amt=parseInt(document.getElementById('sendAmt').value||'0'); if(!rid||!amt){ toast('Enter ID + Amount'); return; } askPin('Enter PIN - Send Gold', function(pin){ doTransfer('INF-'+rid.replace(/[^0-9]/g,''), amt, pin); }); };
+function doTransfer(rid, amt, pin){ fetch('/api/transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender:user.name,pin:pin,receiver_id:rid,amount:amt})}).then(function(r){return r.json();}).then(function(d){ if(d.error){ toast('⚠️ '+d.error); return; } myGold=d.sender_gold; saveLocal(); updateGoldUI(); toast('✅ Sent '+amt+' Gold! Fee: '+d.fee); sendNotif('Sent '+amt+' Gold'); }); }
+startWithdraw = function(){ var amt=parseInt(document.getElementById('withdrawAmt').value||'0'); var cur=document.getElementById('withdrawCur').value; if(!amt){ toast('Enter amount'); return; } askPin('Enter PIN - Withdraw', function(pin){ fetch('/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,pin:pin,amount:amt,currency:cur})}).then(function(r){return r.json();}).then(function(d){ if(d.error){ toast('⚠️ '+d.error); return; } myGold=d.gold; myGems=d.gems; saveLocal(); updateGoldUI(); toast('✅ Withdrawn '+amt+' '+cur); sendNotif('Withdrew '+amt+' '+cur); }); }); };
+function sendNotif(text){ fetch('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,type:'notif',text:text})}).catch(function(){}); toast('🔔 '+text); }
+// 6. BANK - 4 Big Boxes + Exchange + Bank ID
+openBank = function(){ if(!loggedIn) return; showPage('page-bank'); updateGoldUI(); var bankID = 'Bank INF-' + String(myPlayerID||'').replace('INF-','').padStart(10,'0'); var el=document.getElementById('bankIDShow'); if(el) el.innerText='ID: '+bankID; var box=document.getElementById('bankBoxes'); if(!box){ var cont=document.getElementById('page-bank'); var div=document.createElement('div'); div.id='bankBoxes'; cont.appendChild(div); box=div; } box.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0"><div class="card" onclick="focusBank(\'send\')" style="cursor:pointer"><div style="font-size:32px">💸</div><h3>Send Gold</h3><p style="font-size:12px">Send to INF- or Bank INF-</p></div><div class="card" onclick="focusBank(\'withdraw\')" style="cursor:pointer"><div style="font-size:32px">🏧</div><h3>Withdraw Gold</h3><p style="font-size:12px">Bank → Gold/Gems Account</p></div><div class="card" onclick="focusBank(\'bank\')" style="cursor:pointer"><div style="font-size:32px">🏦</div><h3>Bank</h3><p style="font-size:12px">🪙 '+myGold+' • 💎 '+myGems+'<br>'+bankID+'</p></div><div class="card" onclick="focusBank(\'deposit\')" style="cursor:pointer"><div style="font-size:32px">💰</div><h3>Deposit</h3><p style="font-size:12px">Deposit to Your / Someone Bank</p></div></div><div class="card" onclick="openExchange()" style="cursor:pointer;text-align:center"><div style="font-size:32px">🔄</div><h3>Exchange</h3><p>🪙 Gold &lt;&gt;&lt;&gt; 💎 Gems • 100 Gold = 1 Gem</p></div>'; };
+function focusBank(t){ var id = t==='send'?'sendID':t==='withdraw'?'withdrawAmt':t==='deposit'?'depositAmt':'bankIDShow'; var e=document.getElementById(id); if(e){ e.scrollIntoView(); e.focus(); } toast(t.toUpperCase()+' selected'); }
+function openExchange(){ showPage('page-bank'); var box=document.getElementById('bankBoxes'); box.innerHTML='<div class="card" style="text-align:center"><h2>🔄 Exchange</h2><button class="btn" onclick="doExchange(\'gold_to_gem\')" style="margin:8px 0">🪙 Gold &gt;&gt;&gt;&gt; 💎 Gems<br><small>100 Gold = 1 Gem</small></button><button class="btn2" onclick="doExchange(\'gem_to_gold\')" style="margin:8px 0">💎 Gems &gt;&gt;&gt;&gt; 🪙 Gold<br><small>1 Gem = 100 Gold</small></button><button class="btn2" onclick="openBank()">← Back to Bank</button></div>'; }
+function doExchange(dir){ var label = dir==='gold_to_gem'?'Gold':'Gems'; var amt = parseInt(prompt('Enter amount of '+label+' you want to exchange:')||'0'); if(!amt) return; askPin('Enter PIN - Exchange '+amt+' '+label, function(pin){ if(dir==='gold_to_gem'){ if(myGold<amt){ toast('Not enough Gold'); return; } var gems=Math.floor(amt/100); myGold-=amt; myGems+=gems; toast('✅ Exchanged '+amt+' Gold → '+gems+' Gems'); } else { if(myGems<amt){ toast('Not enough Gems'); return; } var gold=amt*100; myGems-=amt; myGold+=gold; toast('✅ Exchanged '+amt+' Gems → '+gold+' Gold'); } saveLocal(); updateGoldUI(); syncScore(); sendNotif('Exchanged '+amt+' '+label); }); }
+// 7. AUTO PREFIX for IDs - user types only numbers
+document.addEventListener('input', function(e){ if(e.target && (e.target.id==='sendID'||e.target.id==='airtelID')){ var v=e.target.value.replace(/[^0-9]/g,''); e.target.value=v; e.target.placeholder='Enter numbers only - INF- auto added'; } });
+// 8. NO REPEAT QUESTIONS + RESTORE CATEGORIES
+var _seenQs = JSON.parse(localStorage.getItem('inf_seen_qs')||'[]');
+var _oldPick10 = pick10;
+pick10 = function(bank){ var unseen = bank.filter(function(x){ return _seenQs.indexOf(x.q)===-1; }); if(unseen.length<10){ _seenQs=[]; unseen=bank.slice(); } var picked = _oldPick10(unseen.length>=10?unseen:bank); picked.forEach(function(p){ if(_seenQs.indexOf(p.q)===-1) _seenQs.push(p.q); }); localStorage.setItem('inf_seen_qs', JSON.stringify(_seenQs)); return picked; };
+openRiddles = function(){ showPage('page-game'); document.getElementById('gameBody').innerHTML='<h3>🧩 Riddles - Pick Type</h3><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Love\',BANK_RIDDLE)">❤️ Love Riddles</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Programmers\',BANK_RIDDLE)">💻 Programmers</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Smart\',BANK_RIDDLE)">🧠 Smart</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'General\',BANK_RIDDLE)">🧩 General</button><button class="opt" onclick="startQuiz(\'RIDDLE\',\'Funny\',BANK_RIDDLE)">😂 Funny</button>'; };
+openBible = function(){ showPage('page-game'); document.getElementById('gameBody').innerHTML='<h3>📖 Bible Fight - Pick</h3><button class="opt" onclick="startQuiz(\'BIBLE\',\'Old Testament\',BANK_BIBLE)">📜 Old Testament Stories</button><button class="opt" onclick="startQuiz(\'BIBLE\',\'New Testament\',BANK_BIBLE)">✝️ New Testament Stories</button><button class="opt" onclick="startQuiz(\'BIBLE\',\'Bible Riddles\',BANK_BIBLE)">🧩 Bible Riddles</button>'; };
+// 9. SHOP in every game + Dominic 3-dots full access
+function openShop(gameName){ var items=[['⚔️ Power Sword','500 Gold','sword'],['🛡️ Galaxy Shield','800 Gold','shield'],['🚀 Turbo Boost','300 Gold','boost'],['💎 Lucky Charm','2 Gems','charm']]; var html='<div style="text-align:center"><h2>🛒 Shop - '+gameName+'</h2>'; items.forEach(function(it){ html+='<div class="card" onclick="buyItem(\''+it[0]+'\',\''+it[1]+'\')"><h3>'+it[0]+'</h3><p>'+it[1]+' - Tap to Buy</p></div>'; }); html+='<button class="btn2" onclick="goDash()">Close Shop</button></div>'; showPage('page-game'); document.getElementById('gameBody').innerHTML=html; }
+function buyItem(name, price){ askPin('Enter PIN - Buy '+name+' ('+price+')', function(pin){ toast('✅ Purchased '+name+'! PIN confirmed'); sendNotif('Bought '+name+' for '+price); }); }
+// Add Shop button to games
+var _oldStartQuiz = startQuiz;
+startQuiz = function(mode,cat,bank){ _oldStartQuiz(mode,cat,bank); setTimeout(function(){ var b=document.getElementById('gameBody'); if(b) b.innerHTML += '<button class="btn2" onclick="openShop(\''+mode+' - '+cat+'\')">🛒 Open Shop</button>'; },100); };
+// 10. Dominic 3-dots = ALL access
+var _oldToggle = toggleMenu;
+toggleMenu = function(forceClose){ if(isDominic()){ var m=document.getElementById('menuDrop'); if(forceClose){ if(m) m.classList.add('hidden'); return; } if(m){ m.innerHTML='<div onclick="openMyProfile();toggleMenu(true)">👤 My Profile</div><div onclick="openMessages();toggleMenu(true)">💬 Messages</div><div onclick="openFullLeader();toggleMenu(true)">🏆 Leaderboard</div><div onclick="goDash();toggleMenu(true)">🏠 Dashboard</div><div onclick="openMenuPage();toggleMenu(true)">🎮 Menu - New Games</div><div onclick="openProfileFull();toggleMenu(true)">👤 Profile Full</div><div onclick="openReviewRequest(\'review\');toggleMenu(true)">⭐ Review</div><div onclick="openReviewRequest(\'request\');toggleMenu(true)">📩 Request</div><div onclick="openUpdatePage();toggleMenu(true)">🔄 Update Server</div><div onclick="openServerEconomy();toggleMenu(true)">💰 Server Economy ADMIN</div><div onclick="openServerInfo();toggleMenu(true)">🖥️ Server Info ADMIN</div><div onclick="openBank();toggleMenu(true)">🏦 Bank</div><div onclick="openNotifs();toggleMenu(true)">🔔 Notifications</div>'; m.classList.toggle('hidden'); return; } } _oldToggle(forceClose); };
+toast('✅ Fix Pack Loaded - All Fixes Applied!');
 window.onload=function(){ updateBottomNav(); if(user && user.name){ document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; } };
 </script>
 </body></html>
