@@ -1,169 +1,416 @@
 from flask import Flask, request, jsonify
-import os, random
-
+import os, requests, time, datetime, json, threading
 app = Flask(__name__)
-
-HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Infinity Bot</title>
-<style>
-body{margin:0;font-family:Arial;background:#0b0b1a;color:white;text-align:center}
-.top{padding:12px;background:#111133;display:flex;justify-content:space-between}
-button{background:#ffcc00;color:black;border:0;padding:12px 20px;border-radius:10px;font-weight:bold;margin:6px;font-size:16px}
-input{padding:12px;width:85%;margin:6px;border-radius:10px;border:0;font-size:16px}
-.card{background:#1a1a3a;margin:12px;padding:16px;border-radius:14px}
-.page{display:none;padding:10px}
-.gamebox{background:#222244;padding:14px;margin:10px;border-radius:12px}
-</style>
-</head>
-<body>
-<div class="top"><div>♾️ INFINITY</div><div id="catClock">Loading CAT...</div></div>
-
-<div id="page-welcome" class="page" style="display:block">
-<div class="card"><h1>♾️ Welcome to Infinity</h1><p>Play • Win • Rank Up</p><button id="enterBtn">Enter ➡️</button></div>
-<div class="card"><p>🕐 CAT Time is live above</p></div>
-</div>
-
-<div id="page-register" class="page">
-<div class="card"><h2>Register</h2><input id="regName" placeholder="Username"><input id="regPhone" placeholder="Phone"><button onclick="doRegister()">Create Account</button><br><button onclick="showPage('page-login')">Have Account? Login</button><br><button onclick="showPage('page-welcome')">Back</button></div>
-</div>
-
-<div id="page-login" class="page">
-<div class="card"><h2>Login</h2><input id="logName" placeholder="Username"><button onclick="doLogin()">Login</button><br><button onclick="showPage('page-register')">No Account? Register</button></div>
-</div>
-
-<div id="page-home" class="page">
-<div class="card"><h2 id="welcomeUser">Hello Player 👋</h2><p>Balance: <b id="balance">1000</b> Coins</p><p>Rank: <b id="rankLabel">Bronze</b></p></div>
-<div class="card"><h3>🎮 Games</h3><button onclick="showPage('page-dice')">🎲 Dice</button><button onclick="showPage('page-coin')">🪙 Coin Flip</button><button onclick="showPage('page-number')">🔢 Number Guess</button><button onclick="showPage('page-slot')">🎰 Slots</button><button onclick="showPage('page-rps')">✂️ Rock Paper</button><button onclick="showPage('page-highlow')">⬆️ High / Low</button></div>
-<div class="card"><button onclick="showPage('page-rank')">🏆 Rank Board</button><button onclick="doLogout()">Logout</button></div>
-</div>
-
-<div id="page-dice" class="page"><div class="card"><h2>🎲 Dice</h2><p id="diceRes">Tap Roll</p><button onclick="playDice()">Roll Dice</button><br><button onclick="showPage('page-home')">Back</button></div></div>
-<div id="page-coin" class="page"><div class="card"><h2>🪙 Coin Flip</h2><p id="coinRes">Heads or Tails?</p><button onclick="playCoin('Heads')">Heads</button><button onclick="playCoin('Tails')">Tails</button><br><button onclick="showPage('page-home')">Back</button></div></div>
-<div id="page-number" class="page"><div class="card"><h2>🔢 Guess 1-10</h2><input id="guessNum" type="number" placeholder="1 to 10"><p id="numRes"></p><button onclick="playNumber()">Guess</button><br><button onclick="showPage('page-home')">Back</button></div></div>
-<div id="page-slot" class="page"><div class="card"><h2>🎰 Slots</h2><p id="slotRes">🍒 🍒 🍒</p><button onclick="playSlot()">Spin</button><br><button onclick="showPage('page-home')">Back</button></div></div>
-<div id="page-rps" class="page"><div class="card"><h2>✂️ Rock Paper Scissors</h2><p id="rpsRes"></p><button onclick="playRps('Rock')">Rock</button><button onclick="playRps('Paper')">Paper</button><button onclick="playRps('Scissors')">Scissors</button><br><button onclick="showPage('page-home')">Back</button></div></div>
-<div id="page-highlow" class="page"><div class="card"><h2>⬆️ High / Low</h2><p id="hlRes">Next card higher or lower than 5?</p><button onclick="playHL('high')">Higher</button><button onclick="playHL('low')">Lower</button><br><button onclick="showPage('page-home')">Back</button></div></div>
-<div id="page-rank" class="page"><div class="card"><h2>🏆 Rank Board</h2><div id="rankList"></div><br><button onclick="showPage('page-home')">Back</button></div></div>
-
+VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN","infinity")
+WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN","")
+PHONE_ID = os.environ.get("PHONE_NUMBER_ID","")
+BASE = os.path.dirname(__file__)
+LEADER_FILE = os.path.join(BASE, "leaderboard.json")
+BACKUP1 = os.path.join(BASE, "leaderboard.json.backup")
+BACKUP2 = os.path.join(BASE, "backup_storage.json")
+MSG_FILE = os.path.join(BASE, "messages.json")
+MSG_BACKUP = os.path.join(BASE, "messages.json.backup")
+USERS = {}
+MESSAGES = {}
+_lock = threading.Lock()
+def norm(n):
+    return str(n or "").strip().lower()
+def load_json_safe(path):
+    try:
+        if os.path.exists(path):
+            with open(path,"r") as f:
+                d=json.load(f)
+                if isinstance(d,dict):
+                    return d
+    except: pass
+    return {}
+def load_users():
+    global USERS
+    for p in [LEADER_FILE, BACKUP1, BACKUP2]:
+        d=load_json_safe(p)
+        if d:
+            new={}
+            for k,v in d.items():
+                nk=norm(v.get("display_name",k) or k)
+                v["display_name"]=v.get("display_name",k)
+                if "history" not in v: v["history"]={}
+                if "friends" not in v: v["friends"]=[]
+                if "requests" not in v: v["requests"]=[]
+                if "wins" not in v: v["wins"]=0
+                if "losses" not in v: v["losses"]=0
+                if "stage" not in v: v["stage"]=0
+                if "never_delete" not in v: v["never_delete"]=True
+                new[nk]=v
+            USERS=new
+            print(f"LOADED {len(USERS)} players FOREVER from {p}")
+            return
+    print("No players - fresh start")
+def load_messages():
+    global MESSAGES
+    for p in [MSG_FILE, MSG_BACKUP]:
+        d=load_json_safe(p)
+        if d:
+            MESSAGES=d
+            print(f"LOADED {len(MESSAGES)} chats FOREVER")
+            return
+def save_users():
+    try:
+        with _lock:
+            for k in list(USERS.keys()):
+                USERS[k]["never_delete"]=True
+            data=json.dumps(USERS)
+            with open(LEADER_FILE,"w") as f: f.write(data)
+            with open(BACKUP1,"w") as f: f.write(data)
+            with open(BACKUP2,"w") as f: f.write(data)
+    except Exception as e: print("Save failed:",e)
+def save_messages():
+    try:
+        with _lock:
+            data=json.dumps(MESSAGES)
+            with open(MSG_FILE,"w") as f: f.write(data)
+            with open(MSG_BACKUP,"w") as f: f.write(data)
+    except Exception as e: print("Save msg failed:",e)
+load_users()
+load_messages()
+def auto_save_loop():
+    while True:
+        time.sleep(10)
+        try:
+            save_users()
+            save_messages()
+            print(f"AUTO-SAVED AFTER 10s: {len(USERS)} players FOREVER")
+        except Exception as e: print("Auto-save error:",e)
+threading.Thread(target=auto_save_loop, daemon=True).start()
+def get_capacity():
+    try:
+        now=datetime.datetime.now()
+        upgrade=datetime.datetime(2026,12,25,0,0,0)
+        return 10000 if now>=upgrade else 1000
+    except: return 1000
+def send_whatsapp(to,text):
+    if not WHATSAPP_TOKEN or not PHONE_ID: return
+    try: requests.post(f"https://graph.facebook.com/v21.0/{PHONE_ID}/messages",headers={"Authorization":f"Bearer {WHATSAPP_TOKEN}","Content-Type":"application/json"},json={"messaging_product":"whatsapp","to":to,"type":"text","text":{"body":text}},timeout=10)
+    except: pass
+HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT v8.5</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box}body{margin:0;font-family:Poppins,Arial;color:white;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh;transition:background .5s}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px}.profile{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff;cursor:pointer;position:relative;box-shadow:0 0 20px #ff006e}.notif{position:absolute;top:-6px;right:-6px;background:red;color:white;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px;filter:drop-shadow(0 0 30px gold)}.enterBtn{margin-top:20px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);color:#000;box-shadow:0 0 40px #ff006e;cursor:pointer}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer}.box span{font-size:38px;display:block}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0;cursor:pointer}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0;cursor:pointer}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:white;font-weight:700;cursor:pointer;text-align:left}input{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000}.hidden{display:none}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.dot{width:12px;height:12px;border-radius:50%;display:inline-block}.green{background:#00ff00;box-shadow:0 0 10px #00ff00}.red{background:#ff2222;box-shadow:0 0 10px #ff2222}.badge{display:inline-block;padding:5px 10px;border-radius:20px;background:rgba(0,0,0,.5);border:1px solid #ffd700;font-size:12px;margin:3px}.count{font-size:60px;font-weight:900;color:#ffd700}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:400;max-width:90%;text-align:center}.regInput{font-size:18px;text-align:center;letter-spacing:2px}.msgFab{position:fixed;right:16px;bottom:16px;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700,#00e5ff);display:flex;align-items:center;justify-content:center;font-size:30px;border:3px solid #fff;box-shadow:0 0 25px #ff006e;cursor:pointer;z-index:50}.backFab{position:fixed;left:16px;bottom:16px;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#1a1a2e,#3a0a5e);display:none;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#ffd700;border:3px solid #ffd700;box-shadow:0 0 20px rgba(255,215,0,.6);cursor:pointer;z-index:60}.chatRow{display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,0,0,.45);border-radius:16px;margin:8px 0}.chatBtn{width:36px;height:36px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#00e5ff,#ff006e);display:inline-flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;margin-left:6px}.chatBox{background:#1a1a2e;border-radius:20px;padding:12px;min-height:320px;max-height:380px;overflow-y:auto}.bubble{max-width:80%;padding:10px 14px;border-radius:18px;margin:6px 0;font-size:14px}.mine{background:#ffd700;color:#000;margin-left:auto}.theirs{background:rgba(255,255,255,.2);color:#fff}.msgBarWrap{display:flex;align-items:center;gap:8px;margin-top:12px}.msgBar{flex:1;display:flex;align-items:center;gap:10px;background:#2b2b33;border-radius:999px;padding:10px 12px}.msgBar .emojiBtn{font-size:22px;background:none;border:none;cursor:pointer}.msgBar input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px;padding:0;margin:0}.msgBar input::placeholder{color:#aaa}.msgBar .attachBtn{font-size:20px;background:none;border:none;cursor:pointer}.micBtn{width:52px;height:52px;min-width:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#c39bff,#9a6bff);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}.sendBtnSmall{width:44px;height:44px;border-radius:50%;border:none;background:#ffd700;font-size:20px;cursor:pointer;display:none}.catTimeTop{font-size:11px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:4px 8px;border-radius:20px;display:inline-block}.timer{position:absolute;top:10px;right:12px;background:#ff2222;color:#fff;padding:6px 12px;border-radius:20px;font-weight:900;font-size:18px}.topRight{display:flex;align-items:center;gap:6px}.soundSmall{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}.leaderScroll{max-height:480px;overflow-y:auto;scroll-behavior:smooth}.myRankBar{position:sticky;bottom:0;background:linear-gradient(90deg,#ffd700,#ff006e);color:#000;padding:12px;border-radius:16px;font-weight:900;text-align:center;cursor:pointer;margin-top:10px;border:2px solid #fff}.myRankBar small{font-weight:400}
+.profileCol{display:flex;flex-direction:column;align-items:center;gap:2px}.menuBtn{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;cursor:pointer;line-height:1}.menuDrop{position:absolute;top:96px;right:10px;background:#1a1a2e;border:2px solid #ffd700;border-radius:16px;padding:8px;z-index:500;min-width:180px;box-shadow:0 0 25px rgba(255,215,0,.5)}.menuDrop div{padding:12px 10px;border-radius:12px;cursor:pointer;font-weight:700}.menuDrop div:active{background:rgba(255,215,0,.25)}
+.gameOverlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px}
+#gameWarnOverlay{z-index:200}
+#welcomeOverlay{z-index:300}
+.gamePopup{background:linear-gradient(160deg,#2b005e,#12002b);border:3px solid #ffd700;border-radius:28px;padding:22px 18px;max-width:420px;width:100%;text-align:center;box-shadow:0 0 40px #ff006e,0 0 80px rgba(255,215,0,.5);animation:popIn .35s ease, shake .4s ease .1s, glowPulse 1s infinite}
+@keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 30px #ff006e}50%{box-shadow:0 0 60px #ffd700}}
+@keyframes popOut{to{transform:scale(.8);opacity:0}}
+.gamePopup.closing{animation:popOut .35s ease forwards}
+.warnIcon{font-size:54px;filter:drop-shadow(0 0 15px #ff2222);animation:glowPulse 1s infinite}
+.choiceRow{display:flex;gap:12px;margin-top:16px}
+.choiceBox{flex:1;padding:18px 8px;border-radius:20px;cursor:pointer;font-weight:900;font-size:18px;border:3px solid #fff;transition:transform .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.choiceBox:active{transform:scale(.95)}
+.choiceNo{background:linear-gradient(135deg,#ff2222,#ff6b6b);color:#fff;box-shadow:0 0 20px rgba(255,34,34,.6)}
+.choiceYes{background:linear-gradient(135deg,#00cc44,#00ff88);color:#000;box-shadow:0 0 20px rgba(0,255,136,.6)}
+.warnBar{height:6px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden;margin-top:14px}
+.warnBarFill{height:100%;background:linear-gradient(90deg,#ff006e,#ffd700);width:100%;animation:shrink 5s linear forwards}
+@keyframes shrink{from{width:100%}to{width:0%}}
+.loadingBar{width:100%;height:10px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;margin:10px 0}.loadingFill{height:100%;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);width:0%;transition:width .3s}
+body.scifi-mode{background:#000510 !important;background-image:linear-gradient(rgba(0,255,170,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,170,.18) 1px,transparent 1px),radial-gradient(circle at 20% 20%,rgba(0,229,255,.35),transparent 40%),radial-gradient(circle at 80% 80%,rgba(255,0,110,.25),transparent 40%) !important;background-size:44px 44px,44px 44px,100% 100%,100% 100% !important;animation:sciMove 1.2s linear infinite !important}
+@keyframes sciMove{0%{background-position:0 0,0 0,0 0,0 0}100%{background-position:0 44px,44px 0,0 0,0 0}}
+body.scifi-mode .card,body.scifi-mode .box{border-color:#00ffaa !important;box-shadow:0 0 25px rgba(0,255,170,.45) !important;background:rgba(0,20,40,.75) !important}
+.scifiCode{font-family:'Share Tech Mono',monospace;color:#00ffaa;font-size:13px;line-height:1.7;opacity:.9;white-space:pre-wrap;overflow:hidden;border:1px solid #00ffaa;border-radius:14px;padding:12px;background:rgba(0,0,0,.65);text-align:left;animation:sciBlink 1s infinite}
+@keyframes sciBlink{0%,100%{box-shadow:0 0 10px rgba(0,255,170,.4)}50%{box-shadow:0 0 28px rgba(0,255,170,.9)}}
+.scifiTag{display:inline-block;padding:6px 12px;border:1px solid #00e5ff;color:#00e5ff;border-radius:99px;font-size:12px;margin:3px;background:rgba(0,0,0,.6)}
+</style></head><body>
+<audio id="enterAudio" src="https://cdn.pixabay.com/audio/2025/07/09/audio_121db7b43f.mp3" preload="auto" playsinline></audio>
+<audio id="dashAudio" src="https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3" preload="auto" playsinline></audio>
+<audio id="popupAudio" src="https://cdn.pixabay.com/audio/2022/03/10/audio_2c8c2adfb0.mp3" preload="auto" playsinline></audio>
+<audio id="warnAudio" src="https://cdn.pixabay.com/audio/2026/06/02/audio_26933dce5c.mp3" preload="auto" playsinline></audio>
+<div class="topbar"><div><span class="catTimeTop" id="catTime">Loading CAT...</span><br><div style="font-weight:900;margin-top:4px">INFINITY BOT</div></div><div class="topRight"><div class="soundSmall" id="soundBtn">🔊</div><div class="profileCol"><div class="profile" id="profileBtn">👤<span id="notifBadge" class="notif hidden">1</span></div><div class="menuBtn" id="menuBtn">⋮</div></div></div></div>
+<div id="menuDrop" class="menuDrop hidden"><div id="menuAdmin" class="hidden">👑 Admin Access Granted - Menu Coming Soon</div><div id="menuNormal1" onclick="openMyProfile();toggleMenu(true)">👤 My Profile</div><div id="menuNormal2" onclick="openMessages();toggleMenu(true)">💬 Messages</div><div id="menuNormal3" onclick="openFullLeader();toggleMenu(true)">🏆 Leaderboard</div><div id="menuNormal4" onclick="goDash();toggleMenu(true)">🏠 Dashboard</div><div id="menuNormal5" onclick="toggleSound();toggleMenu(true)">🔊 Sound ON / OFF</div></div>
+<div id="toast" class="toast hidden"></div>
+<div id="loadingOverlay" class="gameOverlay hidden" style="display:none;z-index:500"><div class="gamePopup"><div style="font-size:50px">⏳</div><h2>Loading All Data...</h2><p id="loadingText">Loading...</p><div class="loadingBar"><div class="loadingFill" id="loadingFill"></div></div></div></div>
+<div id="gameWarnOverlay" class="gameOverlay hidden" style="display:none"><div class="gamePopup" id="gameWarnBox"><div class="warnIcon">⚠️</div><h2 style="margin:8px 0">⚠️ Warning ⚠️</h2><p id="gameWarnText" style="font-size:16px;line-height:1.5">Account not found, try again or Register</p><div class="warnBar"><div class="warnBarFill"></div></div><p style="font-size:12px;opacity:.7;margin:6px 0 0">Closing automatically in 5 seconds...</p></div></div>
+<div id="welcomeOverlay" class="gameOverlay hidden" style="display:none"><div class="gamePopup"><div style="font-size:56px">👑</div><h2 style="margin:8px 0">Welcome to Infinity Game Play Bot</h2><p style="font-size:18px;font-weight:700">Do you already have an account?</p><div class="choiceRow"><div class="choiceBox choiceNo" id="choiceNoBtn">❌<br>No</div><div class="choiceBox choiceYes" id="choiceYesBtn">✅<br>Yes</div></div><p style="font-size:12px;opacity:.7;margin-top:12px">Yes = Login • No = Stay to Register</p></div></div>
+<div id="page-home" class="center"><div style="font-size:26px">✨ 💖 ⭐ 🌟 💫</div><div class="crownBig">👑</div><h1 class="cursive" style="font-size:68px;margin:5px">Infinity Bot</h1><p style="letter-spacing:3px;font-weight:900">DOMINIC MASTIRIA</p><p>Riddles • Bible Fight • Sci-Fi • WhatsApp</p><button class="enterBtn" id="enterBtn">Enter</button><div style="margin-top:16px;font-size:26px">✨ 💖 👑 💖 ✨</div><p style="font-size:12px;opacity:.7">Press ENTER to Continue</p></div>
+<div id="page-register" class="hidden" style="max-width:520px;margin:0 auto;padding:20px 14px"><div class="card" style="text-align:center"><div style="font-size:60px">👑</div><h1 class="cursive" style="font-size:48px;margin:5px">Register</h1><p id="regSub">Create your Infinity account 👑</p><div id="registerForm"><label style="text-align:left;display:block">Your Name:</label><input id="regName" placeholder="Your Name" maxlength="20"><label style="text-align:left;display:block">4-Digit Password:</label><input id="regPass" placeholder="••••" maxlength="4" inputmode="numeric" type="password" class="regInput"><p style="font-size:12px;color:#ffd700">⚠️ Do NOT use 1234 or 0000 - Too easy!</p><button class="btn" onclick="doRegister()">📝 REGISTER</button><p style="font-size:13px;opacity:.8">Already have an account? <b style="color:#ffd700;cursor:pointer" onclick="showLogin()">Click here to Login</b></p></div><div id="loginForm" class="hidden"><label style="text-align:left;display:block">Your Name:</label><input id="loginName" placeholder="Your Name"><label style="text-align:left;display:block">4-Digit Password:</label><input id="loginPass" placeholder="••••" maxlength="4" inputmode="numeric" type="password" class="regInput"><button class="btn" onclick="doLogin()">🔓 LOGIN</button><p style="font-size:13px;opacity:.8">New here? <b style="color:#ffd700;cursor:pointer" onclick="showRegister()">Click here to Register</b></p></div></div></div>
+<div id="page-dash" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div style="text-align:center"><h2 class="cursive" style="font-size:44px;margin:10px 0" id="welcomeText">Welcome, Player 👑</h2><span class="badge">⭐ Rank: <b id="myRank">#-</b></span><span class="badge">🎯 <b id="myStage">Beginner</b></span></div><div class="grid"><div class="box" onclick="openRiddles()"><span>🧩</span><b>RIDDLES</b><br><small>5 Types • 10 Qs</small></div><div class="box" onclick="openBible()"><span>📖</span><b>BIBLE FIGHT</b><br><small>4 Types • 10 Qs</small></div><div class="box" onclick="openComing('SCI-FI')"><span>🚀</span><b>SCI-FI</b><br><small>Coming Soon</small></div><div class="box" onclick="openComing('WHATSAPP')"><span>💚</span><b>WHATSAPP</b><br><small>Coming Soon</small></div></div><div class="card"><h3 style="text-align:center;margin:0">🏆 TOP 5 🏆</h3><div id="leaderList">Loading...</div><button class="btn2" onclick="openFullLeader()">👀 View Full Leaderboard</button></div></div>
+<div id="page-leader" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h3 style="text-align:center;margin:0">🏆 FULL LEADERBOARD 🏆</h3><p style="text-align:center;font-size:12px;opacity:.8">All players • Forever • Never Deleted • Auto-saved • Updated</p><div class="leaderScroll" id="fullLeaderList">Loading...</div><div id="myRankJump"></div></div></div>
+<div id="page-game" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="position:relative"><h2 id="gameTitle" style="text-align:center">🧩 RIDDLES</h2><div id="gameBody"></div></div></div>
+<div id="page-coming" class="hidden" style="max-width:520px;margin:0 auto;padding:40px 20px;text-align:center"><div style="font-size:80px" id="comingIcon">🚀</div><h1 class="cursive" style="font-size:54px">Coming Soon</h1><h2 id="comingName">SCI-FI</h2><div id="scifiExtra" class="hidden"><div class="scifiCode" id="scifiCodeText">> INITIALIZING INFINITY_OS v8.5...
+> LOADING ROBOTIC CORE... OK
+> SCANNING GALAXY... 42%
+> AI ONLINE // CODE RUNNING
+> if (player.ready) { launchSciFi(); }</div><div style="margin:10px 0"><span class="scifiTag">🤖 ROBOTIC</span><span class="scifiTag">💻 CODING</span><span class="scifiTag">🌌 SCI-FI MODE</span></div></div><p>Launching on<br><b>25th December 2026</b></p><p>Returning in:</p><div class="count" id="countDown">5</div></div>
+<div id="page-profile" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="profName">Player</h2><p><span id="profDot" class="dot green"></span> <span id="profStatus">Online</span></p><p>⭐ Rank: <b id="profRank">#-</b></p><p>🏆 Wins: <b id="profWins">0</b> | ❌ Losses: <b id="profLoss">0</b></p><p id="profFriends"></p><p>🎯 Stage: <b id="profStage">Beginner</b></p></div><div class="card"><h3>📩 Friend Requests</h3><div id="reqList"><p>No requests</p></div></div><div class="card"><h3>👥 My Friends - Forever</h3><div id="friendList"></div></div></div>
+<div id="page-other" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card" style="text-align:center"><div style="font-size:70px">👤</div><h2 id="otherName">Player</h2><p><span id="otherDot" class="dot green"></span> <span id="otherStatus">Online</span></p><p>⭐ Rank: <b id="otherRank">#-</b></p><p><b id="otherWins">0</b> Win | <b id="otherLoss">0</b> Lose</p><div id="otherActions"></div></div></div>
+<div id="page-messages" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h1 style="text-align:center;margin:0;font-size:34px">Message</h1><p style="text-align:center;margin:2px 0 12px;opacity:.8;font-size:14px">chats • Saved Forever + Backup</p><div id="chatFriendList"></div></div></div>
+<div id="page-chat" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 20px"><div class="card"><h2 style="text-align:center;margin:0">💬 <span id="chatWith">Friend</span></h2><p style="text-align:center;font-size:12px;opacity:.8">Africa Central Time • <span id="chatCatTime"></span> • Saved Forever + Backup</p><div class="chatBox" id="chatBox"></div><div class="msgBarWrap"><div class="msgBar"><button class="emojiBtn" onclick="addEmoji()">😊</button><input id="msgInput" placeholder="Message" oninput="toggleSend()"><button class="attachBtn" onclick="blockedFeature('Picture')">📎</button><button class="attachBtn" onclick="blockedFeature('Picture')">📷</button></div><button class="micBtn" id="micBtn" onclick="blockedFeature('Voice Note')">🎤</button><button class="sendBtnSmall" id="sendBtnSmall" onclick="sendMsg()">➤</button></div><p style="text-align:center;font-size:11px;opacity:.7">📎 Picture • 🎤 Voice • 📞 Call unlock 24 Jan 2027 12:00 CAT</p></div></div>
+<div class="msgFab" id="msgFab">💬</div><div class="backFab" id="backFab">←</div>
 <script>
-var balance = 1000;
-var myName = "Player";
-function showPage(id){
-  var pages = document.querySelectorAll('.page');
-  for(var i=0;i<pages.length;i++){ pages[i].style.display='none'; }
-  var p = document.getElementById(id);
-  if(p){ p.style.display='block'; }
-  if(id==='page-rank'){ loadRank(); }
-  window.scrollTo(0,0);
+var user=null; try{ user=JSON.parse(localStorage.getItem('inf_user')||'null'); }catch(e){ user=null; }
+var wins=0, losses=0;
+try{ wins=parseInt(localStorage.getItem('inf_wins')||'0')||0; losses=parseInt(localStorage.getItem('inf_loss')||'0')||0; }catch(e){}
+var stageIdx=parseInt(localStorage.getItem('inf_stage')||'0')||0; var loggedIn=false;
+var STAGES=['Beginner','Intermediate','Advanced','Expert','Professional'];
+function isAdmin(){ return user && user.name && user.name.trim().toLowerCase()==='dominic' && user.password==='2164'; }
+function computeStageFromWins(w){ if(w>=500) return 4; if(w>=300) return 3; if(w>=150) return 2; if(w>=50) return 1; return 0; }
+function refreshStageFromWins(){ var ns=computeStageFromWins(wins); if(ns!==stageIdx){ var old=stageIdx; stageIdx=ns; if(ns>old && loggedIn){ setTimeout(function(){ toast('🎉 LEVEL UP! You are now '+stageName()+'! Harder questions unlocked! 👑'); },600); } } return stageIdx; }
+function stageName(){ refreshStageFromWins(); return STAGES[Math.min(stageIdx, STAGES.length-1)]; }
+var currentMode='',currentCat='',qIndex=0,qList=[],score=0,roundWins=0,roundLoss=0,prevRank=999,lastNotif='',chatFriend=''; var currentPage='page-home'; var fullLeaderData=[]; var lastRoundQs=new Set();
+var allFriends=[]; var allChats={};
+try{ var _lf=JSON.parse(localStorage.getItem('inf_friends')||'[]'); if(Array.isArray(_lf)&&_lf.length) allFriends=_lf; }catch(e){}
+function isBannedPassword(pw){ return pw==='1234'||pw==='0000'; }
+var playerHistory={}; var askedSet=new Set();
+function rebuildAskedSet(){ askedSet=new Set(); for(var k in playerHistory){ if(playerHistory[k] && playerHistory[k].asked>0) askedSet.add(k); } }
+function loadLocalHistory(){ try{ var h=JSON.parse(localStorage.getItem('inf_history')||'{}'); if(h&&typeof h==='object') playerHistory=h; }catch(e){ playerHistory={}; } rebuildAskedSet(); }
+function saveLocalHistory(){ try{ localStorage.setItem('inf_history',JSON.stringify(playerHistory)); }catch(e){} }
+loadLocalHistory();
+function hasLoggedInBefore(){ try{ if(localStorage.getItem('inf_has_account')==='yes') return true; if(localStorage.getItem('inf_seen_welcome')==='yes' && localStorage.getItem('inf_user')) return true; if(localStorage.getItem('inf_logged_in_before')==='yes') return true; if(user && user.name && user.password) return true; }catch(e){} return false; }
+function markHasAccount(){ try{ localStorage.setItem('inf_has_account','yes'); localStorage.setItem('inf_seen_welcome','yes'); localStorage.setItem('inf_logged_in_before','yes'); localStorage.setItem('inf_needs_login','no'); }catch(e){} }
+var audioUnlocked=false;
+function unlockAudio(){ if(audioUnlocked) return; audioUnlocked=true; try{ var ids=['popupAudio','warnAudio','enterAudio','dashAudio']; ids.forEach(function(id){ var a=document.getElementById(id); if(a){ a.volume=0.01; var p=a.play(); if(p&&p.catch) p.catch(function(){}); setTimeout(function(){ try{ a.pause(); a.currentTime=0; a.volume=0.7; }catch(e){} },80); } }); }catch(e){} }
+document.addEventListener('touchstart',unlockAudio,{once:true,passive:true});
+document.addEventListener('click',unlockAudio,{once:true});
+document.addEventListener('pointerdown',unlockAudio,{once:true});
+function playSoundNow(id,vol){ var a=document.getElementById(id); if(!a) return; try{ a.pause(); a.currentTime=0; a.volume=vol||0.8; a.muted=false; var p=a.play(); if(p&&p.catch){ p.catch(function(){ unlockAudio(); setTimeout(function(){ try{ var p2=a.play(); if(p2&&p2.catch) p2.catch(function(){}); }catch(e){} },150); }); } }catch(e){} }
+function playPopFallback(){ try{ var Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return; var ctx=new Ctx(); var o=ctx.createOscillator(); var g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(800,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(1800,ctx.currentTime+0.08); g.gain.setValueAtTime(0.35,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.18); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.2); }catch(e){} }
+function playPopupSound(){ playSoundNow('popupAudio',0.9); setTimeout(function(){ playPopFallback(); },60); }
+function playWarnSound(){ playSoundNow('warnAudio',0.9); }
+var warnTimer=null, welcomeTimer=null;
+function hideWarnNow(){ var ov=document.getElementById('gameWarnOverlay'); if(ov){ ov.classList.add('hidden'); ov.style.display='none'; } if(warnTimer){ clearTimeout(warnTimer); warnTimer=null; } }
+function hideWelcomeNow(){ var ov=document.getElementById('welcomeOverlay'); if(ov){ ov.classList.add('hidden'); ov.style.display='none'; } }
+function showLoading(text, pct){ return; }
+function hideLoading(){ return; }
+function mergeFriends(serverFriends){ var local=[]; try{ local=JSON.parse(localStorage.getItem('inf_friends')||'[]'); }catch(e){ local=[]; } var seen={}; var out=[]; (serverFriends||[]).forEach(function(f){ var k=String(f).toLowerCase(); if(!seen[k]){ seen[k]=1; out.push(f); } }); (local||[]).forEach(function(f){ var k=String(f).toLowerCase(); if(!seen[k]){ seen[k]=1; out.push(f); } }); (allFriends||[]).forEach(function(f){ var k=String(f).toLowerCase(); if(!seen[k]){ seen[k]=1; out.push(f); } }); allFriends=out; try{ localStorage.setItem('inf_friends',JSON.stringify(allFriends)); }catch(e){} return allFriends; }
+function loadAllDataTogether(){ if(!user || !user.name) return Promise.resolve(); return fetch('/api/load_all?name='+encodeURIComponent(user.name)+'&password='+encodeURIComponent(user.password||'')).then(function(r){return r.json();}).then(function(d){ if(d && d.found){ wins=d.wins||0; losses=d.losses||0; stageIdx=d.stage!=null?d.stage:computeStageFromWins(wins); if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); } mergeFriends(d.friends||[]); if(d.chats){ for(var k in d.chats){ if(d.chats[k] && d.chats[k].length){ if(!allChats[k]) allChats[k]=[]; var existing={}; allChats[k].forEach(function(m){ existing[m.time+'|'+m.text]=1; }); d.chats[k].forEach(function(m){ if(!existing[m.time+'|'+m.text]) allChats[k].push(m); }); } } } try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} } return fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(lb){ fullLeaderData=sortPlayers(lb.players||[]); loadLeader(); return d; }); }).catch(function(){ loadLeader(); }); }
+function showGameWarn(msg, goToLogin){ if(goToLogin===undefined) goToLogin=true; hideWelcomeNow(); playWarnSound(); var ov=document.getElementById('gameWarnOverlay'); var txt=document.getElementById('gameWarnText'); var box=document.getElementById('gameWarnBox'); txt.innerHTML=msg||'⚠️ Warning ⚠️<br>Account not found, try again or Register'; ov.classList.remove('hidden'); ov.style.display='flex'; box.classList.remove('closing'); var bar=ov.querySelector('.warnBarFill'); if(bar){ var nb=bar.cloneNode(true); bar.parentNode.replaceChild(nb,bar); } if(warnTimer) clearTimeout(warnTimer); warnTimer=setTimeout(function(){ box.classList.add('closing'); setTimeout(function(){ hideWarnNow(); if(goToLogin){ showPage('page-register'); showLogin(); document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; try{ document.getElementById('loginPass').value=''; }catch(e){} window.scrollTo(0,0); } },350); },5000); }
+function showWelcomePopup(){ hideWarnNow(); var ov=document.getElementById('welcomeOverlay'); if(!ov) return; ov.classList.remove('hidden'); ov.style.display='flex'; playPopupSound(); }
+function scheduleWelcomePopup(){ if(welcomeTimer) clearTimeout(welcomeTimer); welcomeTimer=setTimeout(function(){ if(currentPage==='page-register' && !loggedIn){ showWelcomePopup(); } },500); }
+window.welcomeChoice=function(choice){ hideWelcomeNow(); hideWarnNow(); if(choice==='yes'){ setTimeout(function(){ showLogin(); document.getElementById('regSub').innerText='Welcome back! Please Login 👑'; var ln=document.getElementById('loginName'); if(ln && user) ln.value=user.name; if(ln) ln.focus(); window.scrollTo(0,0); },1000); } else { showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; var rn=document.getElementById('regName'); if(rn) rn.focus(); window.scrollTo(0,0); } };
+function restoreFromServer(){ if(!user) return; loadAllDataTogether(); }
+function fetchServerHistory(){ if(!user||!loggedIn) return; fetch('/api/history?name='+encodeURIComponent(user.name)).then(function(r){return r.json();}).then(function(d){ if(d.history){ var ch=false; for(var k in d.history){ if(!playerHistory[k]){ playerHistory[k]=d.history[k]; ch=true; } else { playerHistory[k].asked=Math.max(playerHistory[k].asked||0,d.history[k].asked||0); playerHistory[k].correct=(playerHistory[k].correct||0)+(d.history[k].correct||0); playerHistory[k].wrong=(playerHistory[k].wrong||0)+(d.history[k].wrong||0); } } if(ch) rebuildAskedSet(); saveLocalHistory(); } }).catch(function(){}); }
+function recordAnswer(qText,wasCorrect,cat,mode){ if(!playerHistory[qText]) playerHistory[qText]={asked:0,correct:0,wrong:0,last:0,cat:cat||'',mode:mode||''}; playerHistory[qText].asked++; if(wasCorrect) playerHistory[qText].correct++; else playerHistory[qText].wrong++; playerHistory[qText].last=Date.now(); askedSet.add(qText); saveLocalHistory(); if(user&&loggedIn){ fetch('/api/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,question:qText,correct:wasCorrect,cat:cat,mode:mode})}).catch(function(){}); } }
+function getAskedMap(){ try{ return JSON.parse(localStorage.getItem('inf_asked_qs')||'{}'); }catch(e){ return {}; } }
+function saveAskedMap(m){ try{ localStorage.setItem('inf_asked_qs',JSON.stringify(m)); }catch(e){} }
+function markAsked(qText){ var m=getAskedMap(); m[qText]=Date.now(); saveAskedMap(m); }
+function P(s){ var p=s.split('|'); return {q:p[0],a:p[1],lvl:parseInt(p[2]||'0')}; }
+var BANK_BIBLE=["Who penned most Psalms?|David|0","First book of New Testament?|Matthew|0","Who was swallowed by great fish?|Jonah|0","Abraham's wife?|Sarah|0","Who betrayed Jesus for 30 silver?|Judas Iscariot|0","Shortest verse?|Jesus wept|0","Who built the ark?|Noah|0","River where Jesus was baptized?|Jordan River|0","Mother of Jesus?|Mary|0","How many books are in the Protestant Bible?|66|0","Who led Israel out of Egypt?|Moses|0","What is the last book of the Bible?|Revelation|0","Who was the first king of Israel?|Saul|0","What did David use to kill Goliath?|A sling and a stone|0","Who was thrown into the lions den?|Daniel|0","What was Paul's name before conversion?|Saul|0","Where was Jesus born?|Bethlehem|0","Who was the first man?|Adam|0","Who was the first woman?|Eve|0","How many disciples did Jesus have?|12|0","Who denied Jesus 3 times?|Peter|0","In what language was the New Testament written?|Greek|1","Who wrote Revelation?|John|1","What is the longest book in the Bible?|Psalms|1","Who was the strongest man?|Samson|1","What did Moses receive on Mount Sinai?|The Ten Commandments|1","Who was sold by his brothers into slavery?|Joseph|1","Who was the wisest king?|Solomon|1","Who built the Temple in Jerusalem?|Solomon|1","What was the sign of God's covenant to Noah?|Rainbow|1","Which prophet challenged Baal on Mount Carmel?|Elijah|2","Who was taken up in a chariot of fire?|Elijah|2","Who succeeded Elijah?|Elisha|2","Who interpreted Pharaoh's dreams?|Joseph|2","Which sea did Moses part?|Red Sea|2","Who was the first martyr?|Stephen|2","To which city was Paul going when he was converted?|Damascus|2","Who wrote the book of Romans?|Paul|2","How many plagues were in Egypt?|10|2","What was the last plague in Egypt?|Death of the firstborn|2","Who was the brother of Moses?|Aaron|2","Who was the sister of Moses?|Miriam|2","Which giant did David kill?|Goliath|2","Who was David's best friend?|Jonathan|2","Which king tried to kill baby Jesus?|Herod|2","Where did Jesus grow up?|Nazareth|2","What is the Greek word for God's love?|Agape|2","Which disciple doubted Jesus resurrection?|Thomas|2","Who was the first to see the risen Jesus?|Mary Magdalene|3","What does Christ mean?|Anointed One|3","Which queen visited Solomon?|Queen of Sheba|3","Which book is about vanity of vanities?|Ecclesiastes|3","Who wrote Proverbs?|Solomon|3","What is the book of Acts about?|The early church and the apostles|3","Who was the husband of Mary?|Joseph|3","What was Jesus job before ministry?|Carpenter|3","How many chapters are in Psalms?|150|3","Which parable is about a son who left home?|The Prodigal Son|3","On which island did John write Revelation?|Patmos|3","What does the word Bible mean?|Books|3","Who baptized the Ethiopian eunuch?|Philip|3","Who was the first European convert?|Lydia|3","What is the greatest commandment?|Love the Lord your God with all your heart|3","How long did Methuselah live?|969 years|4","Who were the 3 men in the fiery furnace?|Shadrach, Meshach, Abednego|4","How many elders are around the throne in Revelation?|24 elders|4","Who was the only king and priest?|Melchizedek|4","What does Ebenezer mean?|Stone of Help|4","Which apostle died a natural death?|John|4","What is the longest chapter in the Bible?|Psalm 119|4","What is the shortest chapter in the Bible?|Psalm 117|4"].map(P);
+var BANK_RIDDLE=["What has keys but cannot open locks?|A piano|0","What has a face and two hands but no arms or legs?|A clock|0","What gets wetter the more it dries?|A towel|0","What has a neck but no head?|A bottle|0","What runs but never walks?|Water|0","What has many teeth but cannot bite?|A comb|0","What can you catch but never throw?|A cold|0","What has a bed but never sleeps?|A river|0","What comes once in a minute, twice in a moment, but never in a thousand years?|The letter M|0","What has one eye but cannot see?|A needle|0","What is always in front of you but cannot be seen?|The future|0","What gets bigger the more you take away?|A hole|0","What has words but never speaks?|A book|0","What fills a room without taking up space?|Light|0","What has legs but cannot walk?|A table|0","What goes up but never comes down?|Your age|0","What has a heart that does not beat?|A deck of cards|0","What can you break without touching it?|A promise|0","What has a ring but no finger?|A telephone|0","What is full of holes but holds water?|A sponge|0","What travels the world without leaving its corner?|A stamp|1","What has a thumb and four fingers but is not alive?|A glove|1","What is lighter than a feather but no one can hold it long?|Your breath|1","What has 13 hearts but no organs?|A deck of cards|1","What is black when clean and white when dirty?|A chalkboard|1","What has a head and a tail but no body?|A coin|1","What is yours but others use it more than you?|Your name|1","What goes through cities but never moves?|A road|1","What has many needles but never sews?|A pine tree|1","What is so fragile that saying its name breaks it?|Silence|1","What can be cracked, made, told and played?|A joke|1","What is always coming but never arrives?|Tomorrow|1","What is tall when young and short when old?|A candle|1","What has a foot but no legs?|A ruler|1","What can you touch but not see?|Wind|1","What has no beginning, end or middle?|A donut|2","What has a bank but no money?|A river|2","What is at the end of a rainbow?|The letter W|2","What has a face but never frowns?|A clock|2","What goes up and down but does not move?|A staircase|2","What has a tongue but never talks?|A shoe|2","What has four legs in the morning, two in the afternoon and three in the evening?|A human|2","What has a roof but no walls?|An umbrella|2","What has lots of eyes but cannot see?|A potato|2","What has a head but never weeps?|A nail|2","What has hands but cannot clap?|A clock|2","What is in the middle of nowhere?|The letter H|2","What has a spine but no bones?|A book|2","What has a lid but no box?|An eye|2","What is the longest word?|Smiles|2","What has no legs but can run?|Water|2","What is the beginning of eternity?|The letter E|2","What has a head but no brain?|A hammer|2","What is seen in the middle of March and April but not at the start or end?|The letter R|3","What is heavier, a ton of feathers or a ton of bricks?|Same|3","What goes up when rain comes down?|An umbrella|3","What has a body but no soul?|A doll|3","What has a nose but cannot smell?|A shoe|3","What has a back but no front?|A chair|3","What has a mouth but no teeth?|A bottle|3","What is behind you but you can never see?|Your back|3","What has four wheels and flies?|A garbage truck|3","What is spelled incorrectly in every dictionary?|Incorrectly|3","What can you throw but never catch?|A tantrum|3","What goes through glass without breaking it?|Light|3","What has a chest but no heart?|A treasure chest|3","What has a cap but no head?|A bottle|3","What has a tail but is not an animal?|A kite|3","What is the most valuable thing you can give?|Your time|3","What is always hungry and must be fed, and if you touch it with your finger it turns red?|Fire|4","A man looks at a photo and says, brothers and sisters I have none, but that man's father is my father's son. Who is in the photo?|His son|4","If a plane crashes on the border, where do you bury the survivors?|Nowhere - Survivors are alive|4","What does a rooster lay on a roof?|Roosters don't lay eggs|4","If you overtake the person in 2nd place, what place are you in?|2nd place|4","A cowboy rides into town on Friday, stays 3 days and leaves on Friday. How?|His horse is named Friday|4","What can you hold in your right hand but never in your left?|Your left hand|4","What has cities with no houses, forests with no trees and water with no fish?|A map|4","What is the next number in 1, 11, 21, 1211, 111221?|312211|4","A man dies of old age on his 25th birthday. How?|Born Feb 29 Leap year|4"].map(P);
+var BANK_LOVE=["What grows stronger the more you share it?|Love|0","What is invisible but felt by two hearts?|Love|0","What beats without sound but is heard by a lover?|A heart|0","What can break without being touched?|A heart|0","What language does everyone understand?|Love|0","What is the sweetest thing that is not sugar?|A kiss|0","What makes two people become one?|Marriage|0","What has no beginning and no end when it is true?|True love|0","What is red, beats and belongs to someone else?|Your heart|0","What can be given 1000 times and still remain?|Love|0","What makes time fly?|Love|0","What is the shortest distance between two hearts?|A smile|0","What is the most beautiful thing you can wear?|A smile|0","What makes you cry and smile at the same time?|Love|0","What is the best gift that costs nothing?|Love|0","What makes the rich poor and the poor rich?|Love|0","What is the most powerful drug?|Love|0","What heals a broken heart?|Time and love|0","What is the only thing that is blind?|Love|1","Where do you feel at home anywhere?|Love|1","What can be felt across the world?|Love|1","What is seen in the eyes?|Love|1","What makes you lose sleep but happy?|Love|1","What is broken but still beautiful?|A heart|1","What is given and received at the same time?|A kiss|1","What is found in the dark?|Love|1","When does a day feel like a second?|Being with your love|1","When does a second feel like a day?|Missing your love|1","What is sweet and painful?|Love|1","What is the beginning and the end?|Love|1","What makes you feel like a child again?|Love|1","What makes you invincible?|Love|1","What makes you vulnerable and strong?|Love|1","What is a dream and reality?|Love|1","What is fire and water?|Love|1","What is storm and calm?|Love|1","What is song and silence?|Love|2","What is a journey and a destination?|Love|2","What is a secret and public?|Love|2","What is weakness and strength?|Love|2","What is a curse and a blessing?|Love|2","What is memory and hope?|Love|2","What is a tear and a smile?|Love|2","What is a promise and a gift?|Love|2","What is a question and a statement in 3 words?|I love you|2","What is a feeling and an action?|Love|2","What has no eyes but sees the soul?|Love|2","What is near and far?|Love|2","What is loud and quiet?|A heartbeat in love|2","What is a chain and freedom?|Love|2","What is a flower and a thorn?|Love|2","What is light and shadow?|Love|2","What is a wound and a cure?|Love|2","What is a river and an ocean?|Love|2","What is a star and a sun?|Love|2","What is a key and a lock?|Love|2","What is a door and a wall?|Love|2","What is a mirror and a window?|Love|2","What is a book and a story?|Love|2","What is a poem and a song?|Love|2","What is a dance and stillness?|Love|2","What is a kiss and a hug?|Love|2","What is hello and goodbye?|Love|2","What is first and last?|Love|2","What is beginning and forever?|Love|3","What makes you forget the world?|Love|3","What makes you remember everything?|Love|3","What makes you laugh at pain?|Love|3","What makes you cry for joy?|Love|3","What makes you want to be better?|Love|3","What makes you want to stay?|Love|3","What makes you want to go?|Love|3","What makes you want to fight?|Love|3","What makes you want to forgive?|Love|3","What makes you want to sacrifice?|Love|3","What makes you want to wait?|Love|3","What makes you want to hurry?|Love|3","What makes you want to dream?|Love|3","What makes you want to wake up?|Love|3","What makes you want to live?|Love|3","What would you die for?|Love|3","What stays forever young?|Love|3","What makes you grow old together?|Love|3","What turns strangers into family?|Love|3","What turns a house into a home?|Love|3","What turns a stranger into a soulmate?|Love|3","What turns a moment into eternity?|Love|3","What makes eternity feel short?|Love|3","What makes you feel complete?|Love|3","What makes you feel empty without it?|Love|3","What makes you feel full without eating?|Love|3","What keeps you warm in winter?|Love|3","What keeps you cool in summer?|Love|3","What makes you feel at home far away?|Love|3","What grows when you give it away, dies when you hold it tight and lives when you set it free?|Love|4","What is a prison with no bars, a chain with no iron and a fire with no flame?|Being in love|4","What is broken but not touched, mended but not fixed?|A heart|4","What is written with no pen, spoken with no voice and seen with no eyes?|Love|4","In what war do both win when they surrender?|Love|4","What makes time stop and fly at the same time?|Love|4","What is blind but sees everything?|Love|4","What is beginning and forever?|True love|4","What is a stranger at home and home when gone?|Love|4","What is felt in the heart and measured in tears?|Love|4","What is a cure and a disease?|Love|4","What is light in darkness and darkness in light?|Love|4","Where do you lose yourself and find yourself?|Love|4"].map(P);
+var BANK_SMART=["What speaks with no mouth and hears with no ears but is alive with wind?|An echo|0","What do you leave behind the more you take?|Footsteps|0","What has cities with no houses, forests with no trees and rivers with no water?|A map|0","What is seen once in a year, twice in a week but never in a day?|The letter E|0","A man pushes his car to a hotel and goes bankrupt. Why?|Playing Monopoly|0","What gets sharper the more you use it and duller if you do not?|Your brain|0","What is true and false?|A paradox|0","What is past, present and future?|Time|0","What has no weight but can sink a ship?|A hole|0","What is infinite and finite?|A circle|1","What is 0 and 1?|A bit|1","What is empty and full?|A mind|1","What is beginning and end?|A point|1","What is a question and an answer?|A riddle|1","What is a problem and a solution?|A puzzle|1","What is a cause and an effect?|A loop|1","What is a part and a whole?|A fraction|1","What is a number and a letter?|Roman numerals|1","What is a shape and a sound?|A wave|1","What is always hungry and must be fed, and if you touch it with your finger it turns red?|Fire|1","What has its bottom at the top and its top at the bottom?|A leg|1","What is a verb and a noun?|Love|1","What is a noun and an adjective?|Light|1","What is a color and a feeling?|Blue|1","What is a thing and a place?|Home|1","What is time and place?|Now|1","What is sound and silence?|Music|1","What is light and dark?|Shadow|1","What is day and night?|Dawn|1","What is birth and death?|A seed|1","What is beginning and middle?|A story|1","What is middle and end?|A journey|1","What is a thought and a thing?|An idea|1","What is a dream and reality?|A vision|1","What is memory and future?|A hope|1","What is past and present?|A photograph|1","What is present and future?|A gift|1","What is a gift and a curse?|Knowledge|1","What is a blessing and a burden?|Power|1","What is a friend and an enemy?|Time|2","What is a teacher and a student?|Life|2","What is a master and a slave?|Money|2","What is a king and a pawn?|A chess piece|2","What is a winner and a loser?|A game|2","What is success and failure?|An experiment|2","What is truth and lie?|A story|2","What is fact and fiction?|History|2","What is science and art?|Cooking|2","What is math and language?|Logic|2","What do you have but if you share it you no longer have it?|A secret|2","What is a word and a world?|Earth|2","What is a letter and a number?|A|2","What is a dot and a line?|A point|2","What is a circle and a square?|A zero|2","What is a triangle and a pyramid?|A cone|2","What is a square and a cube?|A box|2","What is a line and a plane?|A line|2","What is a point and a line?|A dot|2","What is a line and a curve?|A wave|2","What is a curve and a circle?|An arc|2","What is a circle and a sphere?|A ball|2","What is a sphere and a cube?|A dice|2","What is a cube and a square?|A cube|2","What is a square and a rectangle?|A square|2","What is a rectangle and a triangle?|A flag|2","What is a triangle and a circle?|A pie|2","What is a circle and a triangle?|A pizza slice|2","What is a triangle and a square?|A roof|2","What is a mirror and a window?|A soul|3","What is a window and a door?|A gate|3","What is a door and a wall?|A secret door|3","What is a wall and a roof?|A tent|3","What is a roof and a floor?|A bridge|3","What is a floor and a ceiling?|A glass floor|3","What is a ceiling and a sky?|A glass ceiling|3","What is a sky and a sea?|A horizon|3","What is a sea and a river?|A delta|3","What is a river and a lake?|A reservoir|3","What is a lake and an ocean?|A sea|3","What is an ocean and a desert?|Sand|3","What is a desert and a forest?|A cactus forest|3","What is a forest and a garden?|A park|3","What is a garden and a farm?|A field|3","What is a farm and a city?|A town|3","What is a city and a village?|A suburb|3","What is a village and a town?|A hamlet|3","What is a town and a country?|A state|3","What is a country and a continent?|Australia|3","What is a continent and a world?|Earth|3","What is a world and a universe?|A universe|3","What is a universe and a mind?|Imagination|3","What is a mind and a brain?|Thought|3","What is a brain and a heart?|Emotion|3","What is a heart and a soul?|Love|3","What is a soul and a spirit?|Life|3","What is a spirit and a ghost?|A memory|3","What is a ghost and a shadow?|A past|3","What strategy lets 100 prisoners open 100 boxes with 50 tries and win more than 30 percent?|Loop strategy|4","A bat and a ball cost $1.10, the bat costs $1 more than the ball. How much is the ball?|5 cents|4","What are 3 positive numbers that add to 12 and multiply to 48?|2, 4, 6|4","What is half of 2 plus 2?|3|4","A farmer has 17 sheep, all but 9 die. How many are left?|9|4","How many months have 28 days?|All 12|4","2 fathers and 2 sons are in a car, there are only 3 people. How?|Grandfather, father, son|4","If 5 machines make 5 parts in 5 minutes, how long for 100 machines to make 100 parts?|5 minutes|4","A boat sinks but no one dies. Why?|Everyone was married|4","What word has 3 consecutive double letters?|Bookkeeper|4","What word is the same forwards and backwards and is a race?|Racecar|4","What number has the same number of letters as its value?|Four|4","A man is 3 times his son's age, in 15 years he will be 2 times. How old is the son now?|15 years old|4","What is next in O, T, T, F, F, S, S, E?|N|4","How many times can you subtract 10 from 100?|Once|4"].map(P);
+var BANK_PROG=["What is a bug that is actually a feature called?|A feature|0","Why do developers like dark mode?|Because light attracts bugs|0","Why did the developer go broke?|Used up all cache|0","What is a developer's favourite place?|The cloud|0","Why do Java developers wear glasses?|Because they don't C#|0","What is code with no comment called?|A mystery writer|0","Why did the function break up with the loop?|Too repetitive|0","What is the most used language by programmers?|Profanity|0","Why did the programmer quit his job?|Didn't get arrays|0","What are 8 hobbits called?|A hobbyte|0","Why do programmers hate nature?|Too many bugs|0","What is a programmer's favourite snack?|Cookies|0","Why did the SQL query go to therapy?|Too many joins|0","What snake writes code?|Python|0","Why was the variable sent to jail?|Not constant|0","What does a programmer say 1 plus 1 is?|10|0","Why did the programmer get stuck in the shower?|Lather, Rinse, Repeat|0","What is a programmer's favourite drink?|Java|0","Why did the HTML element go to the party?|To be div-ided|0","What do you call a program that is always late?|A lag|0","Why did the CSS go to the bar?|To get some style|1","What is a programmer's favourite music?|Algo-rhythm|1","Why did the binary doctor feel sick?|Felt bit-ten|1","What does a computer sing?|A Dell|1","Why did the programmer take a ladder to work?|To reach cloud|1","What is 0 and 1?|A bit|1","What is true and false?|A boolean|1","What is null and not null?|A pointer|1","What is a string and a number?|JavaScript|1","What is a class and an object?|A class|1","What is a function and a variable?|A lambda|1","What is a loop and a condition?|A while loop|1","What is a loop and recursion?|A recursive function|1","What is a bug and a feature?|Documented bug|1","What is a feature and a bug?|Undocumented feature|1","What is front and back?|Full-stack|1","What is client and server?|Peer-to-peer|1","What is a database and a file?|SQLite|1","What is a language and a framework?|JavaScript|1","What is a compiler and an interpreter?|Python|1","Why did the programmer get a divorce?|Too many arguments|1","What is a programmer's favourite animal?|A bug|1","Why did the programmer get a new keyboard?|Too many keys|1","What is a programmer's favourite colour?|#000000|1","What is a programmer's favourite food?|Spaghetti code|1","What is a programmer's favourite sport?|Debugging|1","What has no body, a head, no mouth and a tail?|A HTML tag|2","What has a key with no lock and a value with no price?|A dictionary|2","What is a stack and a queue?|A deque|2","What is a tree and a graph?|A tree is a graph|2","What is a list and a set?|A Python list|2","What is a set and a dict?|A Python set|2","What is a dict and a list?|A JSON object|2","What is JSON and XML?|Data|2","What is XML and HTML?|Markup|2","What is HTML and CSS?|A web page|2","Why did the programmer go to the beach?|To surf the web|2","What is always on time?|A cron job|2","Why did the programmer go to the gym?|To work out bugs|2","Why did the programmer go to the doctor?|Had a virus|2","What is a programmer's favourite movie?|The Matrix|2","What is the mix of Halloween and Christmas?|OCT 31 == DEC 25|3","How many types of people understand binary?|10 in binary = 2|4","What is empty brackets plus empty brackets in JavaScript?|Empty string|4","What is 0.1 plus 0.2 in JavaScript?|0.30000000000000004|4","Why did the programmer die in the shower?|Infinite loop|4","What is a deadlock?|Two processes waiting forever|4","What is the difference between a bug and a feature in production?|Documentation|4","What is the difference between null and undefined in JavaScript?|Null intentionally empty, Undefined never assigned|4","What is not false?|true|4","Why is NaN not equal to NaN?|IEEE 754 spec|4","What is recursion?|To understand recursion you must first understand recursion|4","What are the hardest problems in computer science?|Naming, cache, off-by-one|4","What is 1 plus 1 in JavaScript?|11|4","What is the difference between DELETE and TRUNCATE?|DELETE rollback + WHERE, TRUNCATE drops all|4"].map(P);
+var BANK_FUNNY=["Why did the chicken cross the road?|To get to the other side|0","What cheese is not yours?|Nacho cheese|0","What do you call a fish without eyes?|A fsh|0","Why did the scarecrow win an award?|Outstanding in his field|0","What do you call a can opener that doesn't work?|A can't opener|0","Why did the bicycle fall over?|Two-tired|0","What do you call a bear with no teeth?|A gummy bear|0","Why was the math book sad?|Too many problems|0","What do you call a cow with no legs?|Ground beef|0","Why did the cookie go to the doctor?|Felt crumby|0","What do you call a fake noodle?|An impasta|0","Why does a golfer wear two pairs of pants?|Hole in one|0","What do you call a sleeping bull?|A bulldozer|0","Why did the tomato turn red?|Saw salad dressing|0","What do you call a fish wearing a bowtie?|Sofishticated|0","Why did the banana go to the doctor?|Not peeling well|0","What do you call a dog that does magic?|A labracadabrador|0","What did the coffee say in the police report?|Got mugged|0","What do you call a snowman with a six-pack?|An abdominal snowman|0","Why did the skeleton go to the party alone?|No body to go with|0","What happens when a cow jumps over barbed wire?|Utter destruction|1","Why did the hipster burn his mouth?|Ate pizza before it was cool|1","What do you call a man with no arms and no legs in a pool?|Bob|1","Why did the computer go to the doctor?|Had a virus|1","What do you call a cat that is a criminal?|A purr-petrator|1","Why did the duck get a red card?|Fowl play|1","What do you call a pig that does karate?|A pork chop|1","Why are elephants toenails red?|Hide in cherry tree|1","What do you call a fish that is a doctor?|A sturgeon|1","Why did the grape stop in the middle of the road?|Ran out of juice|1","What do you call a horse that lives next door?|A neigh-bor|1","What do you call a mushroom that is at a party?|A fungi|1","What do you call a cow that is a musician?|A moo-sician|1","Why did the frog take the bus to work?|Car got toad|1","What do you call a chicken in a band?|Had drumsticks|1","Why is the cat on the computer?|Eye on mouse|1","What do you call a fish that is a lawyer?|A legal shark|1","Why is the banana at the party?|A-peeling|1","What do you call a cow that is a detective?|A moo-der mystery|1","Why is the duck at the doctor?|Feeling down|1","What do you call a pig that is a chef?|A pork chef|1","What do you call an elephant at a bar?|Trunk full drinks|1","What do you call a fish that is a teacher?|A school fish|1","Why did the grape go to the gym?|Get some juice|1","What do you call a horse that is a teacher?|A stable teacher|1","What do you call a mushroom that is a doctor?|Feeling spore|1","What do you call a cow that is a doctor?|A moo-dical doctor|1","Why did the frog go to the bank?|Get some green|1","What do you call a dog that is a teacher?|A lab teacher|1","Why did the chicken go to the library?|Get some book|1","What do you call a bear that is a teacher?|A bear teacher|1","Why did the cat go to the store?|Get cat food|1","What do you call a fish that is in a store?|A fish store|1","Why did the banana go to the store?|Get banana|1","What do you call a cow that is in a store?|A cow store|1","Why did the duck go to the store?|Get duck food|1","What do you call a pig that is in a store?|A pig store|1","Why did the elephant go to the store?|Get elephant food|1","What do you call a grape that is in a store?|Get grape|1","What do you call a horse that is in a store?|A horse store|1","What do you call a mushroom that is in a store?|Get mushroom|1","Why did the frog go to the store?|Get frog food|1","What do you call a dog that is in a store?|A dog store|1","Why did the chicken go to the store?|Get chicken food|1","What do you call a bear that is in a store?|A bear store|1","Why did the cat go to the store again?|Get cat food|1","What do you call a fish that is in a store again?|A fish store|1","Why did the banana go to the store again?|Get banana|1","What do you call a cow that is in a store again?|A cow store|1","Why did the duck go to the store again?|Get duck food|1","What do you call a pig that is in a store again?|A pig store|1","Why did the elephant go to the store again?|Get elephant food|1","What do you call a grape that is in a store again?|Get grape|1","What do you call a horse that is in a store again?|A horse store|1","What do you call a mushroom that is in a store again?|Get mushroom|1","Why did the frog go to the store again?|Get frog food|1","What do you call a dog that is in a store again?|A dog store|1","Why did the chicken cross the road twice?|To get other side and back|1","Why is the scarecrow outstanding but cannot sit down?|Because he can't sit down|4","How does a fish with no eyes see?|It doesn't, it just fshes|4","What does coffee say when it gets mugged?|Already depresso|4","Whose cheese is it?|Nacho|4","Why does a bicycle have no kickstand?|No kickstand to stand|4","Can a can opener open a can?|It can, it just won't|4","Why does a math book have no solutions?|No solutions|4","Can a gummy bear bite?|Gums you to death|4","What is the hardest riddle?|The one you are still thinking about|4"].map(P);
+function buildOptions(correct,allAnswers){ var opts=[correct]; var pool=allAnswers.filter(function(a){return a!==correct;}); for(var i=pool.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0; var t=pool[i]; pool[i]=pool[j]; pool[j]=t; } for(var k=0;k<pool.length&&opts.length<3;k++){ if(opts.indexOf(pool[k])<0) opts.push(pool[k]); } while(opts.length<3) opts.push('None of these'); for(var i=opts.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0; var t=opts[i]; opts[i]=opts[j]; opts[j]=t; } return {o:opts,a:opts.indexOf(correct)}; }
+function isCleanQuestion(qText){ if(!qText) return false; if(stageIdx < 4){ if(qText.includes('+')) return false; } return true; }
+function pick10ForRank(bank){ var cleanBank = bank.filter(function(x){ return isCleanQuestion(x.q); }); if(cleanBank.length < 10) cleanBank = bank.slice(); var allowed=[[0,1],[0,1,2],[1,2,3],[2,3,4],[3,4]][stageIdx]||[0,1]; var byRank=cleanBank.filter(function(x){return allowed.indexOf(x.lvl)>=0;}); if(byRank.length<10) byRank=cleanBank.slice(); var fresh=byRank.filter(function(x){return !askedSet.has(x.q)&&!lastRoundQs.has(x.q);}); var pool=fresh.length>=10?fresh:byRank.filter(function(x){return !lastRoundQs.has(x.q);}); if(pool.length<10) pool=byRank.slice(); for(var s=0;s<3;s++){ for(var i=pool.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0; var t=pool[i]; pool[i]=pool[j]; pool[j]=t; } } var picked=pool.slice(0,10); var allAns=cleanBank.map(function(x){return x.a;}); var out=picked.map(function(x){ var oo=buildOptions(x.a,allAns); return {q:x.q,o:oo.o,a:oo.a}; }); lastRoundQs=new Set(picked.map(function(x){return x.q;})); return out; }
+function catNow(){ try{ return new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lusaka'})); }catch(e){ return new Date(); } }
+function updateCatTime(){ try{ var d=catNow(); var ts=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); var ds=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); var el=document.getElementById('catTime'); if(el) el.innerText='🕐 '+ts+' • '+ds+' CAT'; var c2=document.getElementById('chatCatTime'); if(c2) c2.innerText=ts+' • '+ds; }catch(e){} }
+try{ setInterval(updateCatTime,1000); updateCatTime(); }catch(e){}
+function isLocked(){ var now=catNow(); var unlock=new Date(2027,0,24,12,0,0); return now<unlock; }
+function isMenuLocked(){ if(isAdmin()) return false; var now=catNow(); var unlock=new Date(2027,0,24,12,0,0); return now<unlock; }
+function blockedFeature(name){ if(isLocked()){ showGameWarn('🔒 '+name+' is locked!<br>Available on 24 January 2027 at 12:00hrs CAT', false); } else { toast('✅ '+name+' is now unlocked!'); } }
+function addEmoji(){ var inp=document.getElementById('msgInput'); inp.value+='😊'; inp.focus(); toggleSend(); }
+function toggleSend(){ var v=document.getElementById('msgInput').value.trim(); document.getElementById('micBtn').style.display=v?'none':'flex'; document.getElementById('sendBtnSmall').style.display=v?'block':'none'; }
+var soundOn=true; var DASH_URL='https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3'; var dashCtx=null,dashGain=null,dashSource=null,dashBuffer=null,dashLoading=false,dashPlaying=false,dashFallback=false;
+function ensureDashCtx(){ try{ if(!dashCtx) dashCtx=new (window.AudioContext||window.webkitAudioContext)(); if(dashCtx.state==='suspended') dashCtx.resume(); if(!dashGain){ dashGain=dashCtx.createGain(); dashGain.gain.value=0.35; dashGain.connect(dashCtx.destination); } }catch(e){} }
+function startDashWebAudio(){ if(!dashBuffer||dashPlaying) return; try{ ensureDashCtx(); if(dashSource){ try{ dashSource.stop(); }catch(e){} } dashSource=dashCtx.createBufferSource(); dashSource.buffer=dashBuffer; dashSource.loop=true; dashSource.loopStart=0; dashSource.loopEnd=dashBuffer.duration; dashSource.connect(dashGain); dashSource.start(0); dashPlaying=true; }catch(e){} }
+function loadDashBuffer(){ if(dashBuffer||dashLoading) return; dashLoading=true; try{ fetch(DASH_URL).then(function(r){return r.arrayBuffer();}).then(function(buf){ ensureDashCtx(); dashCtx.decodeAudioData(buf.slice(0),function(dec){ dashBuffer=dec; dashLoading=false; if(soundOn&&loggedIn) startDashWebAudio(); },function(){ dashLoading=false; useDashFallback(); }); }).catch(function(){ dashLoading=false; useDashFallback(); }); }catch(e){ dashLoading=false; useDashFallback(); } }
+function useDashFallback(){ if(dashFallback) return; dashFallback=true; try{ var a=document.getElementById('dashAudio'); if(a){ a.volume=0.35; a.loop=true; var p=a.play(); if(p&&p.catch) p.catch(function(){}); } }catch(e){} }
+function playEnterSound(){ unlockAudio(); try{ stopDashFallbackOnly(); var a=document.getElementById('enterAudio'); if(!a) return; a.currentTime=0; a.volume=0.45; a.loop=false; a.muted=false; var p=a.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
+function stopDashFallbackOnly(){ try{ var a=document.getElementById('dashAudio'); if(a) a.pause(); }catch(e){} }
+function startDashboardSound(){ if(!soundOn) return; try{ var e=document.getElementById('enterAudio'); if(e) e.pause(); if(dashBuffer){ startDashWebAudio(); } else { loadDashBuffer(); useDashFallback(); } var b=document.getElementById('soundBtn'); if(b) b.innerText='🔊'; }catch(e){} }
+function stopDashboardSound(){ try{ dashPlaying=false; if(dashSource){ try{ dashSource.stop(); }catch(e){} dashSource=null; } if(dashCtx&&dashCtx.state==='running'){ dashCtx.suspend(); } var a=document.getElementById('dashAudio'); if(a) a.pause(); var e=document.getElementById('enterAudio'); if(e) e.pause(); }catch(e){} }
+function resumeDashAfterMute(){ try{ if(dashCtx&&dashCtx.state==='suspended') dashCtx.resume(); if(dashBuffer&&!dashPlaying) startDashWebAudio(); else if(!dashBuffer) loadDashBuffer(); else { var a=document.getElementById('dashAudio'); if(a&&a.paused){ a.play().catch(function(){}); } } }catch(e){} }
+function toggleSound(){ soundOn=!soundOn; var b=document.getElementById('soundBtn'); if(b) b.innerText=soundOn?'🔊':'🔇'; if(soundOn){ ensureDashCtx(); resumeDashAfterMute(); toast('🎹 Piano Background ON - Continuous'); } else { stopDashboardSound(); toast('🔇 Sound OFF'); } }
+function toggleMenu(forceClose){ var m=document.getElementById('menuDrop'); if(!m) return; if(forceClose){ m.classList.add('hidden'); return; } if(isMenuLocked()){ toast('🔒 Menu locked until 24 Jan 2027 12:00 CAT'); return; } var adminEl=document.getElementById('menuAdmin'); var n1=document.getElementById('menuNormal1'); var n2=document.getElementById('menuNormal2'); var n3=document.getElementById('menuNormal3'); var n4=document.getElementById('menuNormal4'); var n5=document.getElementById('menuNormal5'); if(isAdmin()){ if(adminEl) adminEl.classList.remove('hidden'); [n1,n2,n3,n4,n5].forEach(function(el){ if(el) el.classList.add('hidden'); }); } else { if(adminEl) adminEl.classList.add('hidden'); [n1,n2,n3,n4,n5].forEach(function(el){ if(el) el.classList.remove('hidden'); }); } m.classList.toggle('hidden'); }
+document.addEventListener('click',function(){ if(soundOn&&loggedIn){ ensureDashCtx(); if(dashBuffer&&!dashPlaying) startDashWebAudio(); } },true);
+document.addEventListener('click',function(e){ var b=document.getElementById('menuBtn'); var m=document.getElementById('menuDrop'); if(!b||!m) return; if(b.contains(e.target)) return; if(!m.contains(e.target)) m.classList.add('hidden'); });
+function autoLogout(){ stopDashboardSound(); loggedIn=false; if(!user) return; try{ var data=JSON.stringify({name:user.name}); if(navigator.sendBeacon){ navigator.sendBeacon('/api/logout',new Blob([data],{type:'application/json'})); } else { fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:data,keepalive:true}).catch(function(){}); } }catch(e){} try{ localStorage.setItem('inf_needs_login','yes'); localStorage.setItem('inf_page','page-home'); }catch(e){} }
+try{ document.addEventListener('visibilitychange',function(){ if(document.hidden){ autoLogout(); } }); window.addEventListener('pagehide',function(){ autoLogout(); }); window.addEventListener('beforeunload',function(){ autoLogout(); }); }catch(e){}
+function toast(m){ var t=document.getElementById('toast'); t.innerText=m; t.classList.remove('hidden'); setTimeout(function(){ t.classList.add('hidden'); },4500); }
+function updateBackFab(){ var fab=document.getElementById('backFab'); if(!fab) return; if(currentPage==='page-home'||currentPage==='page-dash'){ fab.style.display='none'; } else { fab.style.display='flex'; } }
+function goBack(){ if(currentPage==='page-register'){ showPage('page-home'); } else if(currentPage==='page-leader'){ goDash(); } else if(currentPage==='page-game'){ showPage('page-dash'); } else if(currentPage==='page-coming'){ clearSciFiMode(); goDash(); } else if(currentPage==='page-profile'){ goDash(); } else if(currentPage==='page-other'){ goDash(); } else if(currentPage==='page-messages'){ goDash(); } else if(currentPage==='page-chat'){ showPage('page-messages'); loadChatList(); } else { showPage('page-dash'); } }
+function clearSciFiMode(){ try{ document.body.classList.remove('scifi-mode'); }catch(e){} }
+function showPage(id){ currentPage=id; ['page-home','page-register','page-dash','page-leader','page-game','page-coming','page-profile','page-other','page-messages','page-chat'].forEach(function(p){ document.getElementById(p).classList.add('hidden'); }); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); updateBackFab(); try{ if(loggedIn&&id!=='page-home'){ localStorage.setItem('inf_page',id); } }catch(e){} if(id!=='page-coming'){ clearSciFiMode(); } }
+function requireLogin(){ if(!loggedIn){ showPage('page-register'); showLogin(); return false; } return true; }
+function welcomeName(){ if(!user) return 'Player'; var n=user.name.trim().toLowerCase(); if(n.indexOf('janice')===0) return 'Welcome Bae 💖'; if(n.indexOf('taizya')===0) return 'Welcome MY Fiance ❤️‍🔥'; if(n.indexOf('tasha')===0) return 'Welcome MY Fiance ❤️‍🔥'; if(n.indexOf('natasha')===0) return 'Welcome MY Fiance ❤️‍🔥'; if(n.indexOf('chikondi')===0) return 'My Princess 👸'; if(n.indexOf('chimwemwe')===0) return 'Her Majesty 👑'; if(n.indexOf('neema')===0) return 'Welcome Wife 💍'; if(n.indexOf('temz')===0) return 'Welcome Grandpa 👴'; if(n.indexOf('abigail')===0) return 'Welcome Babe 💖'; return user.name; }
+function save(){ try{ localStorage.setItem('inf_user',JSON.stringify(user)); localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); localStorage.setItem('inf_friends',JSON.stringify(allFriends)); }catch(e){} markHasAccount(); sync(); }
+function forceSync(){ if(!user||!loggedIn) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); fetchServerHistory(); }).catch(function(){ loadLeader(); fetchServerHistory(); }); }
+function sync(){ if(!user||!loggedIn) return; fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadLeader(); }).catch(function(){}); }
+setInterval(function(){ if(loggedIn && user){ sync(); } },10000);
+setInterval(function(){ if(loggedIn){ loadAllDataTogether(); } },20000);
+setInterval(function(){ if(loggedIn && (currentPage==='page-dash'||currentPage==='page-leader')){ loadLeader(); if(currentPage==='page-leader') loadFullLeader(); } },20000);
+setInterval(function(){ checkNotif(); },60000);
+function goRegister(){
+  unlockAudio(); playEnterSound();
+  if(hasLoggedInBefore() && user && user.name){
+    showPage('page-register');
+    document.getElementById('regSub').innerText='Checking your account... 0.20s';
+    var startTime=performance.now();
+    setTimeout(function(){
+      fetch('/api/player?name='+encodeURIComponent(user.name)).then(function(r){return r.json();}).then(function(d){
+        var elapsed=Math.max(10,Math.round(performance.now()-startTime));
+        if(d && d.found){
+          showLogin();
+          document.getElementById('regSub').innerText='Welcome back! Please Login 👑 - Found in '+elapsed+'ms';
+          var ln=document.getElementById('loginName');
+          if(ln) ln.value=user.name;
+          if(ln) ln.focus();
+        } else {
+          showRegister();
+          document.getElementById('regSub').innerText='Create your Infinity account 👑';
+          scheduleWelcomePopup();
+        }
+      }).catch(function(){
+        showRegister();
+        document.getElementById('regSub').innerText='Create your Infinity account 👑';
+        scheduleWelcomePopup();
+      });
+    },200);
+    return;
+  }
+  showPage('page-register'); showRegister(); document.getElementById('regSub').innerText='Create your Infinity account 👑'; scheduleWelcomePopup();
 }
-function catNow(){ return new Date(); }
-function updateCatTime(){
+function showRegister(){ document.getElementById('registerForm').classList.remove('hidden'); document.getElementById('loginForm').classList.add('hidden'); document.getElementById('regSub').innerText='Create your Infinity account 👑'; }
+function showLogin(){ document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('regSub').innerText='Login to your account 👑'; }
+function applyServerData(d){ wins=d.wins||0; losses=d.losses||0; stageIdx=d.stage!=null?d.stage:computeStageFromWins(wins); if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); } if(d.friends) mergeFriends(d.friends); try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){} }
+function enterDashboard(msg){ loggedIn=true; markHasAccount(); hideWarnNow(); hideWelcomeNow(); toast(msg); updateMe(); showPage('page-dash'); loadAllDataTogether(); loadDashBuffer(); setTimeout(function(){ startDashboardSound(); },1200); }
+function doRegister(){ var n=document.getElementById('regName').value.trim(); var pw=document.getElementById('regPass').value.trim(); if(!n){ toast('Please enter your name!'); return; } if(!pw||pw.length!==4||isNaN(pw)){ toast('Password must be exactly 4 digits!'); return; } if(isBannedPassword(pw)){ toast('Password too easy! Use ANY except 1234 or 0000!'); return; } playEnterSound(); fetch('/api/player?name='+encodeURIComponent(n)).then(function(r){return r.json();}).then(function(d){ if(d && d.found){ showLogin(); document.getElementById('loginName').value=n; document.getElementById('regSub').innerText='Account found! Please Login 👑'; toast('Account found! Please Login 👑'); return; } var localW=wins, localL=losses; user={name:n,password:pw}; if(localW>0){ wins=localW; losses=localL; stageIdx=computeStageFromWins(wins); } else { wins=0; losses=0; stageIdx=0; playerHistory={}; askedSet=new Set(); } lastRoundQs=new Set(); saveLocalHistory(); fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:pw,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadAllDataTogether(); }).catch(function(){}); save(); enterDashboard('Welcome '+welcomeName()+'! Registered 👑 - You are now on Leaderboard FOREVER!'); }).catch(function(){ user={name:n,password:pw}; wins=0; losses=0; stageIdx=0; save(); enterDashboard('Welcome '+welcomeName()+'! Registered 👑'); }); }
+function doLogin(){ var n=document.getElementById('loginName').value.trim(); var pw=document.getElementById('loginPass').value.trim(); if(!n||!pw){ toast('Enter name + password!'); return; } if(pw.length!==4||isNaN(pw)){ toast('Password must be exactly 4 digits!'); return; } if(isBannedPassword(pw)){ toast('Password too easy!'); return; } unlockAudio(); playEnterSound(); var localMatch=false; try{ var lu=JSON.parse(localStorage.getItem('inf_user')||'null'); if(lu && lu.name && lu.name.trim().toLowerCase()===n.trim().toLowerCase() && lu.password===pw) localMatch=true; }catch(e){} fetch('/api/player?name='+encodeURIComponent(n)+'&password='+encodeURIComponent(pw)).then(function(r){return r.json();}).then(function(d){ if(d && d.found && (d.password_ok || d.recovered)){ user={name:d.display_name||n,password:pw}; applyServerData(d); try{ localStorage.setItem('inf_user',JSON.stringify(user)); }catch(e){} fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,password:pw,wins:wins,losses:losses,stage:stageIdx})}).then(function(){ loadAllDataTogether(); }).catch(function(){}); enterDashboard('Welcome back '+welcomeName()+' 👑 - All Data Loaded! '+wins+' Wins! Friends + Chats Kept Forever!'); } else if(d && d.found && !d.password_ok){ showGameWarn('⚠️ Warning ⚠️<br>Account not found, try again or Register<br>Wrong password for this name!', true); } else if(!d.found && localMatch){ user={name:n,password:pw}; applyServerData({wins:wins,losses:losses,stage:stageIdx,history:playerHistory}); fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:pw,wins:wins,losses:losses,stage:stageIdx})}).catch(function(){}); enterDashboard('Welcome back '+welcomeName()+' 👑 - Recovered from this device! '+wins+' Wins!'); } else { showGameWarn('⚠️ Warning ⚠️<br>Account not found, try again or Register<br>No account for "'+n+'"', true); } }).catch(function(){ toast('Network error - try again'); }); }
+function updateMe(){ if(!user) return; refreshStageFromWins(); document.getElementById('welcomeText').innerText='Welcome '+welcomeName(); document.getElementById('myStage').innerText=stageName(); }
+function goDash(){ if(!requireLogin()) return; clearSciFiMode(); showPage('page-dash'); updateMe(); loadAllDataTogether(); startDashboardSound(); }
+function sortPlayers(arr){ return arr.slice().sort(function(a,b){ return (b.wins-b.losses)-(a.wins-a.losses); }); }
+function eqName(a,b){ return String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase(); }
+function loadLeader(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var sorted=sortPlayers(d.players||d); var idx=-1; for(var i=0;i<sorted.length;i++){ if(user&&loggedIn&&eqName(sorted[i].name,user.name)) idx=i; } document.getElementById('myRank').innerText=idx>=0?'#'+(idx+1):'#-'; prevRank=idx>=0?idx+1:999; var top5=sorted.slice(0,5); var medals=['🥇','🥈','🥉','4.','5.']; var html=''; if(!top5.length) html='<p style="text-align:center">No players yet - Be the first!</p>'; top5.forEach(function(p,i){ var dot=p.online?'<span class="dot green"></span>':'<span class="dot red"></span>'; html+='<div class="leadRow" onclick="openOther(\''+p.name.replace(/'/g,"\\'")+'\')"><span>'+dot+' '+medals[i]+' '+(i+1)+'. '+p.name+'</span><span><b>'+p.wins+'</b> Win | <b>'+p.losses+'</b> Lose</span></div>'; }); if(idx>=5&&user){ html+='<div class="leadRow" style="border:2px solid #ffd700" onclick="openFullLeader()"><span>👤 Your Rank: #'+(idx+1)+'</span><span>Tap to see full →</span></div>'; } document.getElementById('leaderList').innerHTML=html; }).catch(function(){}); }
+function openFullLeader(){ if(!requireLogin()) return; showPage('page-leader'); loadFullLeader(); }
+function loadFullLeader(){ fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ fullLeaderData=sortPlayers(d.players||d); renderFullLeader(); }).catch(function(){}); }
+function renderFullLeader(){ var box=document.getElementById('fullLeaderList'); var html=''; if(!fullLeaderData.length) html='<p style="text-align:center">No players yet</p>'; fullLeaderData.forEach(function(p,i){ var dot=p.online?'<span class="dot green"></span>':'<span class="dot red"></span>'; var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':''; var isMe=(user&&eqName(p.name,user.name)); html+='<div class="leadRow" id="rank-'+(i+1)+'" '+(isMe?'style="border:2px solid #ffd700;background:rgba(255,215,0,.25)"':'')+' onclick="openOther(\''+p.name.replace(/'/g,"\\'")+'\')"><span>'+dot+' '+medal+' '+(i+1)+'. '+p.name+(isMe?' 👈 YOU':'')+'</span><span><b>'+p.wins+'</b> Win | <b>'+p.losses+'</b> Lose</span></div>'; }); box.innerHTML=html; var myIdx=-1; for(var i=0;i<fullLeaderData.length;i++){ if(user&&eqName(fullLeaderData[i].name,user.name)) myIdx=i; } var jump=document.getElementById('myRankJump'); if(myIdx>=0){ var me=fullLeaderData[myIdx]; jump.innerHTML='<div class="myRankBar" onclick="jumpToMyRank()">👤 YOUR RANK: #'+(myIdx+1)+' • '+me.wins+' Win | '+me.losses+' Lose<br><small>Tap to jump to your rank →</small></div>'; } else { jump.innerHTML=''; } }
+function jumpToMyRank(){ var myIdx=-1; for(var i=0;i<fullLeaderData.length;i++){ if(user&&eqName(fullLeaderData[i].name,user.name)) myIdx=i; } if(myIdx<0) return; setTimeout(function(){ var el=document.getElementById('rank-'+(myIdx+1)); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.boxShadow='0 0 20px #ffd700'; setTimeout(function(){ el.style.boxShadow=''; },2000); toast('👤 You are Rank #'+(myIdx+1)+'!'); } },100); }
+function checkNotif(){ if(!user||!loggedIn) return; fetch('/api/notif?name='+encodeURIComponent(user.name)).then(function(r){ return r.json(); }).then(function(d){ if(d.requests&&d.requests.length>0){ document.getElementById('notifBadge').innerText=d.requests.length; document.getElementById('notifBadge').classList.remove('hidden'); if(lastNotif!==d.requests.join(',')){ toast('📩 You have a friend request from '+d.requests[0]+'!'); lastNotif=d.requests.join(','); } } else { document.getElementById('notifBadge').classList.add('hidden'); } if(d.newOnline&&!eqName(d.newOnline,user.name)&&lastNotif!==('online'+d.newOnline)){ toast('🟢 '+d.newOnline+' is now Online!'); lastNotif='online'+d.newOnline; } }).catch(function(){}); }
+function openMyProfile(){ if(!requireLogin()) return; loadAllDataTogether().then(function(){ showProfileUI(); }).catch(function(){ showProfileUI(); }); }
+function showProfileUI(){ showPage('page-profile'); document.getElementById('profName').innerText=user.name; document.getElementById('profDot').className='dot green'; document.getElementById('profStatus').innerText='Online'; document.getElementById('profWins').innerText=wins; document.getElementById('profLoss').innerText=losses; document.getElementById('profStage').innerText=stageName(); document.getElementById('profFriends').innerText='👥 Friends: '+(allFriends.length); document.getElementById('friendList').innerHTML=(allFriends.length)?allFriends.map(function(f){ return '<p>👤 '+f+'</p>'; }).join(''):'<p>No friends yet</p>'; fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var s=sortPlayers(arr); var ii=-1; for(var i=0;i<s.length;i++){ if(eqName(s[i].name,user.name)) ii=i; } document.getElementById('profRank').innerText='#'+(ii+1); }).catch(function(){}); fetch('/api/notif?name='+encodeURIComponent(user.name)).then(function(r){ return r.json(); }).then(function(d){ if(d.requests.length===0) document.getElementById('reqList').innerHTML='<p>No requests</p>'; else document.getElementById('reqList').innerHTML=d.requests.map(function(req){ return '<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);padding:10px;border-radius:12px;margin:6px 0"><span>👤 '+req+'</span><span><button onclick="respondFriend(\''+req.replace(/'/g,"\\'")+'\',\'accept\')" style="background:#00cc00;color:white;border:none;padding:8px 12px;border-radius:50%;font-weight:900">✓</button> <button onclick="respondFriend(\''+req.replace(/'/g,"\\'")+'\',\'reject\')" style="background:#ff2222;color:white;border:none;padding:8px 12px;border-radius:50%;font-weight:900">✕</button></span></div>'; }).join(''); }).catch(function(){}); }
+function goRegister(){
+  try{ unlockAudio(); }catch(e){}
+  try{ playEnterSound(); }catch(e){}
+  try{ hideWarnNow(); hideWelcomeNow(); }catch(e){}
+  if(hasLoggedInBefore() && user && user.name){
+    showPage('page-register');
+    var sub0=document.getElementById('regSub'); if(sub0) sub0.innerText='Checking your account... 0.20s';
+    setTimeout(function(){
+      fetch('/api/player?name='+encodeURIComponent(user.name)).then(function(r){return r.json();}).then(function(d){
+        if(d && d.found){
+          showLogin();
+          var sub=document.getElementById('regSub'); if(sub) sub.innerText='Welcome back! Please Login 👑';
+          var ln=document.getElementById('loginName'); if(ln){ ln.value=user.name; ln.focus(); }
+        } else {
+          showRegister();
+          var sub2=document.getElementById('regSub'); if(sub2) sub2.innerText='Create your Infinity account 👑';
+          scheduleWelcomePopup();
+        }
+      }).catch(function(){ showRegister(); scheduleWelcomePopup(); });
+    },200);
+    return;
+  }
+  showPage('page-register'); showRegister();
+  var sub3=document.getElementById('regSub'); if(sub3) sub3.innerText='Create your Infinity account 👑';
+  scheduleWelcomePopup();
+}
+function showRegister(){
   try{
-    var el = document.getElementById('catClock');
-    if(el){
-      var d = catNow();
-      el.innerText = d.toLocaleTimeString('en-GB') + ' CAT';
-    }
+    var rf=document.getElementById('registerForm'); if(rf){ rf.classList.remove('hidden'); rf.style.display='block'; }
+    var lf=document.getElementById('loginForm'); if(lf){ lf.classList.add('hidden'); lf.style.display='none'; }
+    var sub=document.getElementById('regSub'); if(sub) sub.innerText='Create your Infinity account 👑';
   }catch(e){}
 }
-function goRegister(){ showPage('page-register'); }
+function showLogin(){
+  try{
+    var rf=document.getElementById('registerForm'); if(rf){ rf.classList.add('hidden'); rf.style.display='none'; }
+    var lf=document.getElementById('loginForm'); if(lf){ lf.classList.remove('hidden'); lf.style.display='block'; }
+    var sub=document.getElementById('regSub'); if(sub) sub.innerText='Login to your account 👑';
+  }catch(e){}
+}
+function applyServerData(d){
+  if(!d) return;
+  wins=d.wins||0; losses=d.losses||0;
+  stageIdx=(d.stage!=null)?d.stage:computeStageFromWins(wins);
+  if(d.history){ playerHistory=d.history; rebuildAskedSet(); saveLocalHistory(); }
+  if(d.friends) mergeFriends(d.friends);
+  try{ localStorage.setItem('inf_wins',wins); localStorage.setItem('inf_loss',losses); localStorage.setItem('inf_stage',stageIdx); }catch(e){}
+}
+function enterDashboard(msg){
+  loggedIn=true; markHasAccount();
+  try{ hideWarnNow(); hideWelcomeNow(); }catch(e){}
+  toast(msg||'Welcome 👑'); updateMe(); showPage('page-dash');
+  try{ loadAllDataTogether(); }catch(e){}
+  try{ loadDashBuffer(); }catch(e){}
+  setTimeout(function(){ try{ startDashboardSound(); }catch(e){} },1200);
+}
 function doRegister(){
-  var n = document.getElementById('regName').value;
-  if(!n){ alert('Enter username'); return; }
-  myName = n;
-  document.getElementById('welcomeUser').innerText = 'Hello ' + myName + ' 👋';
-  showPage('page-home');
+  var nEl=document.getElementById('regName'); var pEl=document.getElementById('regPass');
+  var n=nEl?nEl.value.trim():''; var pw=pEl?pEl.value.trim():'';
+  if(!n || pw.length!==4){ toast('Enter Name + 4-Digit Password'); return; }
+  if(isBannedPassword(pw)){ toast('⚠️ Do NOT use 1234 or 0000'); return; }
+  fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:pw})}).then(function(r){return r.json();}).then(function(d){
+    if(d && d.error){ toast(d.error); return; }
+    user={name:n,password:pw}; wins=0; losses=0; stageIdx=0;
+    save(); enterDashboard('👑 Welcome to Infinity, '+n+'!');
+  }).catch(function(){ toast('Network error, try again'); });
 }
 function doLogin(){
-  var n = document.getElementById('logName').value;
-  if(!n){ alert('Enter username'); return; }
-  myName = n;
-  document.getElementById('welcomeUser').innerText = 'Hello ' + myName + ' 👋';
-  showPage('page-home');
+  var nEl=document.getElementById('loginName'); var pEl=document.getElementById('loginPass');
+  var n=nEl?nEl.value.trim():''; var pw=pEl?pEl.value.trim():'';
+  if(!n || !pw){ toast('Enter Name + Password'); return; }
+  fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:pw})}).then(function(r){return r.json();}).then(function(d){
+    if(!d || d.error){ showGameWarn('⚠️ Warning ⚠️<br>Account not found, try again or Register',true); return; }
+    user={name:n,password:pw}; applyServerData(d);
+    save(); enterDashboard('👑 Welcome back, '+n+'!');
+  }).catch(function(){ toast('Network error, try again'); });
 }
-function doLogout(){ showPage('page-welcome'); }
-function updateBalance(){
-  document.getElementById('balance').innerText = balance;
-  var r = 'Bronze';
-  if(balance>=5000){ r='Diamond'; } else if(balance>=3000){ r='Gold'; } else if(balance>=1500){ r='Silver'; }
-  document.getElementById('rankLabel').innerText = r;
+function updateMe(){
+  if(!user) return;
+  try{ refreshStageFromWins(); }catch(e){}
+  var dn=document.getElementById('dashName'); if(dn) dn.innerText='Welcome, '+welcomeName();
+  var dr=document.getElementById('dashRank'); if(dr) dr.innerText='⭐ Rank: #'+(prevRank===999?'--':prevRank)+' • 🎯 '+stageName();
+  var ds=document.getElementById('dashStats'); if(ds) ds.innerText='🏆 Wins: '+wins+' | ❌ Losses: '+losses;
+  var pn=document.getElementById('profName'); if(pn) pn.innerText=user.name;
+  var pr=document.getElementById('profRank'); if(pr) pr.innerText='⭐ Rank: #'+(prevRank===999?'--':prevRank);
+  var ps=document.getElementById('profStats'); if(ps) ps.innerText='🏆 Wins: '+wins+' | ❌ Losses: '+losses+' | 🎯 Stage: '+stageName();
 }
-function playDice(){
-  var v = Math.floor(Math.random()*6)+1;
-  var win = (v>=4);
-  if(win){ balance+=100; } else { balance-=50; }
-  document.getElementById('diceRes').innerText = 'You rolled ' + v + (win?' - YOU WIN +100':' - LOSE -50');
-  updateBalance();
+function goDash(){
+  if(!requireLogin()) return;
+  showPage('page-dash'); updateMe();
+  try{ loadLeader(); }catch(e){}
 }
-function playCoin(choice){
-  var c = Math.random()>0.5 ? 'Heads':'Tails';
-  var win = (c===choice);
-  if(win){ balance+=100; } else { balance-=50; }
-  document.getElementById('coinRes').innerText = 'It was ' + c + (win?' - WIN +100':' - LOSE -50');
-  updateBalance();
+function sortPlayers(arr){ return (arr||[]).slice().sort(function(a,b){ return (b.wins||0)-(a.wins||0); }); }
+function loadLeader(){
+  fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(d){
+    fullLeaderData=sortPlayers(d.players||[]);
+    var el=document.getElementById('top5'); if(!el) return;
+    var top=fullLeaderData.slice(0,5);
+    if(!top.length){ el.innerHTML='No players yet'; return; }
+    el.innerHTML=top.map(function(p,i){ return '<div class="leadRow"><span>'+(i+1)+'. '+p.display_name+'</span><span>🏆 '+(p.wins||0)+'</span></div>'; }).join('');
+    if(user){
+      var idx=-1;
+      for(var i=0;i<fullLeaderData.length;i++){ if(norm(fullLeaderData[i].display_name)===norm(user.name)){ idx=i; break; } }
+      prevRank=idx>=0?idx+1:999; updateMe();
+    }
+  }).catch(function(){});
 }
-function playNumber(){
-  var g = parseInt(document.getElementById('guessNum').value);
-  var target = Math.floor(Math.random()*10)+1;
-  var win = (g===target);
-  if(win){ balance+=500; } else { balance-=50; }
-  document.getElementById('numRes').innerText = 'Number was ' + target + (win?' - JACKPOT +500':' - LOSE -50');
-  updateBalance();
+function openFullLeader(){ if(!requireLogin()) return; showPage('page-leader'); loadFullLeader(); }
+function loadFullLeader(){
+  var el=document.getElementById('fullLeader'); if(!el) return;
+  if(!fullLeaderData.length){ el.innerHTML='Loading...'; loadLeader(); setTimeout(loadFullLeader,1000); return; }
+  el.innerHTML=fullLeaderData.map(function(p,i){ return '<div class="leadRow"><span>'+(i+1)+'. '+p.display_name+'</span><span>🏆 '+(p.wins||0)+' | ❌ '+(p.losses||0)+'</span></div>'; }).join('');
 }
-function playSlot(){
-  var em = ['🍒','🍋','⭐','💎','7️⃣'];
-  var a = em[Math.floor(Math.random()*em.length)];
-  var b = em[Math.floor(Math.random()*em.length)];
-  var c = em[Math.floor(Math.random()*em.length)];
-  var win = (a===b && b===c);
-  if(win){ balance+=300; } else { balance-=50; }
-  document.getElementById('slotRes').innerText = a+' '+b+' '+c+(win?' - JACKPOT +300':' - LOSE -50');
-  updateBalance();
+function renderFullLeader(){ loadFullLeader(); }
+function jumpToMyRank(){
+  var el=document.getElementById('fullLeader'); if(!el) return;
+  loadFullLeader(); el.scrollTop=el.scrollHeight;
 }
-function playRps(choice){
-  var opts = ['Rock','Paper','Scissors'];
-  var comp = opts[Math.floor(Math.random()*3)];
-  var win = (choice==='Rock'&&comp==='Scissors')||(choice==='Paper'&&comp==='Rock')||(choice==='Scissors'&&comp==='Paper');
-  var draw = (choice===comp);
-  if(!draw && win){ balance+=100; } else if(!draw){ balance-=50; }
-  document.getElementById('rpsRes').innerText = 'Computer: '+comp+(draw?' - DRAW':(win?' - WIN +100':' - LOSE -50'));
-  updateBalance();
-}
-function playHL(choice){
-  var card = Math.floor(Math.random()*10)+1;
-  var win = (choice==='high' && card>5) || (choice==='low' && card<5);
-  if(win){ balance+=100; } else { balance-=50; }
-  document.getElementById('hlRes').innerText = 'Card was '+card+(win?' - WIN +100':' - LOSE -50');
-  updateBalance();
-}
-function loadRank(){
-  var list = document.getElementById('rankList');
-  list.innerHTML = '1. '+myName+' - '+balance+' coins<br>2. Champion - 4800<br>3. Star - 3200<br>4. Pro - 2100<br>5. Newbie - 900';
-}
-try{
-  var eb = document.getElementById('enterBtn');
-  if(eb){ eb.onclick = function(){ goRegister(); }; }
-}catch(e){}
-setInterval(updateCatTime,1000);
-updateCatTime();
-</script>
-</body>
-</html>
-"""
-
-@app.route('/')
-def home():
-    return HTML
-
-@app.route('/health')
-def health():
-    return jsonify({"status":"ok"})
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+function checkNotif(){ return; }
+function openMyProfile(){ if(!requireLogin()) return; updateMe(); showPage('page-profile'); }
+function openProfileUI(){ openMyProfile(); }
+function addFriend(to){ if(!requireLogin()) return; fetch('/api/friend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:user.name,to:to})}).then(function(){ toast('Friend request sent to '+to+'!'); loadAllDataTogether(); }); }
+function respondFriend(from,act){ fetch('/api/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({me:user.name,from:from,action:act})}).then(function(){ toast(act==='accept'?'✅ You accepted '+from:'❌ You rejected '+from); loadAllDataTogether().then(function(){ openMyProfile(); }); }); }
+function openMessages(){ if(!requireLogin()) return; showPage('page-messages'); loadAllDataTogether().then(function(){ loadChatList(); }); }
+function loadChatList(){ if(allFriends.length){ document.getElementById('chatFriendList').innerHTML=allFriends.map(function(f,i){ return '<div class="chatRow"><span><b>'+(i+1)+'. '+f+'</b></span><span><span class="chatBtn" onclick="openChat(\''+f.replace(/'/g,"\\'")+'\')">💬</span><span class="chatBtn" onclick="blockedFeature(\'Call\')">📞</span></span></div>'; }).join(''); return; } fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var me=null; for(var i=0;i<arr.length;i++){ if(eqName(arr[i].name,user.name)) me=arr[i]; } var friends=me?me.friends:[]; if(friends.length) mergeFriends(friends); if(!allFriends.length){ document.getElementById('chatFriendList').innerHTML='<p style="text-align:center">No friends yet.<br>Add friends from Leaderboard to chat!</p>'; return; } document.getElementById('chatFriendList').innerHTML=allFriends.map(function(f,i){ return '<div class="chatRow"><span><b>'+(i+1)+'. '+f+'</b></span><span><span class="chatBtn" onclick="openChat(\''+f.replace(/'/g,"\\'")+'\')">💬</span><span class="chatBtn" onclick="blockedFeature(\
