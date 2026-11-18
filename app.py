@@ -414,3 +414,20 @@ function addFriend(to){ if(!requireLogin()) return; fetch('/api/friend',{method:
 function respondFriend(from,act){ fetch('/api/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({me:user.name,from:from,action:act})}).then(function(){ toast(act==='accept'?'✅ You accepted '+from:'❌ You rejected '+from); loadAllDataTogether().then(function(){ openMyProfile(); }); }); }
 function openMessages(){ if(!requireLogin()) return; showPage('page-messages'); loadAllDataTogether().then(function(){ loadChatList(); }); }
 function loadChatList(){ if(allFriends.length){ document.getElementById('chatFriendList').innerHTML=allFriends.map(function(f,i){ return '<div class="chatRow"><span><b>'+(i+1)+'. '+f+'</b></span><span><span class="chatBtn" onclick="openChat(\''+f.replace(/'/g,"\\'")+'\')">💬</span><span class="chatBtn" onclick="blockedFeature(\'Call\')">📞</span></span></div>'; }).join(''); return; } fetch('/api/leaderboard').then(function(r){ return r.json(); }).then(function(d){ var arr=d.players||d; var me=null; for(var i=0;i<arr.length;i++){ if(eqName(arr[i].name,user.name)) me=arr[i]; } var friends=me?me.friends:[]; if(friends.length) mergeFriends(friends); if(!allFriends.length){ document.getElementById('chatFriendList').innerHTML='<p style="text-align:center">No friends yet.<br>Add friends from Leaderboard to chat!</p>'; return; } document.getElementById('chatFriendList').innerHTML=allFriends.map(function(f,i){ return '<div class="chatRow"><span><b>'+(i+1)+'. '+f+'</b></span><span><span class="chatBtn" onclick="openChat(\''+f.replace(/'/g,"\\'")+'\')">💬</span><span class="chatBtn" onclick="blockedFeature(\
+function loadChatList(){ if(allFriends.length){ document.getElementById('chatList').innerHTML=allFriends.map(function(f){ return '<div class="leadRow"><span>'+f+'</span><button onclick="openChat(\''+f+'\')">Chat</button></div>'; }).join(''); } }
+function openChat(name){ currentChat=name; showPage('page-chat'); document.getElementById('chatTitle').innerText='Chat with '+name; loadMessages(); }
+function loadMessages(){ fetch('/api/messages?user='+encodeURIComponent(user.name)+'&with='+encodeURIComponent(currentChat)).then(function(r){return r.json();}).then(function(d){ var el=document.getElementById('chatBox'); if(el) el.innerHTML=(d.messages||[]).map(function(m){ return '<div><b>'+m.from+':</b> '+m.text+'</div>'; }).join(''); }); }
+function sendMsg(){ var el=document.getElementById('chatInput'); if(!el||!el.value.trim()) return; fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:user.name,to:currentChat,text:el.value})}).then(function(){ el.value=''; loadMessages(); }); }
+</script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def home():
+    return HOME
+
+if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
