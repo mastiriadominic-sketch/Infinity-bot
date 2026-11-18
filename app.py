@@ -1,310 +1,531 @@
-
-from flask import Flask,request,jsonify
-import os,json,random,datetime,time
-app=Flask(__name__)
-BASE=os.path.dirname(__file__);LF=os.path.join(BASE,"leaderboard.json");MF=os.path.join(BASE,"messages.json")
-USERS={};MESSAGES={};CH={};REQ=[];LOANS=[];ANN=[]
-ECO={"gold":100000000,"gems":1000000,"bank":0,"fees":0,"lottery":0,"hist":[100000000,100010000,99950000],"backup":10000000000,"tick":time.time(),"history":[100000000,100010000,99950000,100020000],"bank_total":0}
-RANKS=[("Beginner",0),("Intermediate",200),("Advanced",400),("Expert",800),("Professional",1600),("National",3200),("S Rank",6400),("SS Rank",12800),("SSS Rank",25600),("SSS Classified",51200),("Godly",102400)]
-def norm(n): return str(n or "").strip().lower()
-def gid(): return "INF-"+"".join(str(random.randint(0,9)) for _ in range(8))
-def gbid(): return "Bank INF-"+"".join(str(random.randint(0,9)) for _ in range(10))
-def cid(s): return "".join(c for c in str(s or "").upper() if c.isdigit())
-def rank(w):
- r="Beginner"
- for n,need in RANKS:
-  if w>=need: r=n
- return r
-def ensure(v,k):
- for a,b in [("display_name",k),("friends",[]),("wins",0),("losses",0),("stage",0),("gold",0),("gems",0),("bank_gold",0),("bank_gems",0),("notifs",[]),("seen",[]),("seen_qs",[]),("items",[]),("cars",[]),("loans",[]),("glevel",1),("gkills",0),("galaxy_level",1),("galaxy_kills",0)]: v.setdefault(a,b)
- if not v.get("player_id"): v["player_id"]=gid()
- if not v.get("bank_id"): v["bank_id"]=gbid()
- return v
+from flask import Flask, request, jsonify
+import os, json, random, datetime, time
+app = Flask(__name__)
+BASE = os.path.dirname(__file__)
+LEADER_FILE = os.path.join(BASE, "leaderboard.json")
+MSG_FILE = os.path.join(BASE, "messages.json")
+USERS = {}
+MESSAGES = {}
+REQUESTS = []
+LOANS = []
+ANNOUNCEMENTS = []
+ECO = {"gold": 100000000, "gems": 1000000, "bank": 0, "bank_total": 0, "fees": 0, "lottery": 0, "backup": 10000000000, "history": [100000000, 100010000, 99950000, 100020000], "last_tick": time.time()}
+RANKS = [("Beginner", 0), ("Intermediate", 200), ("Advanced", 400), ("Expert", 800), ("Professional", 1600), ("National", 3200), ("S Rank", 6400), ("SS Rank", 12800), ("SSS Rank", 25600), ("SSS Classified", 51200), ("Godly Rank Classified", 102400)]
+def norm(n):
+    return str(n or "").strip().lower()
+def gid():
+    return "INF-" + "".join(str(random.randint(0, 9)) for _ in range(8))
+def gbid():
+    return "Bank INF-" + "".join(str(random.randint(0, 9)) for _ in range(10))
+def cid(s):
+    return "".join(c for c in str(s or "").upper() if c.isdigit())
+def rank_for(w):
+    r = "Beginner"
+    for name, need in RANKS:
+        if w >= need:
+            r = name
+    return r
+def ensure(v, k):
+    v.setdefault("display_name", k)
+    v.setdefault("friends", [])
+    v.setdefault("wins", 0)
+    v.setdefault("losses", 0)
+    v.setdefault("stage", 0)
+    v.setdefault("gold", 0)
+    v.setdefault("gems", 0)
+    v.setdefault("bank_gold", 0)
+    v.setdefault("bank_gems", 0)
+    v.setdefault("notifs", [])
+    v.setdefault("seen_qs", [])
+    v.setdefault("items", [])
+    v.setdefault("cars", [])
+    v.setdefault("loans", [])
+    v.setdefault("galaxy_level", 1)
+    v.setdefault("galaxy_kills", 0)
+    if not v.get("player_id"):
+        v["player_id"] = gid()
+    if not v.get("bank_id"):
+        v["bank_id"] = gbid()
+    return v
 try:
- if os.path.exists(LF):
-  d=json.load(open(LF)); USERS={norm(v.get("display_name",k) or k):ensure(v,k) for k,v in d.items()}
-except: pass
+    if os.path.exists(LEADER_FILE):
+        with open(LEADER_FILE) as f:
+            d = json.load(f)
+        USERS = {norm(v.get("display_name", k) or k): ensure(v, k) for k, v in d.items()}
+except:
+    pass
 try:
- if os.path.exists(MF): MESSAGES=json.load(open(MF))
-except: pass
+    if os.path.exists(MSG_FILE):
+        with open(MSG_FILE) as f:
+            MESSAGES = json.load(f)
+except:
+    pass
 def save():
- try: open(LF,"w").write(json.dumps(USERS))
- except: pass
-def tick():
- if time.time()-ECO["tick"]>5:
-  ECO["tick"]=time.time(); ECO["gold"]=max(0,ECO["gold"]+random.randint(-80000,120000)); ECO["hist"].append(ECO["gold"]); ECO["history"].append(ECO["gold"]); ECO["hist"]=ECO["hist"][-80:]; ECO["history"]=ECO["history"][-80:]
-def notify(n,t,typ="info",ex=None):
- if norm(n) in USERS:
-  x={"text":t,"time":str(datetime.datetime.now()),"type":typ}
-  if ex: x.update(ex)
-  USERS[norm(n)]["notifs"].append(x); save()
-def getp(n): return USERS.get(norm(n))
+    try:
+        with open(LEADER_FILE, "w") as f:
+            f.write(json.dumps(USERS))
+    except Exception as e:
+        print(e)
+def crypto_tick():
+    now = time.time()
+    if now - ECO.get("last_tick", 0) > 5:
+        ECO["last_tick"] = now
+        ECO["gold"] = max(0, ECO["gold"] + random.randint(-80000, 120000))
+        ECO["history"].append(ECO["gold"])
+        if len(ECO["history"]) > 80:
+            ECO["history"] = ECO["history"][-80:]
+def notify(name, text, typ="info", extra=None):
+    if norm(name) in USERS:
+        n = {"text": text, "time": str(datetime.datetime.now()), "type": typ}
+        if extra:
+            n.update(extra)
+        USERS[norm(name)]["notifs"].append(n)
+        save()
+def getp(n):
+    return USERS.get(norm(n))
+def check_pin(v, pin):
+    if str(v.get("password")) != str(pin):
+        notify(v["display_name"], "Warning! Pin is wrong.", "warn")
+        return False
+    return True
 @app.route("/")
-def home(): tick(); return HOME
-@app.route("/api/earning_status")
-def es(): tick(); return jsonify({"earning_on":True,"active":True,"economy":ECO})
+def home():
+    crypto_tick()
+    return HOME
 @app.route("/api/player")
 def gp():
- n=norm(request.args.get("name","")); pw=request.args.get("password","")
- if n in USERS:
-  v=USERS[n]
-  if pw and v.get("password") and str(v.get("password"))!=str(pw): return jsonify({"found":True,"password_ok":False,"player_id":v["player_id"]})
-  return jsonify({"found":True,"password_ok":True,"name":v["display_name"],"wins":v["wins"],"losses":v["losses"],"stage":v["stage"],"gold":v["gold"],"gems":v["gems"],"bank_gold":v.get("bank_gold",0),"bank_gems":v.get("bank_gems",0),"player_id":v["player_id"],"bank_id":v.get("bank_id",""),"rank":rank(v["wins"]),"classified":v["wins"]>=3200,"friends":v["friends"],"notifs":v.get("notifs",[]),"seen_qs":v.get("seen_qs",[]) or v.get("seen",[]),"seen":v.get("seen",[]),"items":v.get("items",[]),"cars":v.get("cars",[]),"loans":v.get("loans",[]),"glevel":v.get("glevel",1),"gkills":v.get("gkills",0),"galaxy_level":v.get("galaxy_level",1),"galaxy_kills":v.get("galaxy_kills",0)})
- return jsonify({"found":False})
+    n = norm(request.args.get("name", ""))
+    pw = request.args.get("password", "")
+    if n in USERS:
+        v = USERS[n]
+        if pw and v.get("password") and str(v.get("password")) != str(pw):
+            return jsonify({"found": True, "password_ok": False, "player_id": v["player_id"]})
+        return jsonify({"found": True, "password_ok": True, "name": v["display_name"], "wins": v["wins"], "losses": v["losses"], "stage": v["stage"], "gold": v["gold"], "gems": v["gems"], "bank_gold": v.get("bank_gold", 0), "bank_gems": v.get("bank_gems", 0), "player_id": v["player_id"], "bank_id": v.get("bank_id", ""), "rank": rank_for(v["wins"]), "classified": v["wins"] >= 3200, "friends": v["friends"], "notifs": v.get("notifs", []), "seen_qs": v.get("seen_qs", []), "items": v.get("items", []), "cars": v.get("cars", []), "loans": v.get("loans", []), "galaxy_level": v.get("galaxy_level", 1), "galaxy_kills": v.get("galaxy_kills", 0)})
+    return jsonify({"found": False})
 @app.route("/api/leaderboard")
 def lb():
- m=request.args.get("mode","pvp"); ps=[]
- for v in USERS.values(): ps.append({"name":v["display_name"],"wins":v["wins"],"losses":v["losses"],"gold":v.get("gold",0),"gems":v.get("gems",0),"player_id":v.get("player_id",""),"rank":rank(v["wins"])})
- if m=="gold": ps=sorted(ps,key=lambda x:x["gold"],reverse=True)
- elif m=="gems": ps=sorted(ps,key=lambda x:x["gems"],reverse=True)
- elif m=="rank": ps=sorted(ps,key=lambda x:x["wins"],reverse=True)
- else: ps=sorted(ps,key=lambda x:x["wins"]-x["losses"],reverse=True)
- return jsonify({"players":ps})
-@app.route("/api/score",methods=["POST"])
+    mode = request.args.get("mode", "pvp")
+    ps = []
+    for v in USERS.values():
+        ps.append({"name": v["display_name"], "wins": v["wins"], "losses": v["losses"], "gold": v.get("gold", 0), "gems": v.get("gems", 0), "player_id": v.get("player_id", ""), "rank": rank_for(v["wins"])})
+    if mode == "gold":
+        ps = sorted(ps, key=lambda x: x["gold"], reverse=True)
+    elif mode == "gems":
+        ps = sorted(ps, key=lambda x: x["gems"], reverse=True)
+    elif mode == "rank":
+        ps = sorted(ps, key=lambda x: x["wins"], reverse=True)
+    else:
+        ps = sorted(ps, key=lambda x: x["wins"] - x["losses"], reverse=True)
+    return jsonify({"players": ps})
+@app.route("/api/score", methods=["POST"])
 def sc():
- d=request.get_json() or {}; n=norm(d.get("name"))
- if not n: return jsonify({"error":"no name"}),400
- if n not in USERS: USERS[n]=ensure({"display_name":d.get("name"),"password":d.get("password","")},d.get("name"))
- v=USERS[n]
- if d.get("password"): v["password"]=d.get("password")
- v["wins"]=max(v["wins"],d.get("wins",v["wins"])); v["losses"]=d.get("losses",v["losses"]); v["stage"]=d.get("stage",v["stage"])
- for k in ("gold","gems"):
-  if k in d: v[k]=max(v[k],d[k])
- for k in ("seen","seen_qs","items","cars"):
-  if k in d:
-   for x in d[k]:
-    if x not in v.get(k,[]): v[k].append(x)
- if "glevel" in d: v["glevel"]=max(v.get("glevel",1),d["glevel"]); v["galaxy_level"]=v["glevel"]
- if "gkills" in d: v["gkills"]=max(v.get("gkills",0),d["gkills"]); v["galaxy_kills"]=v["gkills"]
- if "galaxy_level" in d: v["galaxy_level"]=max(v.get("galaxy_level",1),d["galaxy_level"])
- if "galaxy_kills" in d: v["galaxy_kills"]=max(v.get("galaxy_kills",0),d["galaxy_kills"])
- save(); return jsonify({"ok":True})
-def chk(v,pin):
- if str(v.get("password"))!=str(pin): notify(v["display_name"],"Warning! Pin is wrong.","warn"); return False
- return True
-@app.route("/api/transfer",methods=["POST"])
+    d = request.get_json() or {}
+    n = norm(d.get("name"))
+    if not n:
+        return jsonify({"error": "no name"}), 400
+    if n not in USERS:
+        USERS[n] = ensure({"display_name": d.get("name"), "password": d.get("password", "")}, d.get("name"))
+    v = USERS[n]
+    if d.get("password"):
+        v["password"] = d.get("password")
+    v["wins"] = max(v["wins"], d.get("wins", v["wins"]))
+    v["losses"] = d.get("losses", v["losses"])
+    v["stage"] = d.get("stage", v["stage"])
+    if "gold" in d:
+        v["gold"] = max(v["gold"], d["gold"])
+    if "gems" in d:
+        v["gems"] = max(v["gems"], d["gems"])
+    for k in ("seen_qs", "items", "cars"):
+        if k in d:
+            cur = v.get(k, [])
+            for x in d[k]:
+                if x not in cur:
+                    cur.append(x)
+            v[k] = cur
+    if "galaxy_level" in d:
+        v["galaxy_level"] = max(v.get("galaxy_level", 1), d["galaxy_level"])
+    if "galaxy_kills" in d:
+        v["galaxy_kills"] = max(v.get("galaxy_kills", 0), d["galaxy_kills"])
+    save()
+    return jsonify({"ok": True})
+@app.route("/api/transfer", methods=["POST"])
 def tr():
- d=request.get_json() or {}; s=getp(d.get("sender")); amt=int(d.get("amount",0))
- if not s or not chk(s,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
- rid="INF-"+cid(d.get("receiver_id","")); r=None
- for v in USERS.values():
-  if v.get("player_id")==rid: r=v
- if not r: return jsonify({"error":"Receiver not found"}),404
- if s.get("gold",0)<amt: return jsonify({"error":"Not enough Gold"}),400
- fee=int(amt*0.05); s["gold"]-=amt; r["gold"]=r.get("gold",0)+(amt-fee); ECO["gold"]+=fee; ECO["fees"]+=fee; tick()
- notify(s["display_name"],"You sent "+str(amt)+" Gold.","send"); notify(r["display_name"],"You received "+str(amt)+" Gold.","receive"); save(); return jsonify({"ok":True,"sender_gold":s["gold"]})
-@app.route("/api/bank_action",methods=["POST"])
+    d = request.get_json() or {}
+    s = getp(d.get("sender"))
+    amt = int(d.get("amount", 0))
+    if not s or not check_pin(s, d.get("pin", "")):
+        return jsonify({"error": "Wrong PIN"}), 403
+    rid = "INF-" + cid(d.get("receiver_id", ""))
+    recv = None
+    for v in USERS.values():
+        if v.get("player_id") == rid:
+            recv = v
+    if not recv:
+        return jsonify({"error": "Receiver ID not found"}), 404
+    if s.get("gold", 0) < amt:
+        return jsonify({"error": "Not enough Gold"}), 400
+    fee = int(amt * 0.05)
+    s["gold"] -= amt
+    recv["gold"] = recv.get("gold", 0) + (amt - fee)
+    ECO["gold"] += fee
+    ECO["fees"] += fee
+    notify(s["display_name"], "You sent " + str(amt) + " Gold.", "send")
+    notify(recv["display_name"], "You received " + str(amt) + " Gold.", "receive")
+    save()
+    return jsonify({"ok": True, "sender_gold": s["gold"]})
+@app.route("/api/bank_action", methods=["POST"])
 def ba():
- d=request.get_json() or {}; v=getp(d.get("name")); amt=int(d.get("amount",0)); act=d.get("action","deposit"); cur=d.get("currency","Gold")
- if not v or not chk(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
- if act=="deposit":
-  if cur=="Gems":
-   if v.get("gems",0)<amt: return jsonify({"error":"Not enough Gems"}),400
-   v["gems"]-=amt; v["bank_gems"]=v.get("bank_gems",0)+amt
-  else:
-   if v.get("gold",0)<amt: return jsonify({"error":"Not enough Gold"}),400
-   v["gold"]-=amt; v["bank_gold"]=v.get("bank_gold",0)+amt; ECO["gold"]+=amt; ECO["bank"]+=amt; ECO["bank_total"]+=amt
- else:
-  if cur=="Gems":
-   if v.get("bank_gems",0)<amt: return jsonify({"error":"Not enough in Bank"}),400
-   v["bank_gems"]-=amt; v["gems"]=v.get("gems",0)+amt
-  else:
-   if v.get("bank_gold",0)<amt: return jsonify({"error":"Not enough in Bank"}),400
-   v["bank_gold"]-=amt; v["gold"]=v.get("gold",0)+amt
- save(); return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"],"bank_gold":v.get("bank_gold",0),"bank_gems":v.get("bank_gems",0)})
-@app.route("/api/exchange",methods=["POST"])
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    amt = int(d.get("amount", 0))
+    act = d.get("action", "deposit")
+    cur = d.get("currency", "Gold")
+    if not v or not check_pin(v, d.get("pin", "")):
+        return jsonify({"error": "Wrong PIN"}), 403
+    if act == "deposit":
+        if cur == "Gems":
+            if v.get("gems", 0) < amt:
+                return jsonify({"error": "Not enough Gems"}), 400
+            v["gems"] -= amt
+            v["bank_gems"] = v.get("bank_gems", 0) + amt
+        else:
+            if v.get("gold", 0) < amt:
+                return jsonify({"error": "Not enough Gold"}), 400
+            v["gold"] -= amt
+            v["bank_gold"] = v.get("bank_gold", 0) + amt
+            ECO["gold"] += amt
+            ECO["bank"] += amt
+            ECO["bank_total"] += amt
+    else:
+        if cur == "Gems":
+            if v.get("bank_gems", 0) < amt:
+                return jsonify({"error": "Not enough in Bank"}), 400
+            v["bank_gems"] -= amt
+            v["gems"] = v.get("gems", 0) + amt
+        else:
+            if v.get("bank_gold", 0) < amt:
+                return jsonify({"error": "Not enough in Bank"}), 400
+            v["bank_gold"] -= amt
+            v["gold"] = v.get("gold", 0) + amt
+    save()
+    return jsonify({"ok": True, "gold": v["gold"], "gems": v["gems"], "bank_gold": v.get("bank_gold", 0), "bank_gems": v.get("bank_gems", 0)})
+@app.route("/api/exchange", methods=["POST"])
 def ex():
- d=request.get_json() or {}; v=getp(d.get("name")); amt=int(d.get("amount",0)); dr=d.get("direction","gold_to_gem")
- if not v or not chk(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
- if dr=="gold_to_gem":
-  g=amt//100
-  if g<1 or v.get("gold",0)<g*100: return jsonify({"error":"Need 100 Gold = 1 Germ"}),400
-  v["gold"]-=g*100; v["gems"]=v.get("gems",0)+g
- else:
-  if v.get("gems",0)<amt: return jsonify({"error":"Not enough Gems"}),400
-  v["gems"]-=amt; v["gold"]=v.get("gold",0)+amt*100
- save(); return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"]})
-@app.route("/api/loan_apply",methods=["POST"])
-def la():
- d=request.get_json() or {}; v=getp(d.get("name")); amt=int(d.get("amount",0))
- if not v or not chk(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
- lid="LN-"+str(random.randint(10000000,99999999)); loan={"id":lid,"from":v["display_name"],"from_id":v.get("player_id"),"amount":amt,"currency":d.get("currency","Gold"),"repay_date":d.get("repay_date",""),"original_date":d.get("repay_date",""),"status":"pending_dominic","new_date":"","dominic_new_date":""}
- LOANS.append(loan); notify("dominic","LOAN: "+v["display_name"]+" wants "+str(amt)+" "+loan["currency"]+" repay "+loan["repay_date"]+" - Approve?","loan_request",{"loan_id":lid,"amount":amt,"currency":loan["currency"],"repay_date":loan["repay_date"],"from":v["display_name"]}); return jsonify({"ok":True})
-@app.route("/api/loan_dominic",methods=["POST"])
-def ld():
- d=request.get_json() or {}
- if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
- for l in LOANS:
-  if l["id"]==d.get("loan_id"):
-   if not d.get("approve"): l["status"]="declined"; notify(l["from"],"Loan DECLINED by Dominic.","loan_declined"); return jsonify({"ok":True})
-   l["new_date"]=d.get("new_date") or l["repay_date"]; l["dominic_new_date"]=l["new_date"]; l["status"]="waiting_player_confirm"
-   notify(l["from"],"Loan APPROVED but date changed to "+l["new_date"]+" - Approve? NO = refunded.","loan_date_change",{"loan_id":l["id"],"amount":l["amount"],"currency":l["currency"],"new_date":l["new_date"]}); return jsonify({"ok":True})
- return jsonify({"error":"Not found"}),404
-@app.route("/api/loan_player_confirm",methods=["POST"])
-def lc():
- d=request.get_json() or {}; v=getp(d.get("name"))
- if not v: return jsonify({"error":"Not found"}),404
- for l in LOANS:
-  if l["id"]==d.get("loan_id"):
-   if not d.get("approve"): l["status"]="refunded"; notify(v["display_name"],"Loan refunded.","loan_refunded"); return jsonify({"ok":True})
-   l["status"]="approved"; l["repay_date"]=l.get("dominic_new_date") or l.get("new_date") or l["repay_date"]; amt=l["amount"]
-   if l["currency"]=="Gold": v["gold"]=v.get("gold",0)+amt; ECO["gold"]-=amt
-   else: v["gems"]=v.get("gems",0)+amt; ECO["gems"]-=amt
-   v.setdefault("loans",[]).append(l); save(); notify(v["display_name"],"✅ LOAN CREDITED "+str(amt)+" "+l["currency"]+" Repay by "+l["repay_date"],"loan_approved"); return jsonify({"ok":True})
- return jsonify({"error":"Not found"}),404
-@app.route("/api/buy_item",methods=["POST"])
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    amt = int(d.get("amount", 0))
+    direction = d.get("direction", "gold_to_gem")
+    if not v or not check_pin(v, d.get("pin", "")):
+        return jsonify({"error": "Wrong PIN"}), 403
+    if direction == "gold_to_gem":
+        gems = amt // 100
+        if gems < 1 or v.get("gold", 0) < gems * 100:
+            return jsonify({"error": "Need at least 100 Gold = 1 Germ"}), 400
+        v["gold"] -= gems * 100
+        v["gems"] = v.get("gems", 0) + gems
+    else:
+        if v.get("gems", 0) < amt:
+            return jsonify({"error": "Not enough Gems"}), 400
+        v["gems"] -= amt
+        v["gold"] = v.get("gold", 0) + amt * 100
+    save()
+    return jsonify({"ok": True, "gold": v["gold"], "gems": v["gems"]})
+ @app.route("/api/loan_apply", methods=["POST"])
+def loan_apply():
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    amt = int(d.get("amount", 0))
+    if not v or not check_pin(v, d.get("pin", "")):
+        return jsonify({"error": "Wrong PIN"}), 403
+    lid = "LN-" + str(random.randint(10000000, 99999999))
+    loan = {"id": lid, "from": v["display_name"], "from_id": v.get("player_id"), "amount": amt, "currency": d.get("currency", "Gold"), "repay_date": d.get("repay_date", ""), "original_date": d.get("repay_date", ""), "status": "pending_dominic", "new_date": "", "dominic_new_date": ""}
+    LOANS.append(loan)
+    notify("dominic", "LOAN: " + v["display_name"] + " wants " + str(amt) + " " + loan["currency"] + " repay " + loan["repay_date"] + " - Approve?", "loan_request", {"loan_id": lid, "amount": amt, "currency": loan["currency"], "repay_date": loan["repay_date"], "from": v["display_name"]})
+    return jsonify({"ok": True})
+
+@app.route("/api/loan_dominic", methods=["POST"])
+def loan_dom():
+    d = request.get_json() or {}
+    if norm(d.get("admin")) != "dominic" or str(d.get("pin")) != "2164":
+        return jsonify({"error": "Only Dominic"}), 403
+    for l in LOANS:
+        if l["id"] == d.get("loan_id"):
+            if not d.get("approve"):
+                l["status"] = "declined"
+                notify(l["from"], "Loan DECLINED by Dominic.", "loan_declined")
+                return jsonify({"ok": True})
+            l["new_date"] = d.get("new_date") or l["repay_date"]
+            l["dominic_new_date"] = l["new_date"]
+            l["status"] = "waiting_player_confirm"
+            notify(l["from"], "Loan APPROVED but date changed to " + l["new_date"] + " - Approve? NO = refunded.", "loan_date_change", {"loan_id": l["id"], "amount": l["amount"], "currency": l["currency"], "new_date": l["new_date"]})
+            return jsonify({"ok": True})
+    return jsonify({"error": "Not found"}), 404
+
+@app.route("/api/loan_player_confirm", methods=["POST"])
+def loan_pc():
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    if not v:
+        return jsonify({"error": "Not found"}), 404
+    for l in LOANS:
+        if l["id"] == d.get("loan_id"):
+            if not d.get("approve"):
+                l["status"] = "refunded"
+                notify(v["display_name"], "Loan refunded.", "loan_refunded")
+                return jsonify({"ok": True})
+            l["status"] = "approved"
+            l["repay_date"] = l.get("dominic_new_date") or l.get("new_date") or l["repay_date"]
+            amt = l["amount"]
+            if l["currency"] == "Gold":
+                v["gold"] = v.get("gold", 0) + amt
+                ECO["gold"] -= amt
+            else:
+                v["gems"] = v.get("gems", 0) + amt
+                ECO["gems"] -= amt
+            v.setdefault("loans", []).append(l)
+            save()
+            notify(v["display_name"], "✅ LOAN CREDITED " + str(amt) + " " + l["currency"] + " Repay by " + l["repay_date"], "loan_approved")
+            return jsonify({"ok": True})
+    return jsonify({"error": "Not found"}), 404
+
+@app.route("/api/buy_item", methods=["POST"])
 def bi():
- d=request.get_json() or {}; v=getp(d.get("name")); price=int(d.get("price",0)); item=d.get("item","")
- if not v or not chk(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
- if v.get("gold",0)<price: return jsonify({"error":"Not enough Gold"}),400
- if item in v.get("items",[]) or item in v.get("cars",[]): return jsonify({"error":"Already own!"}),400
- v["gold"]-=price
- if any(x in item for x in ["Toyota","BMW","Lamborghini","Ferrari","Tesla","Mercedes","Audi","Rover","Hilux","Nissan","Bugatti"]): v.setdefault("cars",[]).append(item)
- else: v.setdefault("items",[]).append(item)
- ECO["gold"]+=price; ECO["fees"]+=price; notify(v["display_name"],"Bought "+item,"shop"); save(); return jsonify({"ok":True,"gold":v["gold"]})
-@app.route("/api/request_money",methods=["POST"])
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    price = int(d.get("price", 0))
+    item = d.get("item", "")
+    if not v or not check_pin(v, d.get("pin", "")):
+        return jsonify({"error": "Wrong PIN"}), 403
+    if v.get("gold", 0) < price:
+        return jsonify({"error": "Not enough Gold"}), 400
+    if item in v.get("items", []) or item in v.get("cars", []):
+        return jsonify({"error": "Already own!"}), 400
+    v["gold"] -= price
+    if any(x in item for x in ["Toyota", "BMW", "Lamborghini", "Ferrari", "Tesla", "Mercedes", "Audi", "Rover", "Hilux", "Nissan", "Bugatti"]):
+        v.setdefault("cars", []).append(item)
+    else:
+        v.setdefault("items", []).append(item)
+    ECO["gold"] += price
+    ECO["fees"] += price
+    notify(v["display_name"], "Bought " + item, "shop")
+    save()
+    return jsonify({"ok": True, "gold": v["gold"]})
+
+@app.route("/api/request_money", methods=["POST"])
 def rm():
- d=request.get_json() or {}; v=getp(d.get("name")); amt=d.get("amount"); cur=d.get("currency","Gold")
- if not v: return jsonify({"error":"Not found"}),404
- if cur=="Gold" and amt and int(amt)>100000000: return jsonify({"error":"Gold max 100,000,000"}),400
- if cur=="Gems" and amt and int(amt)>100000: return jsonify({"error":"Germ max 100,000"}),400
- rid="RQ-"+str(random.randint(10000000,99999999)); REQ.append({"id":rid,"from":v["display_name"],"from_id":v.get("player_id"),"amount":amt,"currency":cur,"message":str(d.get("message",""))[:200]}); notify("dominic","SECRET: "+v["display_name"]+" wants "+str(amt)+" "+cur,"request",{"request_id":rid,"from":v["display_name"],"amount":amt,"currency":cur}); return jsonify({"ok":True})
-@app.route("/api/request_approve",methods=["POST"])
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    amt = d.get("amount")
+    cur = d.get("currency", "Gold")
+    if not v:
+        return jsonify({"error": "Not found"}), 404
+    if cur == "Gold" and amt and int(amt) > 100000000:
+        return jsonify({"error": "Gold max 100,000,000"}), 400
+    if cur == "Gems" and amt and int(amt) > 100000:
+        return jsonify({"error": "Germ max 100,000"}), 400
+    rid = "RQ-" + str(random.randint(10000000, 99999999))
+    REQUESTS.append({"id": rid, "from": v["display_name"], "from_id": v.get("player_id"), "amount": amt, "currency": cur, "message": str(d.get("message", ""))[:200]})
+    notify("dominic", "SECRET: " + v["display_name"] + " wants " + str(amt) + " " + cur, "request", {"request_id": rid, "from": v["display_name"], "amount": amt, "currency": cur})
+    return jsonify({"ok": True})
+
+@app.route("/api/request_approve", methods=["POST"])
 def ra():
- d=request.get_json() or {}
- if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
- amt=int(d.get("amount",0)); cur=d.get("currency","Gold")
- for r in list(REQ):
-  if r["id"]==d.get("request_id"):
-   REQ.remove(r)
-   if cur=="Gold": ECO["gold"]-=amt
-   else: ECO["gems"]-=amt
-   for v in USERS.values():
-    if v.get("player_id")==r["from_id"]:
-     if cur=="Gold": v["gold"]=v.get("gold",0)+amt
-     else: v["gems"]=v.get("gems",0)+amt
-     notify(v["display_name"],"✅ SECRET APPROVED: +"+str(amt)+" "+cur,"request_ok")
-   save(); return jsonify({"ok":True})
- return jsonify({"error":"Not found"}),404
-@app.route("/api/lottery",methods=["POST"])
+    d = request.get_json() or {}
+    if norm(d.get("admin")) != "dominic" or str(d.get("pin")) != "2164":
+        return jsonify({"error": "Only Dominic"}), 403
+    amt = int(d.get("amount", 0))
+    cur = d.get("currency", "Gold")
+    for r in list(REQUESTS):
+        if r["id"] == d.get("request_id"):
+            REQUESTS.remove(r)
+            if cur == "Gold":
+                ECO["gold"] -= amt
+            else:
+                ECO["gems"] -= amt
+            for v in USERS.values():
+                if v.get("player_id") == r["from_id"]:
+                    if cur == "Gold":
+                        v["gold"] = v.get("gold", 0) + amt
+                    else:
+                        v["gems"] = v.get("gems", 0) + amt
+                    notify(v["display_name"], "✅ SECRET APPROVED: +" + str(amt) + " " + cur, "request_ok")
+            save()
+            return jsonify({"ok": True})
+    return jsonify({"error": "Not found"}), 404
+
+@app.route("/api/lottery", methods=["POST"])
 def lo():
- d=request.get_json() or {}; v=getp(d.get("name")); bet=int(d.get("bet",0)); cur=d.get("currency","Gold")
- if not v or not chk(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
- if cur=="Gold":
-  if v.get("gold",0)<bet: return jsonify({"error":"Not enough"}),400
-  v["gold"]-=bet
- else:
-  if v.get("gems",0)<bet: return jsonify({"error":"Not enough"}),400
-  v["gems"]-=bet
- win=random.random()<0.5
- if win:
-  if cur=="Gold": v["gold"]+=bet*2; ECO["gold"]-=bet
-  else: v["gems"]+=bet*2; ECO["gems"]-=bet
-  notify(v["display_name"],"LOTTERY WIN "+str(bet*2)+" "+cur,"lottery"); res={"win":True,"prize":bet*2}
- else:
-  if cur=="Gold": ECO["gold"]+=bet
-  else: ECO["gems"]+=bet
-  notify(v["display_name"],"LOTTERY LOSE "+str(bet)+" "+cur,"lottery"); res={"win":False,"lost":bet}
- save(); return jsonify({"ok":True,"result":res,"gold":v["gold"],"gems":v["gems"]})
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    bet = int(d.get("bet", 0))
+    cur = d.get("currency", "Gold")
+    if not v or not check_pin(v, d.get("pin", "")):
+        return jsonify({"error": "Wrong PIN"}), 403
+    if cur == "Gold":
+        if v.get("gold", 0) < bet:
+            return jsonify({"error": "Not enough"}), 400
+        v["gold"] -= bet
+    else:
+        if v.get("gems", 0) < bet:
+            return jsonify({"error": "Not enough"}), 400
+        v["gems"] -= bet
+    win = random.random() < 0.5
+    if win:
+        if cur == "Gold":
+            v["gold"] += bet * 2
+            ECO["gold"] -= bet
+        else:
+            v["gems"] += bet * 2
+            ECO["gems"] -= bet
+        notify(v["display_name"], "LOTTERY WIN " + str(bet * 2) + " " + cur, "lottery")
+        res = {"win": True, "prize": bet * 2}
+    else:
+        if cur == "Gold":
+            ECO["gold"] += bet
+        else:
+            ECO["gems"] += bet
+        notify(v["display_name"], "LOTTERY LOSE " + str(bet) + " " + cur, "lottery")
+        res = {"win": False, "lost": bet}
+    save()
+    return jsonify({"ok": True, "result": res, "gold": v["gold"], "gems": v["gems"]})
+
 @app.route("/api/economy")
 def ec():
- if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164": return jsonify({"error":"Admin only"}),403
- tick(); return jsonify({"economy":ECO,"requests":REQ,"loans":LOANS})
-@app.route("/api/emergency",methods=["POST"])
+    if norm(request.args.get("name")) != "dominic" or str(request.args.get("password")) != "2164":
+        return jsonify({"error": "Admin only"}), 403
+    crypto_tick()
+    return jsonify({"economy": ECO, "requests": REQUESTS, "loans": LOANS})
+
+@app.route("/api/emergency", methods=["POST"])
 def em():
- d=request.get_json() or {}
- if norm(d.get("name"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
- if ECO["gold"]>=0: return jsonify({"error":"Emergency only if NEGATIVE"}),400
- ECO["gold"]+=500000000000; ECO["backup"]=max(0,ECO["backup"]-500000000000); return jsonify({"ok":True,"economy":ECO})
-@app.route("/api/announce",methods=["POST"])
+    d = request.get_json() or {}
+    if norm(d.get("name")) != "dominic" or str(d.get("pin")) != "2164":
+        return jsonify({"error": "Only Dominic"}), 403
+    if ECO["gold"] >= 0:
+        return jsonify({"error": "Emergency only if NEGATIVE"}), 400
+    ECO["gold"] += 500000000000
+    ECO["backup"] = max(0, ECO["backup"] - 500000000000)
+    return jsonify({"ok": True, "economy": ECO})
+
+@app.route("/api/announce", methods=["POST"])
 def an():
- d=request.get_json() or {}
- if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
- t=d.get("text","")[:500]; ANN.append({"text":t,"time":str(datetime.datetime.now())})
- for k in list(USERS.keys()): notify(USERS[k]["display_name"],"📢 ANNOUNCEMENT: "+t,"announcement")
- return jsonify({"ok":True})
+    d = request.get_json() or {}
+    if norm(d.get("admin")) != "dominic" or str(d.get("pin")) != "2164":
+        return jsonify({"error": "Only Dominic"}), 403
+    t = d.get("text", "")[:500]
+    ANNOUNCEMENTS.append({"text": t, "time": str(datetime.datetime.now())})
+    for k in list(USERS.keys()):
+        notify(USERS[k]["display_name"], "📢 ANNOUNCEMENT: " + t, "announcement")
+    return jsonify({"ok": True})
+
 @app.route("/api/announcements")
-def ga(): return jsonify({"announcements":ANN[-5:]})
-@app.route("/api/toggle_earning",methods=["POST"])
+def ga():
+    return jsonify({"announcements": ANNOUNCEMENTS[-5:]})
+
+@app.route("/api/toggle_earning", methods=["POST"])
 def te():
- d=request.get_json() or {}
- if norm(d.get("name"))!="dominic" or str(d.get("password"))!="2164": return jsonify({"error":"Only Dominic"}),403
- return jsonify({"earning_on":True,"active":True})
+    d = request.get_json() or {}
+    if norm(d.get("name")) != "dominic" or str(d.get("password")) != "2164":
+        return jsonify({"error": "Only Dominic"}), 403
+    return jsonify({"earning_on": True, "active": True})
+
 @app.route("/api/server_info")
 def si():
- if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164": return jsonify({"error":"Admin only"}),403
- reviews=[]
- try:
-  if os.path.exists(os.path.join(BASE,"reviews.json")):
-   with open(os.path.join(BASE,"reviews.json")) as f: reviews=[json.loads(l) for l in f if l.strip()]
- except: pass
- return jsonify({"players":len(USERS),"earning_on":True,"earning_active":True,"reviews":reviews,"economy":ECO,"loans":LOANS})
-@app.route("/api/review",methods=["POST"])
+    if norm(request.args.get("name")) != "dominic" or str(request.args.get("password")) != "2164":
+        return jsonify({"error": "Admin only"}), 403
+    reviews = []
+    try:
+        if os.path.exists(os.path.join(BASE, "reviews.json")):
+            with open(os.path.join(BASE, "reviews.json")) as f:
+                reviews = [json.loads(l) for l in f if l.strip()]
+    except:
+        pass
+    return jsonify({"players": len(USERS), "earning_on": True, "earning_active": True, "reviews": reviews, "economy": ECO, "loans": LOANS})
+
+@app.route("/api/review", methods=["POST"])
 def rv():
- d=request.get_json() or {}
- try: open(os.path.join(BASE,"reviews.json"),"a").write(json.dumps(d)+"\n")
- except: pass
- return jsonify({"ok":True})
-@app.route("/api/chat_send",methods=["POST"])
+    d = request.get_json() or {}
+    try:
+        open(os.path.join(BASE, "reviews.json"), "a").write(json.dumps(d) + "\n")
+    except:
+        pass
+    return jsonify({"ok": True})
+
+@app.route("/api/chat_send", methods=["POST"])
 def chs():
- d=request.get_json() or {}; s=norm(d.get("sender")); t=norm(d.get("to"))
- if s not in USERS or t not in USERS: return jsonify({"error":"Not found"}),404
- k="|".join(sorted([s,t])); MESSAGES.setdefault(k,[]).append({"from":USERS[s]["display_name"],"text":d.get("text","")[:500],"kind":d.get("kind","text"),"time":str(datetime.datetime.now())}); notify(t,"Msg from "+USERS[s]["display_name"],"chat")
- try: open(MF,"w").write(json.dumps(MESSAGES))
- except: pass
- return jsonify({"ok":True})
+    d = request.get_json() or {}
+    s = norm(d.get("sender"))
+    t = norm(d.get("to"))
+    if s not in USERS or t not in USERS:
+        return jsonify({"error": "Not found"}), 404
+    k = "|".join(sorted([s, t]))
+    MESSAGES.setdefault(k, []).append({"from": USERS[s]["display_name"], "text": d.get("text", "")[:500], "kind": d.get("kind", "text"), "time": str(datetime.datetime.now())})
+    notify(t, "Msg from " + USERS[s]["display_name"], "chat")
+    try:
+        open(MSG_FILE, "w").write(json.dumps(MESSAGES))
+    except:
+        pass
+    return jsonify({"ok": True})
+
 @app.route("/api/chat_get")
 def chg():
- a=norm(request.args.get("a","")); b=norm(request.args.get("b","")); return jsonify({"messages":MESSAGES.get("|".join(sorted([a,b])),[])})
+    a = norm(request.args.get("a", ""))
+    b = norm(request.args.get("b", ""))
+    return jsonify({"messages": MESSAGES.get("|".join(sorted([a, b])), [])})
+
 @app.route("/api/friends")
 def fr():
- n=norm(request.args.get("name",""))
- if n not in USERS: return jsonify({"friends":[]})
- out=[]
- for f in USERS[n].get("friends",[]):
-  if norm(f) in USERS: out.append({"name":USERS[norm(f)]["display_name"],"player_id":USERS[norm(f)].get("player_id",""),"rank":rank(USERS[norm(f)]["wins"])})
- if not out:
-  for k,v in USERS.items():
-   if k!=n: out.append({"name":v["display_name"],"player_id":v.get("player_id",""),"rank":rank(v["wins"])})
- return jsonify({"friends":out})
-@app.route("/api/add_friend",methods=["POST"])
+    n = norm(request.args.get("name", ""))
+    if n not in USERS:
+        return jsonify({"friends": []})
+    out = []
+    for f in USERS[n].get("friends", []):
+        if norm(f) in USERS:
+            out.append({"name": USERS[norm(f)]["display_name"], "player_id": USERS[norm(f)].get("player_id", ""), "rank": rank_for(USERS[norm(f)]["wins"])})
+    if not out:
+        for k, v in USERS.items():
+            if k != n:
+                out.append({"name": v["display_name"], "player_id": v.get("player_id", ""), "rank": rank_for(v["wins"])})
+    return jsonify({"friends": out})
+
+@app.route("/api/add_friend", methods=["POST"])
 def af():
- d=request.get_json() or {}; n=norm(d.get("name")); tid="INF-"+cid(d.get("target_id",""))
- if n not in USERS: return jsonify({"error":"Not found"}),404
- for v in USERS.values():
-  if v.get("player_id")==tid:
-   if v["display_name"] not in USERS[n]["friends"]: USERS[n]["friends"].append(v["display_name"])
-   if USERS[n]["display_name"] not in v["friends"]: v["friends"].append(USERS[n]["display_name"])
-   save(); return jsonify({"ok":True})
- return jsonify({"error":"Not found"}),404
-@app.route("/api/consume",methods=["POST"])
+    d = request.get_json() or {}
+    n = norm(d.get("name"))
+    tid = "INF-" + cid(d.get("target_id", ""))
+    if n not in USERS:
+        return jsonify({"error": "Not found"}), 404
+    for v in USERS.values():
+        if v.get("player_id") == tid:
+            if v["display_name"] not in USERS[n]["friends"]:
+                USERS[n]["friends"].append(v["display_name"])
+            if USERS[n]["display_name"] not in v["friends"]:
+                v["friends"].append(USERS[n]["display_name"])
+            save()
+            return jsonify({"ok": True})
+    return jsonify({"error": "Not found"}), 404
+
+@app.route("/api/consume", methods=["POST"])
 def co():
- d=request.get_json() or {}; v=getp(d.get("name")); b=min(int(d.get("bonus",0)),100)
- if not v or not chk(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
- if d.get("product") in v.get("items",[]): v["items"].remove(d.get("product"))
- v["wins"]+=b; save(); return jsonify({"ok":True,"wins":v["wins"]})
-@app.route("/api/challenge_send",methods=["POST"])
-def cs():
- d=request.get_json() or {}; s=getp(d.get("sender")); tid="INF-"+cid(d.get("target_id",""))
- if not s: return jsonify({"error":"Not found"}),404
- tgt=None
- for v in USERS.values():
-  if v.get("player_id")==tid: tgt=v
- if not tgt: return jsonify({"error":"Not found"}),404
- cid2="CH-"+str(random.randint(10000000,99999999)); CH={"host":s["display_name"],"guest":tgt["display_name"],"host_score":0,"guest_score":0,"q":0,"status":"pending"}
- notify(tgt["display_name"],"CHALLENGE from "+s["display_name"],"challenge",{"challenge_id":cid2}); return jsonify({"ok":True,"challenge_id":cid2})
-@app.route("/api/challenge_respond",methods=["POST"])
-def cr():
- d=request.get_json() or {}; c=CH.get(d.get("challenge_id"))
- if not c: return jsonify({"error":"Not found"}),404
- c["status"]="accepted" if d.get("accept") else "declined"; return jsonify({"ok":True})
-@app.route("/webhook",methods=["GET","POST"])
+    d = request.get_json() or {}
+    v = getp(d.get("name"))
+    b = min(int(d.get("bonus", 0)), 100)
+    if not v or not check_pin(v, d.get("pin", "")):
+        return jsonify({"error": "Wrong PIN"}), 403
+    if d.get("product") in v.get("items", []):
+        v["items"].remove(d.get("product"))
+    v["wins"] += b
+    save()
+    return jsonify({"ok": True, "wins": v["wins"]})
+
+@app.route("/webhook", methods=["GET", "POST"])
 def wh():
- if request.method=="GET":
-  if request.args.get("hub.verify_token")=="infinity": return request.args.get("hub.challenge"),200
-  return "Forbidden",403
- return jsonify({"ok":True})
- HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT v28 FIXED ENTER</title><link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}body{margin:0;font-family:Poppins,Arial;color:#fff;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 14px}.profile{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff;cursor:pointer}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px;filter:drop-shadow(0 0 30px gold)}.enterBtn{margin-top:20px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);color:#000;box-shadow:0 0 40px #ff006e;cursor:pointer;position:relative;z-index:5}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer;position:relative;z-index:2}.box span{font-size:38px;display:block}button{cursor:pointer;position:relative;z-index:2}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0;cursor:pointer}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0;cursor:pointer}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-weight:700;cursor:pointer;text-align:left}input,select,textarea{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000;position:relative;z-index:2}.hidden{display:none!important}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:999;max-width:90%;text-align:center}.gameOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:500}.gamePopup{background:linear-gradient(160deg,#2b005e,#12002b);border:3px solid #ffd700;border-radius:28px;padding:22px 18px;max-width:420px;width:100%;text-align:center;box-shadow:0 0 40px #ff006e}.choiceRow{display:flex;gap:12px;margin-top:16px}.choiceBox{flex:1;padding:18px 8px;border-radius:20px;cursor:pointer;font-weight:900;font-size:18px;border:3px solid #fff}.choiceNo{background:linear-gradient(135deg,#ff2222,#ff6b6b);color:#fff}.choiceYes{background:linear-gradient(135deg,#00cc44,#00ff88);color:#000}.bottomNav{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);border-top:2px solid #ffd700;display:flex;justify-content:space-around;padding:10px 0 14px;z-index:200}.bottomNav div{font-size:28px;cursor:pointer;text-align:center;padding:6px 10px;position:relative;z-index:201}.bottomNav small{display:block;font-size:10px;color:#ffd700}.walletCard{background:linear-gradient(135deg,#ffd700,#ff006e);color:#000;border-radius:24px;padding:18px;text-align:center}.switch{width:70px;height:36px;background:#00cc44;border-radius:99px;position:relative;cursor:pointer;border:2px solid #fff}.switch.off{background:#ff2222}.switchKnob{position:absolute;top:3px;left:34px;width:28px;height:28px;background:#fff;border-radius:50%}.switch.off .switchKnob{left:3px}.spacexScene{background:#000010;border:2px solid #00e5ff;border-radius:20px;padding:16px;text-align:left;font-family:'Share Tech Mono',monospace;color:#00ffaa}.pinInput{font-size:28px;text-align:center;letter-spacing:12px}.tabRow{display:flex;gap:8px}.tabBox{flex:1;padding:12px 4px;border-radius:16px;background:rgba(255,255,255,.15);border:2px solid #ffd700;text-align:center;cursor:pointer;font-weight:900;font-size:13px}.tabBox.active{background:#ffd700;color:#000}.bigBankBox{padding:22px 10px;border-radius:24px;border:2px solid #fff;text-align:center;cursor:pointer;background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4))}.loanGreen{border:4px solid #00ff88!important;box-shadow:0 0 25px #00ff88;background:linear-gradient(160deg,#00cc44,#00ff88)!important;color:#000!important}.idPrefix{display:flex;align-items:center;background:#fff;border-radius:14px;border:2px solid #ffd700;padding:0 10px;margin:8px 0}.idPrefix b{color:#000}.idPrefix input{border:none;flex:1;margin:0}.timerBar{height:14px;background:#333;border-radius:99px;overflow:hidden;margin:10px 0}.timerFill{height:100%;background:linear-gradient(90deg,#00ff88,#ffd700,#ff2222);transition:width .9s linear}.fallArea{position:relative;height:420px;background:linear-gradient(#000428,#004e92);border:2px solid #00e5ff;border-radius:18px;overflow:hidden}.fallItem{position:absolute;font-size:34px;cursor:pointer;user-select:none}.dinoArea{height:220px;background:#fff;border-radius:18px;position:relative;overflow:hidden;border:3px solid #000}.dino{position:absolute;bottom:20px;left:40px;font-size:52px;transition:bottom .35s}.cactus{position:absolute;bottom:20px;font-size:36px}</style></head><body>
+    if request.method == "GET":
+        if request.args.get("hub.verify_token") == "infinity":
+            return request.args.get("hub.challenge"), 200
+        return "Forbidden", 403
+    return jsonify({"ok": True})
+ HOME = r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT v29</title><link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}body{margin:0;font-family:Poppins,Arial;color:#fff;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 14px}.profile{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #fff;cursor:pointer}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px;filter:drop-shadow(0 0 30px gold)}.enterBtn{margin-top:20px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);color:#000;box-shadow:0 0 40px #ff006e;cursor:pointer;position:relative;z-index:5}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer;position:relative;z-index:2}.box span{font-size:38px;display:block}button{cursor:pointer;position:relative;z-index:2}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0;cursor:pointer}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0;cursor:pointer}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-weight:700;cursor:pointer;text-align:left}input,select,textarea{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000;position:relative;z-index:2}.hidden{display:none!important}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:999;max-width:90%;text-align:center}.gameOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:500}.gamePopup{background:linear-gradient(160deg,#2b005e,#12002b);border:3px solid #ffd700;border-radius:28px;padding:22px 18px;max-width:420px;width:100%;text-align:center;box-shadow:0 0 40px #ff006e}.choiceRow{display:flex;gap:12px;margin-top:16px}.choiceBox{flex:1;padding:18px 8px;border-radius:20px;cursor:pointer;font-weight:900;font-size:18px;border:3px solid #fff}.choiceNo{background:linear-gradient(135deg,#ff2222,#ff6b6b);color:#fff}.choiceYes{background:linear-gradient(135deg,#00cc44,#00ff88);color:#000}.bottomNav{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);border-top:2px solid #ffd700;display:flex;justify-content:space-around;padding:10px 0 14px;z-index:200}.bottomNav div{font-size:28px;cursor:pointer;text-align:center;padding:6px 10px;position:relative;z-index:201}.bottomNav small{display:block;font-size:10px;color:#ffd700}.walletCard{background:linear-gradient(135deg,#ffd700,#ff006e);color:#000;border-radius:24px;padding:18px;text-align:center}.switch{width:70px;height:36px;background:#00cc44;border-radius:99px;position:relative;cursor:pointer;border:2px solid #fff}.switch.off{background:#ff2222}.switchKnob{position:absolute;top:3px;left:34px;width:28px;height:28px;background:#fff;border-radius:50%}.switch.off .switchKnob{left:3px}.spacexScene{background:#000010;border:2px solid #00e5ff;border-radius:20px;padding:16px;text-align:left;font-family:'Share Tech Mono',monospace;color:#00ffaa}.pinInput{font-size:28px;text-align:center;letter-spacing:12px}.tabRow{display:flex;gap:8px}.tabBox{flex:1;padding:12px 4px;border-radius:16px;background:rgba(255,255,255,.15);border:2px solid #ffd700;text-align:center;cursor:pointer;font-weight:900;font-size:13px}.tabBox.active{background:#ffd700;color:#000}.bigBankBox{padding:22px 10px;border-radius:24px;border:2px solid #fff;text-align:center;cursor:pointer;background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4))}.loanGreen{border:4px solid #00ff88!important;box-shadow:0 0 25px #00ff88;background:linear-gradient(160deg,#00cc44,#00ff88)!important;color:#000!important}.idPrefix{display:flex;align-items:center;background:#fff;border-radius:14px;border:2px solid #ffd700;padding:0 10px;margin:8px 0}.idPrefix b{color:#000}.idPrefix input{border:none;flex:1;margin:0}.timerBar{height:14px;background:#333;border-radius:99px;overflow:hidden;margin:10px 0}.timerFill{height:100%;background:linear-gradient(90deg,#00ff88,#ffd700,#ff2222);transition:width .9s linear}.fallArea{position:relative;height:420px;background:linear-gradient(#000428,#004e92);border:2px solid #00e5ff;border-radius:18px;overflow:hidden}.fallItem{position:absolute;font-size:34px;cursor:pointer;user-select:none}.dinoArea{height:220px;background:#fff;border-radius:18px;position:relative;overflow:hidden;border:3px solid #000}.dino{position:absolute;bottom:20px;left:40px;font-size:52px;transition:bottom .35s}.cactus{position:absolute;bottom:20px;font-size:36px}</style></head><body>
 <div id="announceBar" class="hidden" style="position:fixed;top:0;left:0;right:0;background:#ffd700;color:#000;padding:10px;text-align:center;font-weight:900;z-index:1000">📢</div>
 <div class="topbar"><div><span id="catTime" style="font-size:12px;background:rgba(0,0,0,.55);border:1px solid #ffd700;padding:5px 9px;border-radius:20px;display:inline-block">00:00:00 CAT</span><br><span id="catDate" style="font-size:10px;background:rgba(0,0,0,.45);border:1px solid rgba(255,215,0,.6);padding:3px 8px;border-radius:20px;display:inline-block;margin-top:4px">Central Africa</span><br><div style="font-weight:900;margin-top:4px">INFINITY BOT</div></div><div id="topRight" class="hidden" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><div style="display:flex;gap:8px;align-items:center"><div id="soundBtn" title="Sound ON/OFF" style="width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;cursor:pointer">🔊</div><div onclick="openShop()" style="width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;cursor:pointer">🛍️</div><div class="profile" id="profileBtn">👤</div></div><div id="menuBtn" style="width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;margin-right:7px">⋮</div></div></div>
 <script>function pad2(n){return(n<10?"0":"")+n}function updateCatTime(){try{var now=new Date();var cat=new Date(now.getTime()+now.getTimezoneOffset()*60000+2*3600000);var days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];document.getElementById("catTime").textContent=pad2(cat.getHours())+":"+pad2(cat.getMinutes())+":"+pad2(cat.getSeconds())+" CAT";document.getElementById("catDate").textContent=days[cat.getDay()]+", "+pad2(cat.getDate())+" "+months[cat.getMonth()]+" "+cat.getFullYear()+" - Central Africa"}catch(e){}}updateCatTime();setInterval(updateCatTime,1000);</script>
@@ -333,7 +554,7 @@ def wh():
 <div id="page-menu" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><h2 style="text-align:center">🎮 MENU</h2><div id="menuGamesList"></div></div></div>
 <div id="page-economy" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><div style="display:flex;justify-content:space-between"><h2>💰 SERVER ECONOMY - LIVE TRADE 24/7</h2><button class="btn" type="button" style="width:auto;background:#ff2222;color:#fff" onclick="doEmergency()">🚨 Emergency</button></div><p style="font-size:12px">Live: ticks every 5s - Up 📈 Down 📉</p><div class="grid"><div class="walletCard">Server Gold<br><b id="ecoGold">0</b></div><div class="walletCard">Server Germ<br><b id="ecoGems">0</b></div><div class="bigBankBox">🏦 Banks<br><b id="ecoBank">0</b></div><div class="bigBankBox">💸 Fees<br><b id="ecoFees">0</b></div><div class="bigBankBox">🎰 Lottery<br><b id="ecoLottery">0</b></div><div class="bigBankBox">🛟 Backup<br><b id="ecoBackup">0</b></div></div><h3>📈 CRYPTO - LIVE</h3><canvas id="ecoChart" width="480" height="160" style="width:100%;background:#000;border:2px solid #00ffaa;border-radius:14px"></canvas><h3>💰 SECRET REQUESTS (Approved = Hidden)</h3><div id="ecoRequests">No requests</div><h3>🏦 LOANS</h3><div id="ecoLoans">No loans</div></div></div>
 <div id="page-lottery" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><h2 style="text-align:center">🎰 LOTTERY</h2><input id="lotBet" type="number" placeholder="e.g. 1000"><select id="lotCur"><option>Gold</option><option>Gems</option></select><button class="btn" type="button" onclick="playLottery()">🎰 SPIN</button><div id="lotResult" style="text-align:center"></div></div></div>
-<div id="page-update" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><h2 style="text-align:center">🔄 UPDATE - DOMINIC ONLY</h2><div class="spacexScene"><p>🚀 SPACEX UPDATE CONSOLE v28</p><p>> SYNCING PLAYERS... NO DATA LOST</p><div style="display:flex;justify-content:space-between;background:rgba(255,255,255,.1);padding:14px;border-radius:16px"><div><b>Earning</b><br><span id="earningDesc">ON</span></div><div class="switch" id="earningSwitch" onclick="toggleEarningSwitch()"><div class="switchKnob"></div></div></div></div><button class="btn" type="button" onclick="doServerUpdate()">🚀 APPLY UPDATE</button></div></div>
+<div id="page-update" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><h2 style="text-align:center">🔄 UPDATE - DOMINIC ONLY</h2><div class="spacexScene"><p>🚀 SPACEX UPDATE CONSOLE v29</p><p>> SYNCING PLAYERS... NO DATA LOST</p><div style="display:flex;justify-content:space-between;background:rgba(255,255,255,.1);padding:14px;border-radius:16px"><div><b>Earning</b><br><span id="earningDesc">ON</span></div><div class="switch" id="earningSwitch" onclick="toggleEarningSwitch()"><div class="switchKnob"></div></div></div></div><button class="btn" type="button" onclick="doServerUpdate()">🚀 APPLY UPDATE</button></div></div>
 <div id="page-server-info" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><h2 style="text-align:center">🖥️ SERVER INFO - DOMINIC</h2><p>PLAYERS: <span id="serverPlayers">0</span> | EARNING: <span id="serverEarningText">ON</span></p><h3>📜 Reviews</h3><div id="serverReviewsList">Loading...</div></div></div>
 <div id="page-review" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><h2 id="reviewTitle" style="text-align:center">⭐ Review</h2><textarea id="reviewText" style="height:140px" placeholder="Type..."></textarea><button class="btn" type="button" onclick="submitReview()">📩 SEND</button></div></div>
 <div id="page-challenge" class="hidden" style="max-width:520px;margin:0 auto;padding:0 14px 110px"><div class="card"><h2 style="text-align:center">🎮 CHALLENGE</h2><p id="challengeDashText" style="text-align:center"></p><div class="grid"><div class="box" onclick="hostPickMode('Bible Fight')"><span>📖</span><b>Bible</b></div><div class="box" onclick="hostPickMode('Riddles')"><span>🧩</span><b>Riddles</b></div><div class="box" onclick="hostPickMode('Galaxy Shooter')"><span>🌌</span><b>Galaxy</b></div><div class="box" onclick="hostPickMode('Decoding')"><span>💻</span><b>Decoding</b></div></div><div id="duelBox"></div><button class="btn2" type="button" onclick="declineChallengeDash()">❌ Decline</button></div></div>
@@ -400,7 +621,7 @@ function doWithdraw(){var amt=parseInt(document.getElementById("withdrawAmt").va
 function doDeposit(){var amt=parseInt(document.getElementById("depositAmt").value||"0");var cur=document.getElementById("depositCur").value;openPin("PIN deposit "+amt,function(pin){fetch("/api/bank_action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,amount:amt,action:"deposit",currency:cur})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;myGems=d.gems;saveLocal();toast("✅ Deposited")})})}
 function doExchange(dir){var amt=parseInt(document.getElementById("exAmt").value||"0");openPin("PIN Exchange",function(pin){fetch("/api/exchange",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,amount:amt,direction:dir})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;myGems=d.gems;saveLocal();toast("✅ Exchange done")})})}
 function openNotifs(){showPage("page-notifs");fetch("/api/player?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){var h="";(d.notifs||[]).slice().reverse().forEach(function(n){var extra="";if(n.type==="loan_request"){extra="<br><button class='btn' type='button' onclick=\"domLoan('"+n.loan_id+"',true)\">✅ Approve Loan</button><button class='btn2' type='button' onclick=\"domLoan('"+n.loan_id+"',false)\">❌ Decline</button>"}if(n.type==="loan_date_change"){extra="<br><button class='btn' type='button' onclick=\"playerLoanConfirm('"+n.loan_id+"',true)\">✅ Yes Approve Date "+n.new_date+"</button><button class='btn2' type='button' onclick=\"playerLoanConfirm('"+n.loan_id+"',false)\">❌ No - Refund</button>"}if(n.type==="request"){extra="<br><button class='btn' type='button' onclick=\"approveReq('"+n.request_id+"',"+n.amount+",'"+n.currency+"')\">✅ Approve Secret</button>"}h+="<div style='padding:12px;background:rgba(0,0,0,.4);border-radius:14px;margin:8px 0'>"+n.text+"<br><small>"+(n.time||"")+"</small>"+extra+"</div>"});document.getElementById("notifList").innerHTML=h||"No notifications";if(h)playPin()})}
-function openEconomy(){if(!isDom()){toast("🔒 Dominic only");return}showPage("page-economy");fetch("/api/economy?name=Dominic&password=2164").then(function(r){return r.json()}).then(function(d){var e=d.economy||{};document.getElementById("ecoGold").innerText=e.gold||0;document.getElementById("ecoGems").innerText=e.gems||0;document.getElementById("ecoBank").innerText=e.bank_total||e.bank||0;document.getElementById("ecoFees").innerText=e.fees||0;document.getElementById("ecoLottery").innerText=e.lottery||0;document.getElementById("ecoBackup").innerText=e.backup||0;var h="";(d.requests||[]).forEach(function(rq){h+="<div style='padding:12px;background:rgba(0,0,0,.4);border-radius:14px;margin:8px 0'>"+rq.from+" wants "+rq.amount+" "+rq.currency+" <button class='btn' type='button' onclick=\"approveReq('"+rq.id+"',"+rq.amount+",'"+rq.currency+"')\">✅ Approve</button></div>"});document.getElementById("ecoRequests").innerHTML=h||"No requests";var h2="";(d.loans||[]).forEach(function(l){h2+="<div style='padding:12px;background:rgba(0,0,0,.4);border-radius:14px;margin:8px 0'>"+l.from+" Loan "+l.amount+" "+l.currency+" Repay "+l.repay_date+" ["+l.status+"] <button class='btn' type='button' onclick=\"domLoan('"+l.id+"',true)\">✅ Approve</button><button class='btn2' type='button' onclick=\"domLoan('"+l.id+"',false)\">❌ Decline</button></div>"});document.getElementById("ecoLoans").innerHTML=h2||"No loans";var cv=document.getElementById("ecoChart");if(cv){var ctx=cv.getContext("2d");ctx.clearRect(0,0,480,160);ctx.strokeStyle="#00ffaa";ctx.lineWidth=3;ctx.beginPath();var hist=e.history||e.hist||[0];hist.forEach(function(v,i){var x=i/(Math.max(1,hist.length-1))*460+10;var y=150-(v/(Math.max(1,Math.max.apply(null,hist)))*120);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke()}})}
+function openEconomy(){if(!isDom()){toast("🔒 Dominic only");return}showPage("page-economy");fetch("/api/economy?name=Dominic&password=2164").then(function(r){return r.json()}).then(function(d){var e=d.economy||{};document.getElementById("ecoGold").innerText=e.gold||0;document.getElementById("ecoGems").innerText=e.gems||0;document.getElementById("ecoBank").innerText=e.bank_total||e.bank||0;document.getElementById("ecoFees").innerText=e.fees||0;document.getElementById("ecoLottery").innerText=e.lottery||0;document.getElementById("ecoBackup").innerText=e.backup||0;var h="";(d.requests||[]).forEach(function(rq){h+="<div style='padding:12px;background:rgba(0,0,0,.4);border-radius:14px;margin:8px 0'>"+rq.from+" wants "+rq.amount+" "+rq.currency+" <button class='btn' type='button' onclick=\"approveReq('"+rq.id+"',"+rq.amount+",'"+rq.currency+"')\">✅ Approve</button></div>"});document.getElementById("ecoRequests").innerHTML=h||"No requests";var h2="";(d.loans||[]).forEach(function(l){h2+="<div style='padding:12px;background:rgba(0,0,0,.4);border-radius:14px;margin:8px 0'>"+l.from+" Loan "+l.amount+" "+l.currency+" Repay "+l.repay_date+" ["+l.status+"] <button class='btn' type='button' onclick=\"domLoan('"+l.id+"',true)\">✅ Approve</button><button class='btn2' type='button' onclick=\"domLoan('"+l.id+"',false)\">❌ Decline</button></div>"});document.getElementById("ecoLoans").innerHTML=h2||"No loans";var cv=document.getElementById("ecoChart");if(cv){var ctx=cv.getContext("2d");ctx.clearRect(0,0,480,160);ctx.strokeStyle="#00ffaa";ctx.lineWidth=3;ctx.beginPath();var hist=e.history||[0];hist.forEach(function(v,i){var x=i/(Math.max(1,hist.length-1))*460+10;var y=150-(v/(Math.max(1,Math.max.apply(null,hist)))*120);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke()}})}
 function approveReq(id,amt,cur){openPin("PIN approve "+amt,function(pin){fetch("/api/request_approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:pin,request_id:id,amount:amt,currency:cur})}).then(function(){toast("✅ Approved - Hidden");playPin();openEconomy()})})}
 function domLoan(id,ap){if(!ap){openPin("PIN decline loan",function(pin){fetch("/api/loan_dominic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:pin,loan_id:id,approve:false})}).then(function(){toast("Loan declined");openEconomy()})});return}var nd=prompt("New repay date? Leave blank = same","");openPin("PIN approve loan",function(pin){fetch("/api/loan_dominic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:pin,loan_id:id,approve:true,new_date:nd})}).then(function(){toast("Loan sent to player for confirm");openEconomy()})})}
 function playerLoanConfirm(id,ap){fetch("/api/loan_player_confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,loan_id:id,approve:ap})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}toast(ap?"✅ Loan Credited":"↩️ Loan Refunded");playPin();loadMe();openNotifs()})}
@@ -422,7 +643,7 @@ function respondChallenge(a){var o=document.getElementById("challengeOverlay");o
 function openRiddles(){pickRiddleCat()}
 function openBible(){pickBible()}
 var QB=["vanity of vanities book?|Ecclesiastes - Solomon|Genesis - Moses|Psalms - David|OLD","Woman judge under palm tree?|Deborah - Palm tree|Esther - Palace|Ruth - Field|OLD","Methuselah lived how long?|969 years|930 years|950 years|OLD","3 men in fiery furnace?|Shadrach, Meshach, Abednego|Daniel, Shadrach, Meshach|Peter, James, John|OLD","High priest tore robes?|Caiaphas|Annas|Pilate|NEW","24 elders represent?|12 tribes + 12 apostles|24 prophets|24 angels|NEW","Sheol vs Gehenna?|Sheol=grave, Gehenna=hell punishment|Same thing|Both heaven|OLD","King and priest?|Melchizedek|David|Solomon|OLD","Goliath spearhead weight?|600 shekels ~15lbs|100 shekels|1000 shekels|OLD","5 books Torah Hebrew?|Bereshit, Shemot, Vayikra, Bamidbar, Devarim|Genesis, Exodus...|Torah 1-5|OLD","Father of Caleb?|Jephunneh|Jesse|Jacob|OLD","Moses father-in-law?|Jethro / Reuel|Aaron|Joshua|OLD","First Gentile church?|Antioch|Rome|Corinth|NEW","Ebenezer means?|Stone of Help - Samuel|Stone of God - Moses|Holy Stone - David|OLD","Fear not how many times?|365 - one per day|100|50|OLD","Only apostle natural death?|John|Peter|Paul|NEW","Demon called Legion?|Legion - we are many|Beelzebub|Lucifer|NEW","Longest chapter?|Psalm 119 - Word of God|Psalm 23|Genesis 1|OLD","Shortest chapter?|Psalm 117 - 2 verses|Psalm 23|John 11|OLD","Struck blind touching Ark?|Uzzah|David|Saul|OLD"];
-var QR=["Always hungry, finger red?|Fire|Water|Wind|FUNNY","Man photo - father's son?|His son|His brother|His father|SMART","3 boxes labels wrong, pick 1?|Pick from 'both' box|Pick apples box|Pick oranges box|SMART","Plane crashes border, bury survivors?|Nowhere - alive|USA|Canada|FUNNY","Rooster lays egg on roof?|Roosters don't lay eggs|Left side|Right side|FUNNY","Overtake 2nd place?|2nd place|1st place|3rd place|SMART","3/7 chicken, 2/3 cat, 1/2 goat?|Chicago|Chicatgo|Catgo|SMART","Cowboy Friday 3 days leaves Friday?|Horse named Friday|Time travel|Magic|FUNNY","Once in minute, twice moment?|Letter M|Letter O|Letter N|SMART","Man pushes car to hotel bankrupt?|Playing Monopoly|Real bankrupt|Lost|FUNNY","Maker doesn't need, buyer doesn't use?|A coffin|A car|A house|SMART","Hold in right not left?|Your left hand|Your right foot|Pen|SMART","Cities no houses, forests no trees?|A map|A book|A photo|SMART","1,11,21,1211,111221 next?|312211|1112211|121211|SMART","12 coins 3 weighs fake?|Divide 4-4-4 then 1-1|Guess|Weigh all|SMART","2 doors 1 lies 1 truth 1 Q?|Ask what other would say, pick opposite|Ask truth|Ask lie|SMART","Fragile saying name breaks?|Silence|Glass|Egg|SMART","Beginning eternity, end time?|Letter E|Letter A|Letter T|SMART","Dies old age on 25th birthday?|Born Feb 29 leap year|Magic|Time|FUNNY","Head tail brown no legs?|A penny|A dog|A snake|FUNNY","Not seen but felt, king kneel?|Love|Money|Power|LOVE","Grows when give away?|Love|Money|Gold|LOVE","Prison no bars, chain no iron?|Being in love|Jail|Home|LOVE","Broken without touch, mended without fix?|A heart|A glass|A bone|LOVE","Written no pen, spoken no voice?|Love|Dream|Song|LOVE","War both win surrender?|Love|Peace|War|LOVE","Time stop and fly?|Love|Sleep|Dream|LOVE","Question and answer in 3 words?|I love you|Who are you|Yes I do|LOVE","Blind but sees everything?|Love|God|Faith|LOVE","Beginning and forever?|True love|Life|Time|LOVE","Stranger feel home?|Love|Money|Home|LOVE","Felt heart measured tears?|Love|Pain|Joy|LOVE","Cure and disease?|Love|Medicine|Virus|LOVE","Light darkness and darkness light?|Love|Sun|Moon|LOVE","Lose yourself find yourself?|Love|Travel|Dream|LOVE","100 prisoners 100 boxes 50 open?|Loop strategy - follow chain|Random|Guess|SMART","Bat+ball $1.10 bat $1 more?|5 cents|10 cents|50 cents|PROGRAMMERS","3 numbers add 12 multiply 48?|2,4,6|3,4,5|1,5,6|SMART","Half of 2+2?|3|2|4|SMART","17 sheep all but 9 die?|9|8|17|SMART","Months have 28 days?|All 12|February only|1|SMART","3-gal and 5-gal measure 4?|Fill 5 pour 3 leave 2 etc|Impossible|Fill 3|SMART","2 fathers 2 sons 3 people?|Grandfather father son|Twins|Brothers|SMART","5 machines 5 parts 5 min, 100 machines?|5 minutes|100 min|20 min|SMART","Boat sinks no one dies?|Everyone married - no single|Boat empty|Swim|FUNNY","3 consecutive double letters?|Bookkeeper|Mississippi|Letter|PROGRAMMERS","Same forwards backwards race?|Racecar|Level|Madam|SMART","Number letters = value?|Four - 4 letters|Three|Five|SMART","Man 3x son, in 15y 2x, son age?|15 years|10 years|20 years|SMART","O T T F F S S E next?|N - Nine|T|E|SMART","Subtract 10 from 100 how many?|Once - then 90|10 times|9 times|SMART","4 letters sometimes 9 never 5?|What - word play|Yes|No|SMART","OCT 31 == DEC 25?|Octal 31 = Decimal 25|Halloween|Christmas|PROGRAMMERS","10 types people binary?|10 binary = 2|10 people|2 types|PROGRAMMERS","[] + [] in JS?|Empty string|0|NaN|PROGRAMMERS","0.1+0.2?|0.30000000000000004|0.3|0.4|PROGRAMMERS","Programmer dies shower?|Lather Rinse Repeat loop|Drowned|Slipped|PROGRAMMERS","What is deadlock?|Two waiting each other forever|Bug|Crash|PROGRAMMERS","Bug vs feature?|Documentation|Code|Test|PROGRAMMERS","null vs undefined?|Null intentional, Undefined never assigned|Same|Opposite|PROGRAMMERS","!false = ?|true|false|0|PROGRAMMERS","NaN !== NaN why?|IEEE 754 spec|Bug|Error|PROGRAMMERS","What is recursion?|To understand recursion must understand recursion|Loop|Function|PROGRAMMERS","Hardest CS problem?|Naming, cache, off-by-one|Coding|Debugging|PROGRAMMERS","1 + '1' in JS?|'11' string|2|11 number|PROGRAMMERS","Developer broke?|Used up all cache|No money|Lost job|PROGRAMMERS","DELETE vs TRUNCATE?|DELETE rollback+WHERE, TRUNCATE drops all|Same|No diff|PROGRAMMERS","Scarecrow award?|Outstanding in field|Funny|Tall|FUNNY","Fish without eyes?|A fsh|Blind fish|Nemo|FUNNY","Coffee police report?|Got mugged - depresso|Stolen|Cold|FUNNY","Cheese not yours?|Nacho cheese|Cheddar|Mozzarella|FUNNY","Bicycle fall over?|Two-tired|Flat|Broken|FUNNY","Can opener not work?|A can't opener|Broken|Rusty|FUNNY","Math book sad?|Too many problems|Hard|Boring|FUNNY","Bear no teeth?|A gummy bear|Old bear|Baby|FUNNY","Golfer two pants?|Hole in one|Cold|Fashion|FUNNY","Hardest riddle?|One you still thinking|Last one|First one|FUNNY"];
+var QR=["Always hungry, finger red?|Fire|Water|Wind|FUNNY","Man photo - father's son?|His son|His brother|His father|SMART","3 boxes labels wrong, pick 1?|Pick from 'both' box|Pick apples box|Pick oranges box|SMART","Plane crashes border, bury survivors?|Nowhere - alive|USA|Canada|FUNNY","Rooster lays egg on roof?|Roosters don't lay eggs|Left side|Right side|FUNNY","Overtake 2nd place?|2nd place|1st place|3rd place|SMART","3/7 chicken, 2/3 cat, 1/2 goat?|Chicago|Chicatgo|Catgo|SMART","Cowboy Friday 3 days leaves Friday?|Horse named Friday|Time travel|Magic|FUNNY","Once in minute, twice moment?|Letter M|Letter O|Letter N|SMART","Man pushes car to hotel bankrupt?|Playing Monopoly|Real bankrupt|Lost|FUNNY","Maker doesn't need, buyer doesn't use?|A coffin|A car|A house|SMART","Hold in right not left?|Your left hand|Your right foot|Pen|SMART","Cities no houses, forests no trees?|A map|A book|A photo|SMART","1,11,21,1211,111221 next?|312211|1112211|121211|SMART","12 coins 3 weighs fake?|Divide 4-4-4 then 1-1|Guess|Weigh all|SMART","2 doors 1 lies 1 truth 1 Q?|Ask what other would say, pick opposite|Ask truth|Ask lie|SMART","Fragile saying name breaks?|Silence|Glass|Egg|SMART","Beginning eternity, end time?|Letter E|Letter A|Letter T|SMART","Dies old age on 25th birthday?|Born Feb 29 leap year|Magic|Time|FUNNY","Head tail brown no legs?|A penny|A dog|A snake|FUNNY","Not seen but felt, king kneel?|Love|Money|Power|LOVE","Grows when give away?|Love|Money|Gold|LOVE","Prison no bars, chain no iron?|Being in love|Jail|Home|LOVE","Broken without touch, mended without fix?|A heart|A glass|A bone|LOVE","Written no pen, spoken no voice?|Love|Dream|Song|LOVE","War both win surrender?|Love|Peace|War|LOVE","Time stop and fly?|Love|Sleep|Dream|LOVE","Question and answer in 3 words?|I love you|Who are you|Yes I do|LOVE","Blind but sees everything?|Love|God|Faith|LOVE","Beginning and forever?|True love|Life|Time|LOVE","Stranger feel home?|Love|Money|Home|LOVE","Felt heart measured tears?|Love|Pain|Joy|LOVE","Cure and disease?|Love|Medicine|Virus|LOVE","Light darkness and darkness light?|Love|Sun|Moon|LOVE","Lose yourself find yourself?|Love|Travel|Dream|LOVE","100 prisoners 100 boxes 50 open?|Loop strategy - follow chain|Random|Guess|SMART","Bat+ball $1.10 bat $1 more?|5 cents|10 cents|50 cents|PROGRAMMERS","3 numbers add 12 multiply 48?|2,4,6|3,4,5|1,5,6|SMART","Half of 2+2?|3|2|4|SMART","17 sheep all but 9 die?|9|8|17|SMART","Months have 28 days?|All 12|February only|1|SMART","3-gal and 5-gal measure 4?|Fill 5 pour 3 leave 2 etc|Impossible|Fill 3|SMART","2 fathers 2 sons 3 people?|Grandfather father son|Twins|Brothers|SMART","5 machines 5 parts 5 min, 100 machines?|5 minutes|100 min|20 min|SMART","Boat sinks no one dies?|Everyone married - no single|Boat empty|Swim|FUNNY","3 consecutive double letters?|Bookkeeper|Mississippi|Letter|PROGRAMMERS","Same forwards backwards race?|Racecar|Level|Madam|SMART","Number letters = value?|Four - 4 letters|Three|Five|SMART","Man 3x son, in 15y 2x, son age?|15 years|10 years|20 years|SMART","O T T F F S S E next?|N - Nine|T|E|SMART","Subtract 10 from 100 how many?|Once - then 90|10 times|9 times|SMART","4 letters sometimes 9 never 5?|What - word play|Yes|No|SMART","OCT 31 == DEC 25?|Octal 31 = Decimal 25|Halloween|Christmas|PROGRAMMERS","10 types people binary?|10 binary = 2|10 people|2 types|PROGRAMMERS","Empty + Empty in JS?|Empty string|0|NaN|PROGRAMMERS","0.1+0.2?|0.30000000000000004|0.3|0.4|PROGRAMMERS","Programmer dies shower?|Lather Rinse Repeat loop|Drowned|Slipped|PROGRAMMERS","What is deadlock?|Two waiting each other forever|Bug|Crash|PROGRAMMERS","Bug vs feature?|Documentation|Code|Test|PROGRAMMERS","null vs undefined?|Null intentional, Undefined never assigned|Same|Opposite|PROGRAMMERS","Not false = ?|true|false|0|PROGRAMMERS","NaN not equal NaN why?|IEEE 754 spec|Bug|Error|PROGRAMMERS","What is recursion?|To understand recursion must understand recursion|Loop|Function|PROGRAMMERS","Hardest CS problem?|Naming, cache, off-by-one|Coding|Debugging|PROGRAMMERS","1 + '1' in JS?|'11' string|2|11 number|PROGRAMMERS","Developer broke?|Used up all cache|No money|Lost job|PROGRAMMERS","DELETE vs TRUNCATE?|DELETE rollback+WHERE, TRUNCATE drops all|Same|No diff|PROGRAMMERS","Scarecrow award?|Outstanding in field|Funny|Tall|FUNNY","Fish without eyes?|A fsh|Blind fish|Nemo|FUNNY","Coffee police report?|Got mugged - depresso|Stolen|Cold|FUNNY","Cheese not yours?|Nacho cheese|Cheddar|Mozzarella|FUNNY","Bicycle fall over?|Two-tired|Flat|Broken|FUNNY","Can opener not work?|A can't opener|Broken|Rusty|FUNNY","Math book sad?|Too many problems|Hard|Boring|FUNNY","Bear no teeth?|A gummy bear|Old bear|Baby|FUNNY","Golfer two pants?|Hole in one|Cold|Fashion|FUNNY","Hardest riddle?|One you still thinking|Last one|First one|FUNNY"];
 function parseQ(s){var p=s.split("|");var opts=[p[1],p[2],p[3]];for(var i=opts.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=opts[i];opts[i]=opts[j];opts[j]=t}return {q:p[0],correct:p[1],opts:opts,cat:p[4]}}
 function pickRiddleCat(){showPage("page-game");document.getElementById("gameTitle").innerText="🧩 PICK RIDDLE TYPE";document.getElementById("gameBody").innerHTML="<p>Pick one - 10 Questions, 25s Timer, 3 Options</p><button class='btn2' type='button' onclick=\"startQuiz('RIDDLE','LIVE')\">🎤 Live</button><button class='btn2' type='button' onclick=\"startQuiz('RIDDLE','SMART')\">🧠 Smart / Logic</button><button class='btn2' type='button' onclick=\"startQuiz('RIDDLE','FUNNY')\">😂 Funny</button><button class='btn2' type='button' onclick=\"startQuiz('RIDDLE','PROGRAMMERS')\">💻 Programmers</button><button class='btn2' type='button' onclick=\"startQuiz('RIDDLE','LOVE')\">💖 Love</button><button class='btn2' type='button' onclick='goDash()'>⬅ Back</button>"}
 function pickBible(){showPage("page-game");document.getElementById("gameTitle").innerText="📖 PICK TESTAMENT";document.getElementById("gameBody").innerHTML="<p>Pick - Only Bible questions from that Testament</p><button class='btn2' type='button' onclick=\"startQuiz('BIBLE','OLD')\">📜 Old Testament</button><button class='btn2' type='button' onclick=\"startQuiz('BIBLE','NEW')\">✝️ New Testament</button><button class='btn2' type='button' onclick='goDash()'>⬅ Back</button>"}
@@ -464,8 +685,8 @@ function toggleMenu(){var m=document.getElementById("menuDrop");if(!m.classList.
 function openUpdatePage(){if(!isDom()){toast("🔒 Dominic only");return}showPage("page-update")}
 document.addEventListener("click",function(e){var m=document.getElementById("menuDrop");var b=document.getElementById("menuBtn");if(m&&!m.classList.contains("hidden")&&b&&!b.contains(e.target)&&!m.contains(e.target))m.classList.add("hidden")});
 document.addEventListener("DOMContentLoaded",function(){try{updateCatTime()}catch(e){}var mb=document.getElementById("menuBtn");if(mb)mb.onclick=function(e){e.stopPropagation();toggleMenu()};var pb=document.getElementById("profileBtn");if(pb)pb.onclick=function(){openMyProfile()};var sb=document.getElementById("soundBtn");if(sb)sb.onclick=function(){toggleSound()};var bf=document.getElementById("backFab");if(bf)bf.onclick=function(){goBack()};var mf=document.getElementById("msgFab");if(mf)mf.onclick=function(){openMessages()};var eb=document.getElementById("enterBtn");if(eb)eb.onclick=function(){enterClicked()};showPage("page-home");document.addEventListener("keydown",function(e){if(e.key==="Enter"&&currentPage==="page-home")enterClicked()});setInterval(function(){if(loggedIn)checkAnn()},15000)});
-</script></body></html>"""
-if __name__=="__main__":
-    port=int(os.environ.get("PORT",5000))
-    app.run(host="0.0.0.0",port=port)
- 
+</script></body></html>
+"""
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
