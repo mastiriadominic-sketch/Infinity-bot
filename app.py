@@ -1,442 +1,387 @@
-
-import os, json, random, shutil, sqlite3, time
-from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, make_response
-app = Flask(__name__)
-DB_FILE="infinity.db"; DB_B1="infinity_backup1.db"; DB_B2="infinity_backup2.db"; ALL_DB=[DB_FILE,DB_B1,DB_B2]
-DEFAULT_ECO={"gold":100000000,"gems":100000,"bank_gold":50000000,"bank_gems":50000000,"bank_total":100000000,"fees":0,"lottery":0,"backup":100000000,"history":[100000000,100000000],"crypto":{"BTC":85000,"ETH":4200,"DOGE":2}}
-DATA={"players":{},"loans":[],"requests":[],"announcements":[],"reviews":[],"chats":{},"game_on":True,"friend_requests":[],"economy":dict(DEFAULT_ECO)}
-def db_conn(p):
-    c=sqlite3.connect(p); c.execute("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)"); return c
-def db_read(p):
-    try:
-        if not os.path.exists(p): return None
-        c=db_conn(p); r=c.execute("SELECT v FROM kv WHERE k='DATA'").fetchone(); c.close()
-        if r: return json.loads(r[0])
-    except Exception: pass
-    return None
-def db_write_all():
-    try:
-        c=db_conn(DB_FILE); c.execute("INSERT OR REPLACE INTO kv VALUES ('DATA',?)",(json.dumps(DATA),)); c.commit(); c.close()
-        for b in [DB_B1,DB_B2]:
-            try: shutil.copyfile(DB_FILE,b)
-            except Exception: pass
-    except Exception: pass
+import os,json,random,shutil,sqlite3,time
+from datetime import datetime,timedelta
+from flask import Flask,request,jsonify,make_response
+app=Flask(__name__)
+DB_FILE="infinity.db";DB_B1="infinity_backup1.db";DB_B2="infinity_backup2.db";ALL_DB=[DB_FILE,DB_B1,DB_B2]
+DE={"gold":100000000,"gems":100000,"bank_gold":50000000,"bank_gems":50000000,"bank_total":100000000,"fees":0,"lottery":0,"backup":100000000,"history":[100000000,100000000],"crypto":{"BTC":85000,"ETH":4200,"DOGE":2}}
+DATA={"players":{},"loans":[],"requests":[],"announcements":[],"reviews":[],"chats":{},"game_on":True,"friend_requests":[],"economy":dict(DE)}
+def dc(p):
+ c=sqlite3.connect(p);c.execute("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)");return c
+def dr(p):
+ try:
+  if not os.path.exists(p):return None
+  c=dc(p);r=c.execute("SELECT v FROM kv WHERE k='DATA'").fetchone();c.close()
+  return json.loads(r[0]) if r else None
+ except Exception:return None
+def dw():
+ try:
+  c=dc(DB_FILE);c.execute("INSERT OR REPLACE INTO kv VALUES ('DATA',?)",(json.dumps(DATA),));c.commit();c.close()
+  for b in [DB_B1,DB_B2]:
+   try:shutil.copyfile(DB_FILE,b)
+   except Exception:pass
+ except Exception:pass
 def load():
-    global DATA
-    found=[]
-    for p in ALL_DB:
-        d=db_read(p)
-        if d: found.append(d)
-    if not found:
-        DATA["economy"]=dict(DEFAULT_ECO); db_write_all(); return
-    found.sort(key=lambda x: len(x.get("players",{})),reverse=True); base=found[0]
-    for k in DATA:
-        if k in base: DATA[k]=base[k]
-    merged={}
-    for d in found:
-        for n,p in d.get("players",{}).items():
-            if n not in merged: merged[n]=p
-            elif (p.get("wins",0)+p.get("gold",0))>(merged[n].get("wins",0)+merged[n].get("gold",0)): merged[n]=p
-    DATA["players"]=merged
-    e=DATA.get("economy",{})
-    if e.get("gold",0)==0 and len(merged)==0: DATA["economy"]=dict(DEFAULT_ECO)
-    else:
-        if "bank_gold" not in e: e["bank_gold"]=50000000
-        if "bank_gems" not in e: e["bank_gems"]=50000000
-        if "gems" not in e: e["gems"]=100000
-        if "crypto" not in e: e["crypto"]={"BTC":85000,"ETH":4200,"DOGE":2}
-    for v in DATA["players"].values():
-        if "crypto" not in v: v["crypto"]={"BTC":0,"ETH":0,"DOGE":0}
-        if "losses" not in v: v["losses"]=0
-    db_write_all()
-def save(): db_write_all()
-def storage_status():
-    o=[]
-    for p in ALL_DB:
-        d=db_read(p); o.append({"file":p,"exists":os.path.exists(p),"players":len(d.get("players",{})) if d else 0})
-    return o
+ global DATA
+ f=[d for d in [dr(p) for p in ALL_DB] if d]
+ if not f:DATA["economy"]=dict(DE);dw();return
+ f.sort(key=lambda x:len(x.get("players",{})),reverse=True)
+ for k in DATA:
+  if k in f[0]:DATA[k]=f[0][k]
+ m={}
+ for d in f:
+  for n,p in d.get("players",{}).items():
+   if n not in m:m[n]=p
+   elif (p.get("wins",0)+p.get("gold",0))>(m[n].get("wins",0)+m[n].get("gold",0)):m[n]=p
+ DATA["players"]=m;e=DATA.get("economy",{})
+ if e.get("gold",0)==0 and len(m)==0:DATA["economy"]=dict(DE)
+ else:
+  e.setdefault("bank_gold",50000000);e.setdefault("bank_gems",50000000);e.setdefault("gems",100000);e.setdefault("crypto",{"BTC":85000,"ETH":4200,"DOGE":2})
+ for v in DATA["players"].values():v.setdefault("crypto",{"BTC":0,"ETH":0,"DOGE":0});v.setdefault("losses",0)
+ dw()
+def save():dw()
+def ss():
+ o=[]
+ for p in ALL_DB:
+  d=dr(p);o.append({"file":p,"exists":os.path.exists(p),"players":len(d.get("players",{})) if d else 0})
+ return o
 load()
-def norm(s): return str(s or "").strip().lower()
+def norm(s):return str(s or "").strip().lower()
 def getp(n):
-    if not n: return None
-    for k,v in DATA["players"].items():
-        if norm(k)==norm(n): return v
-    return None
-def new_player(name,pw):
-    pid="INF-"+str(random.randint(10000000,99999999)); bid="BANK INF-"+str(random.randint(10000000,99999999))
-    p={"name":name,"display_name":name,"password":str(pw),"player_id":pid,"bank_id":bid,"wins":0,"losses":0,"gold":0,"gems":0,"bank_gold":0,"bank_gems":0,"cars":[],"items":[],"seen_qs":[],"crypto":{"BTC":0,"ETH":0,"DOGE":0},"galaxy_level":1,"galaxy_kills":0,"notifs":[],"friends":[],"active_loan":None,"loan_history":[],"rank":0,"last_interest":"","saved_at":int(time.time())}
-    DATA["players"][name]=p; save(); return p
-def check_pin(v,pin):
-    if not v: return False
-    if norm(v.get("name"))=="dominic": return str(pin)=="2164"
-    return str(pin)==str(v.get("password"))
+ if not n:return None
+ for k,v in DATA["players"].items():
+  if norm(k)==norm(n):return v
+ return None
+def newp(name,pw):
+ pid="INF-"+str(random.randint(10000000,99999999));bid="BANK INF-"+str(random.randint(10000000,99999999))
+ p={"name":name,"display_name":name,"password":str(pw),"player_id":pid,"bank_id":bid,"wins":0,"losses":0,"gold":0,"gems":0,"bank_gold":0,"bank_gems":0,"cars":[],"items":[],"seen_qs":[],"crypto":{"BTC":0,"ETH":0,"DOGE":0},"galaxy_level":1,"galaxy_kills":0,"notifs":[],"friends":[],"active_loan":None,"loan_history":[],"rank":0,"last_interest":"","saved_at":int(time.time())}
+ DATA["players"][name]=p;save();return p
+def cpin(v,pin):
+ if not v:return False
+ return str(pin)=="2164" if norm(v.get("name"))=="dominic" else str(pin)==str(v.get("password"))
 def notify(name,text,typ="info",extra=None):
-    v=getp(name)
-    if not v:
-        if norm(name)=="dominic": v=new_player("dominic","2164")
-        else: return
-    n={"text":text,"type":typ,"time":datetime.now().strftime("%H:%M %d %b")}
-    if extra: n.update(extra)
-    v.setdefault("notifs",[]).append(n); save()
-def find_by_id(pid):
-    pid=str(pid).upper().replace("BANK ","")
-    if not pid.startswith("INF-"): pid="INF-"+pid
-    for v in DATA["players"].values():
-        if v.get("player_id")==pid or v.get("bank_id")==pid: return v
-    return None
-def active_loan_of(v):
-    if not v: return None
-    for l in DATA["loans"]:
-        if norm(l.get("from"))==norm(v["name"]) and l.get("status") in ["active","waiting_player_confirm","extended"]: return l
-    return v.get("active_loan")
+ v=getp(name)
+ if not v:
+  if norm(name)=="dominic":v=newp("dominic","2164")
+  else:return
+ n={"text":text,"type":typ,"time":datetime.now().strftime("%H:%M %d %b")}
+ if extra:n.update(extra)
+ v.setdefault("notifs",[]).append(n);save()
+def byid(pid):
+ pid=str(pid).upper().replace("BANK ","")
+ if not pid.startswith("INF-"):pid="INF-"+pid
+ for v in DATA["players"].values():
+  if v.get("player_id")==pid or v.get("bank_id")==pid:return v
+ return None
+def alo(v):
+ if not v:return None
+ for l in DATA["loans"]:
+  if norm(l.get("from"))==norm(v["name"]) and l.get("status") in ["active","waiting_player_confirm","extended"]:return l
+ return v.get("active_loan")
 @app.route("/")
-def home(): return make_response(HOME,200,{"Content-Type":"text/html"})
+def home():return make_response(HOME,200,{"Content-Type":"text/html"})
 @app.route("/api/switch_status")
-def sw_s(): return jsonify({"game_on":DATA.get("game_on",True)})
+def sws():return jsonify({"game_on":DATA.get("game_on",True)})
 @app.route("/api/switch_toggle",methods=["POST"])
-def sw_t():
-    d=request.get_json() or {}
-    if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    DATA["game_on"]=bool(d.get("on",True)); save(); return jsonify({"ok":True,"game_on":DATA["game_on"]})
+def swt():
+ d=request.get_json() or {}
+ if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ DATA["game_on"]=bool(d.get("on",True));save();return jsonify({"ok":True,"game_on":DATA["game_on"]})
 @app.route("/api/player")
-def api_player():
-    v=getp(request.args.get("name",""))
-    if not v: return jsonify({"found":False})
-    if request.args.get("password") and str(request.args.get("password"))!=str(v.get("password")): return jsonify({"found":True,"password_ok":False})
-    al=active_loan_of(v); fr=[r for r in DATA.get("friend_requests",[]) if norm(r.get("to"))==norm(v["name"]) and r.get("status")=="pending"]
-    return jsonify({"found":True,"password_ok":True,"name":v["name"],"player_id":v.get("player_id"),"bank_id":v.get("bank_id"),"wins":v.get("wins",0),"losses":v.get("losses",0),"gold":v.get("gold",0),"gems":v.get("gems",0),"bank_gold":v.get("bank_gold",0),"bank_gems":v.get("bank_gems",0),"cars":v.get("cars",[]),"items":v.get("items",[]),"seen_qs":v.get("seen_qs",[]),"crypto":v.get("crypto",{"BTC":0,"ETH":0,"DOGE":0}),"galaxy_level":v.get("galaxy_level",1),"galaxy_kills":v.get("galaxy_kills",0),"notifs":v.get("notifs",[])[-30:],"friends":v.get("friends",[]),"friend_requests":fr,"active_loan":al,"loans":[x for x in DATA["loans"] if norm(x.get("from"))==norm(v["name"])],"rank":v.get("rank",0)})
+def apl():
+ v=getp(request.args.get("name",""))
+ if not v:return jsonify({"found":False})
+ if request.args.get("password") and str(request.args.get("password"))!=str(v.get("password")):return jsonify({"found":True,"password_ok":False})
+ return jsonify({"found":True,"password_ok":True,"name":v["name"],"player_id":v.get("player_id"),"bank_id":v.get("bank_id"),"wins":v.get("wins",0),"losses":v.get("losses",0),"gold":v.get("gold",0),"gems":v.get("gems",0),"bank_gold":v.get("bank_gold",0),"bank_gems":v.get("bank_gems",0),"cars":v.get("cars",[]),"items":v.get("items",[]),"seen_qs":v.get("seen_qs",[]),"crypto":v.get("crypto",{"BTC":0,"ETH":0,"DOGE":0}),"galaxy_level":v.get("galaxy_level",1),"galaxy_kills":v.get("galaxy_kills",0),"notifs":v.get("notifs",[])[-30:],"friends":v.get("friends",[]),"friend_requests":[r for r in DATA.get("friend_requests",[]) if norm(r.get("to"))==norm(v["name"]) and r.get("status")=="pending"],"active_loan":alo(v),"loans":[x for x in DATA["loans"] if norm(x.get("from"))==norm(v["name"])],"rank":v.get("rank",0)})
 @app.route("/api/restore",methods=["POST"])
-def api_restore():
-    d=request.get_json() or {}; name=d.get("name",""); pw=str(d.get("password","")); v=getp(name)
-    if v:
-        if str(v.get("password"))==pw: return jsonify({"restored":False,"found":True,"player":v})
-        return jsonify({"error":"Wrong password"}),403
-    v=new_player(name,pw); v["wins"]=int(d.get("wins",0) or 0); v["losses"]=int(d.get("losses",0) or 0); v["gold"]=int(d.get("gold",0) or 0); v["gems"]=int(d.get("gems",0) or 0); v["cars"]=d.get("cars",[]); v["items"]=d.get("items",[])
-    if d.get("player_id"): v["player_id"]=d.get("player_id")
-    if d.get("bank_id"): v["bank_id"]=d.get("bank_id")
-    save(); return jsonify({"restored":True,"found":True,"player":v})
+def ar():
+ d=request.get_json() or {};n=d.get("name","");pw=str(d.get("password",""));v=getp(n)
+ if v:return jsonify({"restored":False,"found":True,"player":v}) if str(v.get("password"))==pw else (jsonify({"error":"Wrong password"}),403)
+ v=newp(n,pw);v["wins"]=int(d.get("wins",0) or 0);v["losses"]=int(d.get("losses",0) or 0);v["gold"]=int(d.get("gold",0) or 0);v["gems"]=int(d.get("gems",0) or 0);v["cars"]=d.get("cars",[]);v["items"]=d.get("items",[])
+ if d.get("player_id"):v["player_id"]=d.get("player_id")
+ if d.get("bank_id"):v["bank_id"]=d.get("bank_id")
+ save();return jsonify({"restored":True,"found":True,"player":v})
 @app.route("/api/score",methods=["POST"])
-def api_score():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v: v=new_player(d.get("name","Player"),d.get("password","0000"))
-    if int(d.get("wins",0))>v.get("wins",0): v["wins"]=int(d.get("wins",0))
-    if int(d.get("losses",0))>v.get("losses",0): v["losses"]=int(d.get("losses",0))
-    if int(d.get("gold",0))>v.get("gold",0): v["gold"]=int(d.get("gold",0))
-    if int(d.get("gems",0))>v.get("gems",0): v["gems"]=int(d.get("gems",0))
-    if d.get("cars") is not None and len(d.get("cars",[]))>len(v.get("cars",[])): v["cars"]=d.get("cars")
-    if d.get("seen_qs") is not None:
-        cur=set(v.get("seen_qs",[])); cur.update(d.get("seen_qs",[])); v["seen_qs"]=list(cur)
-    v["saved_at"]=int(time.time()); save(); return jsonify({"ok":True})
+def asc():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v:v=newp(d.get("name","Player"),d.get("password","0000"))
+ v["wins"]=max(v.get("wins",0),int(d.get("wins",0)));v["losses"]=max(v.get("losses",0),int(d.get("losses",0)));v["gold"]=max(v.get("gold",0),int(d.get("gold",0)));v["gems"]=max(v.get("gems",0),int(d.get("gems",0)))
+ if d.get("cars") and len(d.get("cars",[]))>len(v.get("cars",[])):v["cars"]=d.get("cars")
+ if d.get("seen_qs"):v["seen_qs"]=list(set(v.get("seen_qs",[]))|set(d.get("seen_qs",[])))
+ v["saved_at"]=int(time.time());save();return jsonify({"ok":True})
 @app.route("/api/leaderboard")
-def api_leader():
-    mode=request.args.get("mode","pvp"); ps=list(DATA["players"].values())
-    if mode=="gold": ps.sort(key=lambda x:x.get("gold",0),reverse=True)
-    elif mode=="gems": ps.sort(key=lambda x:x.get("gems",0),reverse=True)
-    else: ps.sort(key=lambda x:(x.get("wins",0)-x.get("losses",0)),reverse=True)
-    out=[]
-    for i,p in enumerate(ps[:50]): out.append({"name":p["name"],"player_id":p.get("player_id"),"wins":p.get("wins",0),"losses":p.get("losses",0),"gold":p.get("gold",0),"gems":p.get("gems",0),"rank":i+1,"active_loan":bool(active_loan_of(p))})
-    return jsonify({"players":out})
+def alb():
+ m=request.args.get("mode","pvp");ps=list(DATA["players"].values())
+ if m=="gold":ps.sort(key=lambda x:x.get("gold",0),reverse=True)
+ elif m=="gems":ps.sort(key=lambda x:x.get("gems",0),reverse=True)
+ else:ps.sort(key=lambda x:(x.get("wins",0)-x.get("losses",0)),reverse=True)
+ return jsonify({"players":[{"name":p["name"],"player_id":p.get("player_id"),"wins":p.get("wins",0),"losses":p.get("losses",0),"gold":p.get("gold",0),"gems":p.get("gems",0),"rank":i+1,"active_loan":bool(alo(p))} for i,p in enumerate(ps[:50])]})
 @app.route("/api/transfer",methods=["POST"])
-def api_transfer():
-    d=request.get_json() or {}; v=getp(d.get("sender"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    r=find_by_id(d.get("receiver_id","")); amt=int(d.get("amount",0))
-    if not r: return jsonify({"error":"Receiver not found"}),404
-    if amt<=0 or v.get("gold",0)<amt: return jsonify({"error":"Not enough Gold"}),400
-    v["gold"]-=amt; r["gold"]=r.get("gold",0)+amt; notify(r["name"],"💸 "+v["name"]+" sent you "+str(amt)+" Gold"); save(); return jsonify({"ok":True,"sender_gold":v["gold"]})
+def atr():
+ d=request.get_json() or {};v=getp(d.get("sender"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ r=byid(d.get("receiver_id",""));amt=int(d.get("amount",0))
+ if not r:return jsonify({"error":"Receiver not found"}),404
+ if amt<=0 or v.get("gold",0)<amt:return jsonify({"error":"Not enough Gold"}),400
+ v["gold"]-=amt;r["gold"]=r.get("gold",0)+amt;notify(r["name"],"💸 "+v["name"]+" sent you "+str(amt)+" Gold");save();return jsonify({"ok":True,"sender_gold":v["gold"]})
 @app.route("/api/bank_action",methods=["POST"])
-def api_bank():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    amt=int(d.get("amount",0)); cur=d.get("currency","Gold"); is_gold=(cur=="Gold")
-    if d.get("action")=="deposit":
-        if is_gold:
-            if v.get("gold",0)<amt: return jsonify({"error":"Not enough"}),400
-            v["gold"]-=amt; v["bank_gold"]=v.get("bank_gold",0)+amt; DATA["economy"]["bank_gold"]+=amt
-        else:
-            if v.get("gems",0)<amt: return jsonify({"error":"Not enough"}),400
-            v["gems"]-=amt; v["bank_gems"]=v.get("bank_gems",0)+amt; DATA["economy"]["bank_gems"]+=amt
-    else:
-        if is_gold:
-            if v.get("bank_gold",0)<amt: return jsonify({"error":"Not enough in Bank"}),400
-            v["bank_gold"]-=amt; v["gold"]=v.get("gold",0)+amt; DATA["economy"]["bank_gold"]-=amt
-        else:
-            if v.get("bank_gems",0)<amt: return jsonify({"error":"Not enough in Bank"}),400
-            v["bank_gems"]-=amt; v["gems"]=v.get("gems",0)+amt; DATA["economy"]["bank_gems"]-=amt
-    save(); return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"],"bank_gold":v.get("bank_gold",0),"bank_gems":v.get("bank_gems",0)})
+def aba():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ amt=int(d.get("amount",0));cur=d.get("currency","Gold");g=(cur=="Gold")
+ if d.get("action")=="deposit":
+  if g:
+   if v.get("gold",0)<amt:return jsonify({"error":"Not enough"}),400
+   v["gold"]-=amt;v["bank_gold"]=v.get("bank_gold",0)+amt;DATA["economy"]["bank_gold"]+=amt
+  else:
+   if v.get("gems",0)<amt:return jsonify({"error":"Not enough"}),400
+   v["gems"]-=amt;v["bank_gems"]=v.get("bank_gems",0)+amt;DATA["economy"]["bank_gems"]+=amt
+ else:
+  if g:
+   if v.get("bank_gold",0)<amt:return jsonify({"error":"Not enough in Bank"}),400
+   v["bank_gold"]-=amt;v["gold"]=v.get("gold",0)+amt;DATA["economy"]["bank_gold"]-=amt
+  else:
+   if v.get("bank_gems",0)<amt:return jsonify({"error":"Not enough in Bank"}),400
+   v["bank_gems"]-=amt;v["gems"]=v.get("gems",0)+amt;DATA["economy"]["bank_gems"]-=amt
+ save();return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"],"bank_gold":v.get("bank_gold",0),"bank_gems":v.get("bank_gems",0)})
 @app.route("/api/bank_interest",methods=["POST"])
-def api_interest():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    month=datetime.now().strftime("%Y-%m")
-    if v.get("last_interest")==month: return jsonify({"error":"Already claimed this month"}),400
-    bg=int(v.get("bank_gold",0)*0.10); bm=int(v.get("bank_gems",0)*0.10)
-    v["bank_gold"]=v.get("bank_gold",0)+bg; v["bank_gems"]=v.get("bank_gems",0)+bm; v["last_interest"]=month
-    notify(v["name"],"🎁 Bank Interest +10%: +"+str(bg)+" Gold, +"+str(bm)+" Germs"); save()
-    return jsonify({"ok":True,"bonus_gold":bg,"bonus_gems":bm,"bank_gold":v["bank_gold"],"bank_gems":v["bank_gems"]})
+def abi():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ mo=datetime.now().strftime("%Y-%m")
+ if v.get("last_interest")==mo:return jsonify({"error":"Already claimed this month"}),400
+ bg=int(v.get("bank_gold",0)*0.10);bm=int(v.get("bank_gems",0)*0.10);v["bank_gold"]=v.get("bank_gold",0)+bg;v["bank_gems"]=v.get("bank_gems",0)+bm;v["last_interest"]=mo;notify(v["name"],"🎁 Interest +10%: +"+str(bg)+" Gold, +"+str(bm)+" Germs");save();return jsonify({"ok":True,"bonus_gold":bg,"bonus_gems":bm,"bank_gold":v["bank_gold"],"bank_gems":v["bank_gems"]})
 @app.route("/api/exchange",methods=["POST"])
-def api_exchange():
-    d=request.get_json() or {}; v=getp(d.get("name")); amt=int(d.get("amount",0)); direction=d.get("direction","gold_to_gem")
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    if direction=="gold_to_gem":
-        gems=amt//100
-        if gems<1 or v.get("gold",0)<gems*100: return jsonify({"error":"Need 100 Gold = 1 Germ"}),400
-        v["gold"]-=gems*100; v["gems"]=v.get("gems",0)+gems
-    else:
-        if v.get("gems",0)<amt: return jsonify({"error":"Not enough Gems"}),400
-        v["gems"]-=amt; v["gold"]=v.get("gold",0)+amt*100
-    save(); return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"]})
+def aex():
+ d=request.get_json() or {};v=getp(d.get("name"));amt=int(d.get("amount",0));dr=d.get("direction","gold_to_gem")
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ if dr=="gold_to_gem":
+  g=amt//100
+  if g<1 or v.get("gold",0)<g*100:return jsonify({"error":"Need 100 Gold = 1 Germ"}),400
+  v["gold"]-=g*100;v["gems"]=v.get("gems",0)+g
+ else:
+  if v.get("gems",0)<amt:return jsonify({"error":"Not enough Gems"}),400
+  v["gems"]-=amt;v["gold"]=v.get("gold",0)+amt*100
+ save();return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"]})
 @app.route("/api/crypto",methods=["GET"])
-def api_crypto_get():
-    e=DATA["economy"].get("crypto",{"BTC":85000,"ETH":4200,"DOGE":2})
-    for k in e:
-        ch=random.uniform(-0.03,0.03); e[k]=max(1,round(e[k]*(1+ch),2))
-    DATA["economy"]["crypto"]=e; save()
-    v=getp(request.args.get("name",""))
-    hold=v.get("crypto",{"BTC":0,"ETH":0,"DOGE":0}) if v else {"BTC":0,"ETH":0,"DOGE":0}
-    return jsonify({"prices":e,"holdings":hold,"gold":v.get("gold",0) if v else 0})
+def acg():
+ e=DATA["economy"].get("crypto",{"BTC":85000,"ETH":4200,"DOGE":2})
+ for k in e:e[k]=max(1,round(e[k]*(1+random.uniform(-0.03,0.03)),2))
+ DATA["economy"]["crypto"]=e;save();v=getp(request.args.get("name",""));return jsonify({"prices":e,"holdings":v.get("crypto",{"BTC":0,"ETH":0,"DOGE":0}) if v else {"BTC":0,"ETH":0,"DOGE":0},"gold":v.get("gold",0) if v else 0})
 @app.route("/api/crypto_trade",methods=["POST"])
-def api_crypto():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    coin=d.get("coin","BTC"); amt=float(d.get("amount",0)); action=d.get("action","buy")
-    prices=DATA["economy"].get("crypto",{"BTC":85000,"ETH":4200,"DOGE":2}); price=float(prices.get(coin,0))
-    if price<=0 or amt<=0: return jsonify({"error":"Bad amount"}),400
-    v.setdefault("crypto",{"BTC":0,"ETH":0,"DOGE":0})
-    if action=="buy":
-        cost=amt*price
-        if v.get("gold",0)<cost: return jsonify({"error":"Not enough Gold. Need "+str(int(cost))}),400
-        v["gold"]-=int(cost); v["crypto"]=round(float(v["crypto"].get(coin,0))+amt,6)
-    else:
-        if float(v["crypto"].get(coin,0))<amt: return jsonify({"error":"Not enough "+coin}),400
-        v["crypto"]=round(float(v["crypto"].get(coin,0))-amt,6); v["gold"]+=int(amt*price)
-    save(); return jsonify({"ok":True,"gold":v["gold"],"holdings":v["crypto"],"price":price})
+def act():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ coin=d.get("coin","BTC");amt=float(d.get("amount",0));act2=d.get("action","buy");pr=float(DATA["economy"].get("crypto",{"BTC":85000,"ETH":4200,"DOGE":2}).get(coin,0))
+ if pr<=0 or amt<=0:return jsonify({"error":"Bad amount"}),400
+ v.setdefault("crypto",{"BTC":0,"ETH":0,"DOGE":0})
+ if act2=="buy":
+  cost=amt*pr
+  if v.get("gold",0)<cost:return jsonify({"error":"Not enough Gold. Need "+str(int(cost))}),400
+  v["gold"]-=int(cost);v["crypto"][coin]=round(float(v["crypto"].get(coin,0))+amt,6)
+ else:
+  if float(v["crypto"].get(coin,0))<amt:return jsonify({"error":"Not enough "+coin}),400
+  v["crypto"][coin]=round(float(v["crypto"].get(coin,0))-amt,6);v["gold"]+=int(amt*pr)
+ save();return jsonify({"ok":True,"gold":v["gold"],"holdings":v["crypto"],"price":pr})
 @app.route("/api/loan_apply",methods=["POST"])
-def loan_apply():
-    d=request.get_json() or {}; v=getp(d.get("name")); amt=int(d.get("amount",0))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    if active_loan_of(v): return jsonify({"error":"You already have ACTIVE loan. Pay it first!"}),400
-    cur=d.get("currency","Gold")
-    if cur=="Gold" and DATA["economy"]["gold"]<amt: return jsonify({"error":"Server economy does not have enough Gold"}),400
-    if cur=="Gems" and DATA["economy"]["gems"]<amt: return jsonify({"error":"Server economy does not have enough Germs"}),400
-    lid="LN-"+str(random.randint(10000000,99999999))
-    loan={"id":lid,"from":v["display_name"],"from_id":v.get("player_id"),"amount":amt,"currency":cur,"repay_date":d.get("repay_date",""),"original_date":d.get("repay_date",""),"status":"pending_dominic","new_date":"","dominic_new_date":"","extended":False}
-    DATA["loans"].append(loan)
-    notify("dominic","LOAN: "+v["display_name"]+" wants "+str(amt)+" "+cur+" repay "+loan["repay_date"],"loan_request",{"loan_id":lid,"amount":amt,"currency":cur,"repay_date":loan["repay_date"],"from":v["display_name"]})
-    save(); return jsonify({"ok":True})
+def ala():
+ d=request.get_json() or {};v=getp(d.get("name"));amt=int(d.get("amount",0))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ if alo(v):return jsonify({"error":"You already have ACTIVE loan. Pay it first!"}),400
+ cur=d.get("currency","Gold")
+ if cur=="Gold" and DATA["economy"]["gold"]<amt:return jsonify({"error":"Server economy does not have enough Gold"}),400
+ if cur=="Gems" and DATA["economy"]["gems"]<amt:return jsonify({"error":"Server economy does not have enough Germs"}),400
+ lid="LN-"+str(random.randint(10000000,99999999));loan={"id":lid,"from":v["display_name"],"from_id":v.get("player_id"),"amount":amt,"currency":cur,"repay_date":d.get("repay_date",""),"original_date":d.get("repay_date",""),"status":"pending_dominic","new_date":"","dominic_new_date":"","extended":False}
+ DATA["loans"].append(loan);notify("dominic","LOAN: "+v["display_name"]+" wants "+str(amt)+" "+cur+" repay "+loan["repay_date"],"loan_request",{"loan_id":lid,"amount":amt,"currency":cur,"repay_date":loan["repay_date"],"from":v["display_name"]});save();return jsonify({"ok":True})
 @app.route("/api/loan_dominic",methods=["POST"])
-def loan_dom():
-    d=request.get_json() or {}
-    if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    for l in list(DATA["loans"]):
-        if l["id"]==d.get("loan_id"):
-            dom=getp("dominic")
-            if not d.get("approve"):
-                if dom: dom["notifs"]=[n for n in dom.get("notifs",[]) if not (n.get("type")=="loan_request" and n.get("loan_id")==l["id"])]
-                notify(l["from"],"Loan DECLINED by Dominic"); DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=l["id"]]; save(); return jsonify({"ok":True})
-            if dom: dom["notifs"]=[n for n in dom.get("notifs",[]) if not (n.get("type")=="loan_request" and n.get("loan_id")==l["id"])]
-            l["new_date"]=d.get("new_date") or l["repay_date"]; l["dominic_new_date"]=l["new_date"]; l["status"]="waiting_player_confirm"
-            notify(l["from"],"Dominic APPROVED your loan! Date: "+l["new_date"]+" - Tap Yes to receive.","loan_date_change",{"loan_id":l["id"],"new_date":l["new_date"]})
-            save(); return jsonify({"ok":True})
-    return jsonify({"error":"Not found"}),404
+def ald():
+ d=request.get_json() or {}
+ if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ for l in list(DATA["loans"]):
+  if l["id"]==d.get("loan_id"):
+   dom=getp("dominic")
+   if not d.get("approve"):
+    if dom:dom["notifs"]=[n for n in dom.get("notifs",[]) if not (n.get("type")=="loan_request" and n.get("loan_id")==l["id"])]
+    notify(l["from"],"Loan DECLINED by Dominic");DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=l["id"]];save();return jsonify({"ok":True})
+   if dom:dom["notifs"]=[n for n in dom.get("notifs",[]) if not (n.get("type")=="loan_request" and n.get("loan_id")==l["id"])]
+   l["new_date"]=d.get("new_date") or l["repay_date"];l["dominic_new_date"]=l["new_date"];l["status"]="waiting_player_confirm";notify(l["from"],"Dominic APPROVED your loan! Date: "+l["new_date"],"loan_date_change",{"loan_id":l["id"],"new_date":l["new_date"]});save();return jsonify({"ok":True})
+ return jsonify({"error":"Not found"}),404
 @app.route("/api/loan_player_confirm",methods=["POST"])
-def loan_player_confirm():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v: return jsonify({"error":"No player"}),404
-    for l in list(DATA["loans"]):
-        if l["id"]==d.get("loan_id"):
-            if l.get("status")=="active":
-                v["notifs"]=[n for n in v.get("notifs",[]) if not (n.get("type")=="loan_date_change" and n.get("loan_id")==l["id"])]; save(); return jsonify({"error":"Already claimed!"}),400
-            if d.get("approve"):
-                l["status"]="active"; l["repay_date"]=l.get("dominic_new_date") or l["repay_date"]; v["active_loan"]=l
-                if l["currency"]=="Gold": DATA["economy"]["gold"]-=l["amount"]; v["gold"]=v.get("gold",0)+l["amount"]
-                else: DATA["economy"]["gems"]-=l["amount"]; v["gems"]=v.get("gems",0)+l["amount"]
-                v["notifs"]=[n for n in v.get("notifs",[]) if not (n.get("type")=="loan_date_change" and n.get("loan_id")==l["id"])]
-                v["notifs"].append({"text":"✅ Loan APPROVED & RECEIVED: +"+str(l["amount"])+" "+l["currency"]+" - Repay by "+l["repay_date"],"type":"loan_active","time":datetime.now().strftime("%H:%M %d %b")})
-                notify("dominic",v["name"]+" received Loan "+str(l["amount"])+" "+l["currency"]+" from Server Economy")
-            else:
-                v["notifs"]=[n for n in v.get("notifs",[]) if not (n.get("type")=="loan_date_change" and n.get("loan_id")==l["id"])]
-                DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=l["id"]]; notify("dominic",v["name"]+" declined Loan - Refunded")
-            save(); return jsonify({"ok":True})
-    return jsonify({"error":"Not found / Already claimed"}),404
+def alp():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v:return jsonify({"error":"No player"}),404
+ for l in list(DATA["loans"]):
+  if l["id"]==d.get("loan_id"):
+   if l.get("status")=="active":return jsonify({"error":"Already claimed!"}),400
+   if d.get("approve"):
+    l["status"]="active";l["repay_date"]=l.get("dominic_new_date") or l["repay_date"];v["active_loan"]=l
+    if l["currency"]=="Gold":DATA["economy"]["gold"]-=l["amount"];v["gold"]=v.get("gold",0)+l["amount"]
+    else:DATA["economy"]["gems"]-=l["amount"];v["gems"]=v.get("gems",0)+l["amount"]
+    v["notifs"]=[n for n in v.get("notifs",[]) if not (n.get("type")=="loan_date_change" and n.get("loan_id")==l["id"])];v["notifs"].append({"text":"✅ Loan RECEIVED: +"+str(l["amount"])+" "+l["currency"]+" - Repay by "+l["repay_date"],"type":"loan_active","time":datetime.now().strftime("%H:%M %d %b")});notify("dominic",v["name"]+" received Loan "+str(l["amount"])+" "+l["currency"])
+   else:
+    v["notifs"]=[n for n in v.get("notifs",[]) if not (n.get("type")=="loan_date_change" and n.get("loan_id")==l["id"])];DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=l["id"]];notify("dominic",v["name"]+" declined Loan")
+   save();return jsonify({"ok":True})
+ return jsonify({"error":"Not found"}),404
 @app.route("/api/loan_repay",methods=["POST"])
-def loan_repay():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    loan=None
-    for l in DATA["loans"]:
-        if l["id"]==d.get("loan_id") and norm(l.get("from"))==norm(v["name"]): loan=l; break
-    if not loan or loan.get("status") not in ["active","extended"]: return jsonify({"error":"No active loan"}),404
-    amt=loan["amount"]; cur=loan["currency"]
-    if cur=="Gold":
-        if v.get("gold",0)<amt: return jsonify({"error":"Not enough Gold."}),400
-        v["gold"]-=amt; DATA["economy"]["gold"]+=amt
-    else:
-        if v.get("gems",0)<amt: return jsonify({"error":"Not enough Germs"}),400
-        v["gems"]-=amt; DATA["economy"]["gems"]+=amt
-    DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=loan["id"]]; v["active_loan"]=None
-    v.setdefault("loan_history",[]).append({"amount":amt,"currency":cur,"status":"paid","date":datetime.now().strftime("%Y-%m-%d")})
-    notify(v["name"],"✅ Loan PAID: "+str(amt)+" "+cur); save(); return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"]})
+def alr():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ loan=None
+ for l in DATA["loans"]:
+  if l["id"]==d.get("loan_id") and norm(l.get("from"))==norm(v["name"]):loan=l;break
+ if not loan or loan.get("status") not in ["active","extended"]:return jsonify({"error":"No active loan"}),404
+ amt=loan["amount"];cur=loan["currency"]
+ if cur=="Gold":
+  if v.get("gold",0)<amt:return jsonify({"error":"Not enough Gold."}),400
+  v["gold"]-=amt;DATA["economy"]["gold"]+=amt
+ else:
+  if v.get("gems",0)<amt:return jsonify({"error":"Not enough Germs"}),400
+  v["gems"]-=amt;DATA["economy"]["gems"]+=amt
+ DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=loan["id"]];v["active_loan"]=None;v.setdefault("loan_history",[]).append({"amount":amt,"currency":cur,"status":"paid","date":datetime.now().strftime("%Y-%m-%d")});notify(v["name"],"✅ Loan PAID: "+str(amt)+" "+cur);save();return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"]})
 @app.route("/api/loan_due",methods=["POST"])
-def loan_due():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v: return jsonify({"error":"No player"}),404
-    loan=None
-    for l in DATA["loans"]:
-        if l["id"]==d.get("loan_id") and norm(l.get("from"))==norm(v["name"]): loan=l; break
-    if not loan: return jsonify({"error":"No loan"}),404
-    if d.get("action","extend")=="extend" and not loan.get("extended"):
-        try:
-            old=datetime.strptime(loan["repay_date"],"%Y-%m-%d"); loan["repay_date"]=(old+timedelta(days=7)).strftime("%Y-%m-%d")
-        except Exception: pass
-        loan["extended"]=True; loan["status"]="extended"; v["active_loan"]=loan
-        notify(v["name"],"⏳ Extension: New date "+loan["repay_date"]); save(); return jsonify({"ok":True,"new_date":loan["repay_date"]})
-    amt=loan["amount"]; cur=loan["currency"]; wins_taken=0
-    if cur=="Gold":
-        have=v.get("gold",0)
-        if have>=amt: v["gold"]-=amt; DATA["economy"]["gold"]+=amt
-        else: v["gold"]=0; wins_taken=((amt-have)+999)//1000; v["wins"]=max(0,v.get("wins",0)-wins_taken); DATA["economy"]["gold"]+=have
-    else:
-        have=v.get("gems",0)
-        if have>=amt: v["gems"]-=amt; DATA["economy"]["gems"]+=amt
-        else: v["gems"]=0; wins_taken=((amt-have)+9)//10; v["wins"]=max(0,v.get("wins",0)-wins_taken); DATA["economy"]["gems"]+=have
-    DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=loan["id"]]; v["active_loan"]=None
-    notify(v["name"],"⚠️ Server COLLECTED Loan: Deducted "+str(wins_taken)+" Wins"); save(); return jsonify({"ok":True,"wins_taken":wins_taken,"wins":v["wins"]})
+def aldu():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v:return jsonify({"error":"No player"}),404
+ loan=None
+ for l in DATA["loans"]:
+  if l["id"]==d.get("loan_id") and norm(l.get("from"))==norm(v["name"]):loan=l;break
+ if not loan:return jsonify({"error":"No loan"}),404
+ if d.get("action","extend")=="extend" and not loan.get("extended"):
+  try:old=datetime.strptime(loan["repay_date"],"%Y-%m-%d");loan["repay_date"]=(old+timedelta(days=7)).strftime("%Y-%m-%d")
+  except Exception:pass
+  loan["extended"]=True;loan["status"]="extended";v["active_loan"]=loan;notify(v["name"],"⏳ Extension: "+loan["repay_date"]);save();return jsonify({"ok":True,"new_date":loan["repay_date"]})
+ amt=loan["amount"];cur=loan["currency"];wt=0
+ if cur=="Gold":
+  h=v.get("gold",0)
+  if h>=amt:v["gold"]-=amt;DATA["economy"]["gold"]+=amt
+  else:v["gold"]=0;wt=((amt-h)+999)//1000;v["wins"]=max(0,v.get("wins",0)-wt);DATA["economy"]["gold"]+=h
+ else:
+  h=v.get("gems",0)
+  if h>=amt:v["gems"]-=amt;DATA["economy"]["gems"]+=amt
+  else:v["gems"]=0;wt=((amt-h)+9)//10;v["wins"]=max(0,v.get("wins",0)-wt);DATA["economy"]["gems"]+=h
+ DATA["loans"]=[x for x in DATA["loans"] if x["id"]!=loan["id"]];v["active_loan"]=None;notify(v["name"],"⚠️ Collected Loan: -"+str(wt)+" Wins");save();return jsonify({"ok":True,"wins_taken":wt,"wins":v["wins"]})
 @app.route("/api/request_money",methods=["POST"])
-def api_req():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v: return jsonify({"error":"No player"}),404
-    rid="RQ-"+str(random.randint(10000000,99999999)); amt=int(d.get("amount") or 0)
-    r={"id":rid,"from":v["display_name"],"amount":amt,"currency":d.get("currency","Gold"),"message":d.get("message","")}
-    DATA["requests"].append(r); notify("dominic","🔒 SECRET: "+v["display_name"]+" wants "+str(amt)+" "+r["currency"],"request",{"request_id":rid,"amount":amt,"currency":r["currency"]}); save(); return jsonify({"ok":True})
+def arq():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v:return jsonify({"error":"No player"}),404
+ rid="RQ-"+str(random.randint(10000000,99999999));amt=int(d.get("amount") or 0);r={"id":rid,"from":v["display_name"],"amount":amt,"currency":d.get("currency","Gold"),"message":d.get("message","")};DATA["requests"].append(r);notify("dominic","🔒 SECRET: "+v["display_name"]+" wants "+str(amt)+" "+r["currency"],"request",{"request_id":rid,"amount":amt,"currency":r["currency"]});save();return jsonify({"ok":True})
 @app.route("/api/request_approve",methods=["POST"])
-def api_req_ap():
-    d=request.get_json() or {}
-    if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    for r in DATA["requests"]:
-        if r["id"]==d.get("request_id"):
-            v=getp(r["from"])
-            if v:
-                if d.get("currency","Gold")=="Gold": v["gold"]=v.get("gold",0)+int(d.get("amount",0)); DATA["economy"]["gold"]-=int(d.get("amount",0))
-                else: v["gems"]=v.get("gems",0)+int(d.get("amount",0)); DATA["economy"]["gems"]-=int(d.get("amount",0))
-                notify(v["name"],"🔒 Secret Approved: +"+str(d.get("amount",0))+" "+d.get("currency","Gold"))
-                dom=getp("dominic")
-                if dom: dom["notifs"]=[n for n in dom.get("notifs",[]) if not (n.get("type")=="request" and n.get("request_id")==r["id"])]
-            DATA["requests"]=[x for x in DATA["requests"] if x["id"]!=r["id"]]; save(); return jsonify({"ok":True})
-    return jsonify({"error":"Not found"}),404
+def arqa():
+ d=request.get_json() or {}
+ if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ for r in DATA["requests"]:
+  if r["id"]==d.get("request_id"):
+   v=getp(r["from"])
+   if v:
+    if d.get("currency","Gold")=="Gold":v["gold"]=v.get("gold",0)+int(d.get("amount",0));DATA["economy"]["gold"]-=int(d.get("amount",0))
+    else:v["gems"]=v.get("gems",0)+int(d.get("amount",0));DATA["economy"]["gems"]-=int(d.get("amount",0))
+    notify(v["name"],"🔒 Secret Approved: +"+str(d.get("amount",0))+" "+d.get("currency","Gold"));dom=getp("dominic")
+    if dom:dom["notifs"]=[n for n in dom.get("notifs",[]) if not (n.get("type")=="request" and n.get("request_id")==r["id"])]
+   DATA["requests"]=[x for x in DATA["requests"] if x["id"]!=r["id"]];save();return jsonify({"ok":True})
+ return jsonify({"error":"Not found"}),404
 @app.route("/api/buy_item",methods=["POST"])
-def api_buy():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    item=d.get("item",""); price=int(d.get("price",0))
-    if v.get("gold",0)<price: return jsonify({"error":"Not enough Gold"}),400
-    if item in v.get("cars",[]) or item in v.get("items",[]): return jsonify({"error":"Already owned"}),400
-    v["gold"]-=price
-    if any(x in item for x in ["Toyota","BMW","Lamborghini","Ferrari","Tesla","Mercedes","Audi","Rover","Hilux","Nissan","Bugatti"]): v.setdefault("cars",[]).append(item)
-    else: v.setdefault("items",[]).append(item)
-    save(); return jsonify({"ok":True,"gold":v["gold"]})
+def aby():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ it=d.get("item","");pr=int(d.get("price",0))
+ if v.get("gold",0)<pr:return jsonify({"error":"Not enough Gold"}),400
+ if it in v.get("cars",[]) or it in v.get("items",[]):return jsonify({"error":"Already owned"}),400
+ v["gold"]-=pr
+ if any(x in it for x in ["Toyota","BMW","Lamborghini","Ferrari","Tesla","Mercedes","Audi","Rover","Hilux","Nissan","Bugatti"]):v.setdefault("cars",[]).append(it)
+ else:v.setdefault("items",[]).append(it)
+ save();return jsonify({"ok":True,"gold":v["gold"]})
 @app.route("/api/consume",methods=["POST"])
-def api_consume():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    p=d.get("product","")
-    if p in v.get("items",[]): v["items"].remove(p)
-    v["wins"]=v.get("wins",0)+int(d.get("bonus",20)); save(); return jsonify({"ok":True,"wins":v["wins"]})
+def aco():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ p=d.get("product","")
+ if p in v.get("items",[]):v["items"].remove(p)
+ v["wins"]=v.get("wins",0)+int(d.get("bonus",20));save();return jsonify({"ok":True,"wins":v["wins"]})
 @app.route("/api/lottery",methods=["POST"])
-def api_lot():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v or not check_pin(v,d.get("pin","")): return jsonify({"error":"Wrong PIN"}),403
-    bet=int(d.get("bet",0)); cur=d.get("currency","Gold")
-    if bet<=0: return jsonify({"error":"Bet > 0"}),400
-    if cur=="Gold":
-        if v.get("gold",0)<bet: return jsonify({"error":"Not enough Gold"}),400
-        v["gold"]-=bet
-    else:
-        if v.get("gems",0)<bet: return jsonify({"error":"Not enough Gems"}),400
-        v["gems"]-=bet
-    win=random.random()<0.35
-    if win:
-        prize=bet*2
-        if cur=="Gold": v["gold"]+=prize
-        else: v["gems"]+=prize
-        res={"win":True,"prize":prize,"lost":0}
-    else: res={"win":False,"prize":0,"lost":bet}; DATA["economy"]["lottery"]=DATA["economy"].get("lottery",0)+bet
-    save(); return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"],"result":res})
+def alo2():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v or not cpin(v,d.get("pin","")):return jsonify({"error":"Wrong PIN"}),403
+ bet=int(d.get("bet",0));cur=d.get("currency","Gold")
+ if bet<=0:return jsonify({"error":"Bet > 0"}),400
+ if cur=="Gold":
+  if v.get("gold",0)<bet:return jsonify({"error":"Not enough Gold"}),400
+  v["gold"]-=bet
+ else:
+  if v.get("gems",0)<bet:return jsonify({"error":"Not enough Gems"}),400
+  v["gems"]-=bet
+ win=random.random()<0.35
+ if win:
+  pr=bet*2
+  if cur=="Gold":v["gold"]+=pr
+  else:v["gems"]+=pr
+  res={"win":True,"prize":pr,"lost":0}
+ else:res={"win":False,"prize":0,"lost":bet};DATA["economy"]["lottery"]=DATA["economy"].get("lottery",0)+bet
+ save();return jsonify({"ok":True,"gold":v["gold"],"gems":v["gems"],"result":res})
 @app.route("/api/announce",methods=["POST"])
-def api_ann():
-    d=request.get_json() or {}
-    if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    DATA["announcements"].append({"text":d.get("text",""),"time":datetime.now().strftime("%H:%M")})
-    for v in DATA["players"].values(): v.setdefault("notifs",[]).append({"text":"📢 "+d.get("text",""),"type":"announce","time":datetime.now().strftime("%H:%M")})
-    save(); return jsonify({"ok":True})
+def aan():
+ d=request.get_json() or {}
+ if norm(d.get("admin"))!="dominic" or str(d.get("pin"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ DATA["announcements"].append({"text":d.get("text",""),"time":datetime.now().strftime("%H:%M")})
+ for v in DATA["players"].values():v.setdefault("notifs",[]).append({"text":"📢 "+d.get("text",""),"type":"announce","time":datetime.now().strftime("%H:%M")})
+ save();return jsonify({"ok":True})
 @app.route("/api/announcements")
-def api_anns(): return jsonify({"announcements":DATA["announcements"][-5:]})
+def aann():return jsonify({"announcements":DATA["announcements"][-5:]})
 @app.route("/api/economy")
-def api_eco():
-    if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    e=DATA["economy"]; e["history"]=(e.get("history",[])+[e.get("gold",100000000)])[-20:]; save()
-    pending=[x for x in DATA["loans"] if x.get("status")=="pending_dominic"]
-    return jsonify({"economy":e,"requests":DATA["requests"],"loans":pending,"is_negative":e.get("gold",100000000)<0,"backups":storage_status()})
+def aeco():
+ if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ e=DATA["economy"];e["history"]=(e.get("history",[])+[e.get("gold",100000000)])[-20:];save();return jsonify({"economy":e,"requests":DATA["requests"],"loans":[x for x in DATA["loans"] if x.get("status")=="pending_dominic"],"is_negative":e.get("gold",100000000)<0,"backups":ss()})
 @app.route("/api/emergency",methods=["POST"])
-def api_em():
-    d=request.get_json() or {}
-    if norm(d.get("name"))!="dominic" or str(d.get("pin"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    if DATA["economy"].get("gold",100000000)>=0: return jsonify({"error":"Not negative - Locked"}),400
-    v=getp("dominic") or new_player("dominic","2164"); DATA["economy"].update({"gold":100000000,"gems":100000,"bank_gold":50000000,"bank_gems":50000000}); v["gold"]=v.get("gold",0)+500000000000; save(); return jsonify({"ok":True})
+def aem():
+ d=request.get_json() or {}
+ if norm(d.get("name"))!="dominic" or str(d.get("pin"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ if DATA["economy"].get("gold",100000000)>=0:return jsonify({"error":"Not negative - Locked"}),400
+ v=getp("dominic") or newp("dominic","2164");DATA["economy"].update({"gold":100000000,"gems":100000,"bank_gold":50000000,"bank_gems":50000000});v["gold"]=v.get("gold",0)+500000000000;save();return jsonify({"ok":True})
 @app.route("/api/server_info")
-def api_srv():
-    if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    return jsonify({"players":len(DATA["players"]),"earning_on":True,"reviews":DATA["reviews"][-20:],"backups":storage_status()})
+def asv():
+ if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ return jsonify({"players":len(DATA["players"]),"earning_on":True,"reviews":DATA["reviews"][-20:],"backups":ss()})
 @app.route("/api/review",methods=["POST"])
-def api_rev():
-    d=request.get_json() or {}; DATA["reviews"].append({"name":d.get("name"),"type":d.get("type"),"text":d.get("text")}); save(); return jsonify({"ok":True})
+def arv():
+ d=request.get_json() or {};DATA["reviews"].append({"name":d.get("name"),"type":d.get("type"),"text":d.get("text")});save();return jsonify({"ok":True})
 @app.route("/api/friends")
-def api_friends():
-    v=getp(request.args.get("name",""))
-    if not v: return jsonify({"friends":[],"requests":[]})
-    out=[]
-    for fn in v.get("friends",[]):
-        fv=getp(fn)
-        if fv: out.append({"name":fv["name"],"player_id":fv.get("player_id")})
-    reqs=[r for r in DATA.get("friend_requests",[]) if norm(r.get("to"))==norm(v["name"]) and r.get("status")=="pending"]
-    return jsonify({"friends":out,"requests":reqs})
+def afr():
+ v=getp(request.args.get("name",""))
+ if not v:return jsonify({"friends":[],"requests":[]})
+ return jsonify({"friends":[{"name":getp(fn)["name"],"player_id":getp(fn).get("player_id")} for fn in v.get("friends",[]) if getp(fn)],"requests":[r for r in DATA.get("friend_requests",[]) if norm(r.get("to"))==norm(v["name"]) and r.get("status")=="pending"]})
 @app.route("/api/friend_request",methods=["POST"])
-def api_fr():
-    d=request.get_json() or {}; v=getp(d.get("name")); t=find_by_id(d.get("target_id",""))
-    if not v or not t: return jsonify({"error":"Not found"}),404
-    if norm(t["name"])==norm(v["name"]): return jsonify({"error":"Cannot add yourself"}),400
-    if t["name"] in v.get("friends",[]): return jsonify({"error":"Already friends"}),400
-    for r in DATA.get("friend_requests",[]):
-        if norm(r.get("from"))==norm(v["name"]) and norm(r.get("to"))==norm(t["name"]) and r.get("status")=="pending": return jsonify({"error":"Request already sent"}),400
-    DATA.setdefault("friend_requests",[]).append({"id":"FR-"+str(random.randint(10000000,99999999)),"from":v["display_name"],"to":t["display_name"],"status":"pending"})
-    notify(t["name"],"👥 Friend Request from "+v["display_name"]+" - Accept in Profile!","friend_request"); save(); return jsonify({"ok":True})
+def afrq():
+ d=request.get_json() or {};v=getp(d.get("name"));t=byid(d.get("target_id",""))
+ if not v or not t:return jsonify({"error":"Not found"}),404
+ if norm(t["name"])==norm(v["name"]):return jsonify({"error":"Cannot add yourself"}),400
+ if t["name"] in v.get("friends",[]):return jsonify({"error":"Already friends"}),400
+ for r in DATA.get("friend_requests",[]):
+  if norm(r.get("from"))==norm(v["name"]) and norm(r.get("to"))==norm(t["name"]) and r.get("status")=="pending":return jsonify({"error":"Request already sent"}),400
+ DATA.setdefault("friend_requests",[]).append({"id":"FR-"+str(random.randint(10000000,99999999)),"from":v["display_name"],"to":t["display_name"],"status":"pending"});notify(t["name"],"👥 Friend Request from "+v["display_name"],"friend_request");save();return jsonify({"ok":True})
 @app.route("/api/friend_respond",methods=["POST"])
-def api_fresp():
-    d=request.get_json() or {}; v=getp(d.get("name"))
-    if not v: return jsonify({"error":"No player"}),404
-    for r in DATA.get("friend_requests",[]):
-        if r["id"]==d.get("request_id") and norm(r.get("to"))==norm(v["name"]):
-            if d.get("accept"):
-                r["status"]="accepted"; f=getp(r["from"])
-                if f and f["name"] not in v.get("friends",[]): v.setdefault("friends",[]).append(f["name"])
-                if f and v["name"] not in f.get("friends",[]): f.setdefault("friends",[]).append(v["name"])
-                notify(r["from"],"✅ "+v["display_name"]+" ACCEPTED your Friend Request!")
-            else: r["status"]="declined"; notify(r["from"],"❌ "+v["display_name"]+" declined Friend Request")
-            save(); return jsonify({"ok":True})
-    return jsonify({"error":"Not found"}),404
+def afrp():
+ d=request.get_json() or {};v=getp(d.get("name"))
+ if not v:return jsonify({"error":"No player"}),404
+ for r in DATA.get("friend_requests",[]):
+  if r["id"]==d.get("request_id") and norm(r.get("to"))==norm(v["name"]):
+   if d.get("accept"):
+    r["status"]="accepted";f=getp(r["from"])
+    if f and f["name"] not in v.get("friends",[]):v.setdefault("friends",[]).append(f["name"])
+    if f and v["name"] not in f.get("friends",[]):f.setdefault("friends",[]).append(v["name"])
+    notify(r["from"],"✅ "+v["display_name"]+" ACCEPTED your Friend Request!")
+   else:r["status"]="declined";notify(r["from"],"❌ "+v["display_name"]+" declined Friend Request")
+   save();return jsonify({"ok":True})
+ return jsonify({"error":"Not found"}),404
 @app.route("/api/chat_send",methods=["POST"])
-def api_chat_send():
-    d=request.get_json() or {}; key="|".join(sorted([norm(d.get("sender","")),norm(d.get("to",""))])); DATA["chats"].setdefault(key,[]).append({"from":d.get("sender",""),"text":d.get("text","")}); save(); return jsonify({"ok":True})
+def acs():
+ d=request.get_json() or {};k="|".join(sorted([norm(d.get("sender","")),norm(d.get("to",""))]));DATA["chats"].setdefault(k,[]).append({"from":d.get("sender",""),"text":d.get("text","")});save();return jsonify({"ok":True})
 @app.route("/api/chat_get")
-def api_chat_get():
-    key="|".join(sorted([norm(request.args.get("a","")),norm(request.args.get("b",""))])); return jsonify({"messages":DATA["chats"].get(key,[])})
+def acg2():
+ k="|".join(sorted([norm(request.args.get("a","")),norm(request.args.get("b",""))]));return jsonify({"messages":DATA["chats"].get(k,[])})
 @app.route("/api/storage_status")
-def api_storage():
-    if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164": return jsonify({"error":"Only Dominic"}),403
-    return jsonify({"db":"SQLite infinity.db + 2 backups","backups":storage_status(),"ram_players":len(DATA["players"])})
+def ast():
+ if norm(request.args.get("name"))!="dominic" or str(request.args.get("password"))!="2164":return jsonify({"error":"Only Dominic"}),403
+ return jsonify({"db":"SQLite infinity.db + 2 backups","backups":ss(),"ram_players":len(DATA["players"])})
 
-HOME = r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT v36</title><link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:Poppins,Arial;color:#fff;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;padding:8px 14px}.profile{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;border:2px solid #fff;cursor:pointer}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px}.enterBtn{margin-top:18px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);cursor:pointer;position:relative;z-index:5}.db-note{margin:10px 0 4px;font-size:11px;color:#00ff88}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer}.box span{font-size:38px;display:block}button{cursor:pointer}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-weight:700;cursor:pointer;text-align:left}input,select,textarea{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000}.hidden{display:none!important}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:999;max-width:90%;text-align:center}.gameOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:500}.gamePopup{background:linear-gradient(160deg,#2b005e,#12002b);border:3px solid #ffd700;border-radius:28px;padding:22px 18px;max-width:420px;width:100%;text-align:center}.choiceRow{display:flex;gap:12px;margin-top:16px}.choiceBox{flex:1;padding:18px 8px;border-radius:20px;cursor:pointer;font-weight:900;border:3px solid #fff}.choiceNo{background:#ff2222;color:#fff}.choiceYes{background:#00cc44;color:#000}.bottomNav{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);border-top:2px solid #ffd700;display:flex;justify-content:space-around;padding:10px 0 14px;z-index:200}.bottomNav div{font-size:28px;cursor:pointer;text-align:center}.bottomNav small{display:block;font-size:10px;color:#ffd700}.walletCard{background:linear-gradient(135deg,#ffd700,#ff006e);color:#000;border-radius:24px;padding:18px;text-align:center}.bigBankBox{padding:22px 10px;border-radius:24px;border:2px solid #fff;text-align:center;cursor:pointer;background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4))}.loanGreen{border:4px solid #00ff88!important;background:linear-gradient(160deg,#00cc44,#00ff88)!important;color:#000!important}.idPrefix{display:flex;align-items:center;background:#fff;border-radius:14px;border:2px solid #ffd700;padding:0 10px;margin:8px 0}.idPrefix b{color:#000}.idPrefix input{border:none;flex:1;margin:0}.timerBar{height:14px;background:#333;border-radius:99px;overflow:hidden}.timerFill{height:100%;background:linear-gradient(90deg,#00ff88,#ffd700,#ff2222);transition:width 1s linear}.fallArea{position:relative;height:420px;background:linear-gradient(#000428,#004e92);border:2px solid #00e5ff;border-radius:18px;overflow:hidden}.fallItem{position:absolute;font-size:34px;cursor:pointer}.tabBox{flex:1;padding:12px 4px;border-radius:16px;background:rgba(255,255,255,.15);border:2px solid #ffd700;text-align:center;cursor:pointer;font-weight:900;font-size:13px}.tabBox.active{background:#ffd700;color:#000}.pinInput{font-size:28px;text-align:center;letter-spacing:12px}.shopGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.shopBox{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.5);border-radius:18px;padding:12px;text-align:center}.catTab{padding:8px 4px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid #ffd700;text-align:center;cursor:pointer;font-size:11px;font-weight:900}.catTab.active{background:#ffd700;color:#000}#menuDrop{position:fixed!important;top:108px!important;right:8px!important;width:200px!important;background:#1a1a2e;border:2px solid #ffd700;border-radius:14px;padding:6px;z-index:900}#menuDrop div{padding:8px!important;font-size:12px!important}</style></head><body>
+HOME=r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>INFINITY BOT v37</title><link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:Poppins,Arial;color:#fff;background:radial-gradient(circle at 50% 20%,#3a0a5e,#12002b 70%);min-height:100vh}.cursive{font-family:'Great Vibes',cursive}.topbar{display:flex;justify-content:space-between;padding:8px 14px}.profile{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700);display:flex;align-items:center;justify-content:center;border:2px solid #fff;cursor:pointer}.center{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.crownBig{font-size:90px}.enterBtn{margin-top:18px;padding:16px 70px;font-family:'Great Vibes',cursive;font-size:48px;border:none;border-radius:60px;background:linear-gradient(90deg,#ff006e,#ffd700,#00e5ff);cursor:pointer;position:relative;z-index:5}.db-note{margin:10px 0 4px;font-size:11px;color:#00ff88}.card{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);border-radius:26px;padding:20px;margin:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid #fff;border-radius:24px;padding:22px 10px;text-align:center;cursor:pointer}.box span{font-size:38px;display:block}button{cursor:pointer}.btn{width:100%;padding:14px;border:none;border-radius:25px;font-weight:900;background:#ffd700;margin:6px 0}.btn2{width:100%;padding:13px;border-radius:25px;border:2px solid #00e5ff;background:transparent;color:#00e5ff;font-weight:900;margin:6px 0}.opt{width:100%;padding:13px;margin:7px 0;border-radius:16px;border:2px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-weight:700;cursor:pointer;text-align:left}input,select,textarea{width:100%;padding:14px;border-radius:14px;border:2px solid #ffd700;margin:8px 0;font-size:16px;background:#fff;color:#000}.hidden{display:none!important}.leadRow{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(0,0,0,.45);border-radius:14px;margin:6px 0;cursor:pointer}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:20px;font-weight:700;z-index:999;max-width:90%;text-align:center}.gameOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:500}.gamePopup{background:linear-gradient(160deg,#2b005e,#12002b);border:3px solid #ffd700;border-radius:28px;padding:22px 18px;max-width:420px;width:100%;text-align:center}.choiceRow{display:flex;gap:12px;margin-top:16px}.choiceBox{flex:1;padding:18px 8px;border-radius:20px;cursor:pointer;font-weight:900;border:3px solid #fff}.choiceNo{background:#ff2222;color:#fff}.choiceYes{background:#00cc44;color:#000}.bottomNav{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);border-top:2px solid #ffd700;display:flex;justify-content:space-around;padding:10px 0 14px;z-index:200}.bottomNav div{font-size:28px;cursor:pointer;text-align:center}.bottomNav small{display:block;font-size:10px;color:#ffd700}.walletCard{background:linear-gradient(135deg,#ffd700,#ff006e);color:#000;border-radius:24px;padding:18px;text-align:center}.bigBankBox{padding:22px 10px;border-radius:24px;border:2px solid #fff;text-align:center;cursor:pointer;background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.4))}.loanGreen{border:4px solid #00ff88!important;background:linear-gradient(160deg,#00cc44,#00ff88)!important;color:#000!important}.idPrefix{display:flex;align-items:center;background:#fff;border-radius:14px;border:2px solid #ffd700;padding:0 10px;margin:8px 0}.idPrefix b{color:#000}.idPrefix input{border:none;flex:1;margin:0}.timerBar{height:14px;background:#333;border-radius:99px;overflow:hidden}.timerFill{height:100%;background:linear-gradient(90deg,#00ff88,#ffd700,#ff2222);transition:width 1s linear}.tabBox{flex:1;padding:12px 4px;border-radius:16px;background:rgba(255,255,255,.15);border:2px solid #ffd700;text-align:center;cursor:pointer;font-weight:900;font-size:13px}.tabBox.active{background:#ffd700;color:#000}.pinInput{font-size:28px;text-align:center;letter-spacing:12px}.shopGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.shopBox{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.5);border-radius:18px;padding:12px;text-align:center}.catTab{padding:8px 4px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid #ffd700;text-align:center;cursor:pointer;font-size:11px;font-weight:900}.catTab.active{background:#ffd700;color:#000}#menuDrop{position:fixed!important;top:108px!important;right:8px!important;width:200px!important;background:#1a1a2e;border:2px solid #ffd700;border-radius:14px;padding:6px;z-index:900}#menuDrop div{padding:8px!important;font-size:12px!important}</style></head><body>
 <div id="frozenOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px"><div style="font-size:80px">❄️</div><h1>GAME PAUSED</h1><p style="color:#ffd700;font-weight:900">SWITCHED OFF BY DOMINIC</p><div id="frozenDominicBox" style="display:none;margin-top:20px;background:#1a1a2e;border:2px solid #ffd700;border-radius:20px;padding:16px;width:100%;max-width:320px"><p>👑 Dominic Only</p><input id="frozenPin" type="password" inputmode="numeric" maxlength="4" placeholder="2164"><button class="btn" type="button" onclick="dominicUnfreeze()">🔓 TURN GAME ON</button></div></div>
 <div id="loanDatePopup" class="gameOverlay hidden" style="display:none;z-index:1200"><div class="gamePopup"><div style="font-size:50px">📅</div><h2>Dominic Changed Date</h2><p id="loanDatePopupText"></p><label>New Repay Date:</label><input id="loanDateInput" type="date"><div class="choiceRow"><div class="choiceBox choiceNo" onclick="loanDateRespond(false)">❌ No - Refund</div><div class="choiceBox choiceYes" onclick="loanDateRespond(true)">✅ Yes - Receive Loan</div></div></div></div>
 <div id="loanDueOverlay" class="gameOverlay hidden" style="display:none;z-index:1100"><div class="gamePopup"><div style="font-size:50px">⏰</div><h2>LOAN DUE!</h2><p id="loanDueText"></p><div class="choiceRow"><div class="choiceBox choiceNo" onclick="loanDueAction('extend')">⏳ Extension +7 Days</div><div class="choiceBox choiceYes" onclick="loanDueAction('collect')">💰 Pay / Collect Now</div></div></div></div>
@@ -477,133 +422,35 @@ HOME = r"""<!DOCTYPE html><html><head><meta name="viewport" content="width=devic
 <div id="backFab" onclick="goBack()" style="position:fixed;left:16px;bottom:88px;width:58px;height:58px;border-radius:50%;background:#1a1a2e;display:none;align-items:center;justify-content:center;font-size:28px;color:#ffd700;border:3px solid #ffd700;cursor:pointer;z-index:150">←</div>
 <div id="msgFab" onclick="openMessages()" style="position:fixed;right:16px;bottom:88px;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ffd700,#00e5ff);display:none;align-items:center;justify-content:center;font-size:30px;border:3px solid #fff;cursor:pointer;z-index:150">💬</div>
 <div id="bottomNav" class="bottomNav hidden"><div onclick="goDash()">🏡<small>Home</small></div><div onclick="openFullLeader()">🏆<small>Leader</small></div><div onclick="openBank()">💰<small>Bank</small></div><div onclick="openNotifs()">✉️<small>Notify</small></div></div>
-<audio id="pinSound" preload="auto" src="https://cdn.pixabay.com/audio/2025/07/09/audio_121db7b43f.mp3"></audio><audio id="dashAudio" loop preload="auto" style="display:none"></audio>
 <script>
-var CUTE_SOUND="https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3";var soundOn=true,dashAudio=null;
-function updateCatTime(){try{var now=new Date();var ft=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Lusaka",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});var fd=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Lusaka",weekday:"short",day:"2-digit",month:"short",year:"numeric"});var t=document.getElementById("catTime");if(t)t.textContent=ft.format(now)+" CAT";var d=document.getElementById("catDate");if(d)d.textContent=fd.format(now)+" - Central Africa"}catch(e){var t2=document.getElementById("catTime");if(t2){var n=new Date();var h=n.getUTCHours()+2;if(h>=24)h-=24;t2.textContent=(h<10?"0":"")+h+":"+(n.getUTCMinutes()<10?"0":"")+n.getUTCMinutes()+":"+(n.getUTCSeconds()<10?"0":"")+n.getUTCSeconds()+" CAT"}}}
+function updateCatTime(){try{var n=new Date();var f=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Lusaka",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});var d=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Lusaka",weekday:"short",day:"2-digit",month:"short",year:"numeric"});var t=document.getElementById("catTime");if(t)t.textContent=f.format(n)+" CAT";var e=document.getElementById("catDate");if(e)e.textContent=d.format(n)+" - Central Africa"}catch(err){var t2=document.getElementById("catTime");if(t2){var x=new Date();var h=x.getUTCHours()+2;if(h>=24)h-=24;var p=function(v){return v<10?"0"+v:""+v};t2.textContent=p(h)+":"+p(x.getUTCMinutes())+":"+p(x.getUTCSeconds())+" CAT"}}}
 updateCatTime();setInterval(updateCatTime,1000);
+function enterClicked(){var h=document.getElementById("page-home");if(h){h.classList.add("hidden");h.style.display="none"}var r=document.getElementById("page-register");if(r){r.classList.remove("hidden");r.style.display="block"}var rf=document.getElementById("registerForm");var lf=document.getElementById("loginForm");if(rf)rf.classList.remove("hidden");if(lf)lf.classList.add("hidden");setTimeout(function(){var w=document.getElementById("page-welcome");if(w){w.classList.remove("hidden");w.style.display="flex"}},100);if(window.showPage2){window.showPage2()} }
+function hideMenu(){var d=document.getElementById("menuDrop");if(d){d.classList.add("hidden");d.style.display="none"}}
+</script>
+<script>
+var CUTE="https://cdn.pixabay.com/audio/2025/06/12/audio_0ea789b238.mp3";var soundOn=true,dashAudio=null;
 function playPin(){try{var a=document.getElementById("pinSound");if(a){a.currentTime=0;var p=a.play();if(p&&p.catch)p.catch(function(){})}}catch(e){}}
-function startDashLoop(){try{if(!dashAudio)dashAudio=document.getElementById("dashAudio");if(!dashAudio)return;if(!dashAudio.src)dashAudio.src=CUTE_SOUND;dashAudio.loop=true;dashAudio.volume=0.6;if(soundOn){var p=dashAudio.play();if(p&&p.catch)p.catch(function(){})}}catch(e){}}
+function startDashLoop(){try{if(!dashAudio)dashAudio=document.getElementById("dashAudio");if(!dashAudio)return;if(!dashAudio.src)dashAudio.src=CUTE;dashAudio.loop=true;dashAudio.volume=0.6;if(soundOn){var p=dashAudio.play();if(p&&p.catch)p.catch(function(){})}}catch(e){}}
 function stopDashLoop(){try{if(dashAudio)dashAudio.pause()}catch(e){}}
 function toggleSound(){soundOn=!soundOn;var b=document.getElementById("soundBtn");if(b)b.innerText=soundOn?"🔊":"🔇";if(soundOn){startDashLoop();playPin()}else stopDashLoop();toast(soundOn?"🔊 ON":"🔇 OFF")}
 var user=null;try{user=JSON.parse(localStorage.getItem("inf_user")||localStorage.getItem("inf_backup")||"null")}catch(e){}
 var wins=0,losses=0,myGold=0,myGems=0,myPlayerID="",myBankID="",myCars=[];try{var b2=JSON.parse(localStorage.getItem("inf_backup")||"{}");wins=parseInt(localStorage.getItem("inf_wins")||b2.wins||"0")||0;losses=parseInt(localStorage.getItem("inf_losses")||b2.losses||"0")||0;myGold=parseInt(localStorage.getItem("inf_gold")||b2.gold||"0")||0;myGems=parseInt(localStorage.getItem("inf_gems")||b2.gems||"0")||0;myPlayerID=localStorage.getItem("inf_player_id")||b2.player_id||"";myBankID=localStorage.getItem("inf_bank_id")||b2.bank_id||"";myCars=JSON.parse(localStorage.getItem("inf_cars")||JSON.stringify(b2.cars||[]))}catch(e){}
 var loggedIn=false,currentPage="page-home",seenQs=[];try{seenQs=JSON.parse(localStorage.getItem("inf_seen")||"[]")}catch(e){}
-var pinCb=null,leaderMode="pvp",chatWithName="",quizT=null,quizLeft=30,quizRound=[],quizIdx=0,quizScore=0,quizLoss=0,quizMode="",quizCat="",galaxyKills=0,galaxyLevel=1,fallInt=null,matchScore=0,gameOn=true,shopCat="All",currentLoan=null,pendingLoanForDate=null,reviewType="review",cryptoPrices={BTC:85000,ETH:4200,DOGE:2},cryptoHold={BTC:0,ETH:0,DOGE:0};
-var RIDDLE_BANK=[
-["BIBLE","In which book is the phrase vanity of vanities found, and who is author?","Ecclesiastes - Solomon","Genesis - Moses","Psalms - David"],
-["BIBLE","Name the only woman judge in Judges, under which tree did she judge?","Deborah - Palm tree","Ruth - Oak tree","Esther - Cedar tree"],
-["BIBLE","How many years did Methuselah live?","969 years","777 years","856 years"],
-["BIBLE","Name the 3 men in the fiery furnace, what was the 4th figure?","Shadrach Meshach Abednego - Son of God","Daniel Hananiah Mishael - Angel","Peter James John - Spirit"],
-["BIBLE","High priest who tore robes when Jesus claimed to be Son of God?","Caiaphas","Annas","Pilate"],
-["BIBLE","In Revelation, how many elders around throne?","24 elders","12 elders","7 elders"],
-["BIBLE","Difference between Sheol Hades Gehenna Tartarus?","Sheol/Hades grave, Gehenna hell, Tartarus prison for fallen angels","All mean heaven","All mean earth"],
-["BIBLE","Only person both king and priest?","Melchizedek","David","Solomon"],
-["BIBLE","Exact weight of Goliath spearhead?","600 shekels - 15 lbs","100 shekels","300 shekels"],
-["BIBLE","Name 5 books of Torah in Hebrew","Bereshit Shemot Vayikra Bamidbar Devarim","Genesis Exodus Leviticus Numbers Deuteronomy in Greek","Matthew Mark Luke John Acts"],
-["BIBLE","Father of Caleb, leader of 12 spies?","Jephunneh","Nun","Aaron"],
-["BIBLE","Name of Moses father-in-law, also called Reuel?","Jethro","Aaron","Zipporah father Hobab only"],
-["BIBLE","City where first Gentile church established?","Antioch","Jerusalem","Rome"],
-["BIBLE","What does Ebenezer mean, who set up stone?","Stone of Help - Samuel","Rock of Ages - David","House of God - Jacob"],
-["BIBLE","How many times Fear not in Bible?","365 times","100 times","50 times"],
-["BIBLE","Only apostle to die natural death?","John","Peter","Paul"],
-["BIBLE","Name of demon that called itself Legion?","Legion - we are many","Beelzebub","Lucifer"],
-["BIBLE","Longest chapter in Bible?","Psalm 119","Psalm 23","Genesis 1"],
-["BIBLE","Shortest chapter in Bible?","Psalm 117","Psalm 23","John 11"],
-["BIBLE","Man struck blind for touching Ark?","Uzzah","Aaron","Saul"],
-["HARD","I am always hungry, must be fed. Finger I lick turns red. Not alive but grow. What?","Fire","Water","Shadow"],
-["HARD","Brothers and sisters I have none, but that man's father is my father's son. Who in photo?","His son","His brother","His father"],
-["HARD","3 boxes apples oranges both, all labels WRONG. Pick 1 fruit from 1 box. How fix?","Pick from box labeled both","Pick from apples box","Pick from oranges box"],
-["HARD","Plane crashes on US-Canada border. Where bury survivors?","Nowhere - survivors alive","Canada","USA"],
-["HARD","Rooster lays egg on roof, which side rolls?","Roosters don't lay eggs","Left side","Right side"],
-["HARD","You overtake person in 2nd place. What place now?","2nd place","1st place","3rd place"],
-["HARD","What is 3/7 chicken, 2/3 cat, 1/2 goat?","Chicago","Chicatgo","London"],
-["HARD","Cowboy rides into town on Friday, stays 3 days, leaves Friday. How?","His horse named Friday","He time travels","Friday is a day twice"],
-["HARD","Comes once in minute, twice in moment, never in thousand years?","Letter M","Letter O","Letter T"],
-["HARD","Man pushes car to hotel, tells owner bankrupt. Why?","Playing Monopoly","He is homeless","Car broke down"],
-["HARD","Maker doesn't need it, buyer doesn't use it, user doesn't know it. What?","A coffin","A gift","A car"],
-["HARD","Hold in right hand but never left?","Your left hand","Your right hand","A pen"],
-["HARD","Cities no houses, forests no trees, water no fish. What?","A map","A dream","A book"],
-["HARD","Next number: 1, 11, 21, 1211, 111221?","312211","121221","1112221"],
-["HARD","12 coins one fake, balance scale 3 weighs. Strategy?","Divide 4-4-4 then 1-1 logic","Weigh all at once","Guess"],
-["HARD","Prisoner 2 doors, one guard lies one truth. One question?","Ask what would other guard say, pick opposite","Ask which is freedom","Ask your name"],
-["HARD","So fragile saying name breaks it?","Silence","Glass","Egg"],
-["HARD","Beginning of eternity, end of time and space, beginning of every end?","Letter E","Letter A","Letter T"],
-["HARD","Man dies old age on 25th birthday. How?","Born Feb 29 - 100 years old 25 birthdays","He lied","He was sick"],
-["HARD","Head tail brown no legs?","A penny","A snake","A dog"],
-["LOVE","Not seen but felt. Make king kneel slave rise. Given never taken. What?","Love","Money","Power"],
-["LOVE","Grows when give away, dies hold tight, lives set free?","Love","Money","Fear"],
-["LOVE","Prison no bars, chain no iron, fire no flame. Want stay forever?","Being in love","Jail","Hate"],
-["LOVE","Broken without touched, mended without fixed?","A heart","A glass","A bone"],
-["LOVE","Written without pen, spoken without voice, seen without eyes?","Love","Dream","Song"],
-["LOVE","Only war where both win when surrender?","Love","Chess","Peace"],
-["LOVE","Make time stop and fly at same time?","Love","Sleep","Work"],
-["LOVE","Both question and answer in 3 words?","I love you","How are you","I miss you"],
-["LOVE","Blind but sees everything?","Love","Justice","Night"],
-["LOVE","Both beginning and forever?","True love","Time","Death"],
-["LOVE","Make stranger feel home, home feel stranger when gone?","Love","Money","Fear"],
-["LOVE","Felt in heart measured in tears?","Love","Pain","Joy"],
-["LOVE","Both cure and disease?","Love","Medicine","Poison"],
-["LOVE","Light in darkness and darkness in light?","Love","Fire","Moon"],
-["LOVE","Make you lose yourself to find yourself?","Love","Travel","Sleep"],
-["LOGIC","100 prisoners 100 boxes each open 50. Strategy >30%?","Loop strategy - start own number follow chain","Open random","Open first 50"],
-["LOGIC","Bat and ball $1.10. Bat $1 more than ball. Ball?","5 cents","10 cents","15 cents"],
-["LOGIC","3 positive numbers add 12 multiply 48?","2, 4, 6","1, 5, 6","3, 3, 6"],
-["LOGIC","What is half of 2 + 2?","3","2","4"],
-["LOGIC","Farmer 17 sheep. All but 9 die. Left?","9","8","17"],
-["LOGIC","How many months have 28 days?","All 12","1 - February","2"],
-["LOGIC","3-gallon and 5-gallon jug measure exactly 4?","Fill 5 pour into 3 leave 2, etc leaves 4 in 5","Fill both","Impossible"],
-["LOGIC","2 fathers 2 sons in car but only 3 people?","Grandfather father son","Twins","Two cars"],
-["LOGIC","Number multiply itself add itself divide itself get itself? Trick","3 - as in list","2","1"],
-["LOGIC","5 machines make 5 parts in 5 min. 100 machines 100 parts?","5 minutes","100 minutes","20 minutes"],
-["LOGIC","Boat filled people sinks. No one dies. How?","Everyone married - no one single","Boat not real","They swam"],
-["LOGIC","Only word with 3 consecutive double letters?","Bookkeeper","Mississippi","Balloon"],
-["LOGIC","Spelled same forwards backwards means race?","Racecar","Level","Madam"],
-["LOGIC","Number same letters as value?","Four - 4 letters","Three","Five"],
-["LOGIC","Plane crashes border, bury survivors?","You don't - alive","Border","Both countries"],
-["LOGIC","Man 3x son age. In 15 years twice. Son now?","15 years old","10 years","20 years"],
-["LOGIC","Next letter O T T F F S S E ?","N - Nine","T - Ten","E - Eleven"],
-["LOGIC","How many times subtract 10 from 100?","Once - then 90","10 times","9 times"],
-["LOGIC","Has 4 letters, sometimes 9, never 5?","What - word play","Love","Time"],
-["LOGIC","Pass person in 2nd, what place?","2nd","1st","3rd"],
-["PROG","Why programmers mix Halloween and Christmas?","OCT 31 == DEC 25 - Octal 31 = Decimal 25","Both holidays","They forget"],
-["PROG","10 types people: understand binary and don't. Explain?","10 binary = 2","10 = ten","Joke no meaning"],
-["PROG","Output of [] + [] in JavaScript?","Empty string","0","NaN"],
-["PROG","What is 0.1 + 0.2 in most languages?","0.30000000000000004","0.3","0.4"],
-["PROG","Why programmer died in shower?","Shampoo Lather Rinse Repeat - infinite loop","Water hot","Slipped"],
-["PROG","What is deadlock?","Two processes waiting each other forever","Computer crash","Bug"],
-["PROG","Difference bug vs feature in production?","Documentation","Nothing","Code"],
-["PROG","Explain null vs undefined JS?","Null intentionally empty, Undefined never assigned","Same","Opposite"],
-["PROG","What does !false equal?","true","false","0"],
-["PROG","Why NaN !== NaN in JS?","NaN not equal itself IEEE 754","Bug","It is equal"],
-["PROG","What is recursion?","To understand recursion must first understand recursion","Loop","Function"],
-["PROG","Hardest problem in CS?","Naming cache off-by-one","Sorting","Memory"],
-["PROG","Output 1 + 1 in JS?","11 - string concatenation","2","1"],
-["PROG","Why developer go broke?","Used up all cache","Spent money","No job"],
-["PROG","Difference SQL DELETE vs TRUNCATE?","DELETE rollback WHERE, TRUNCATE drops all","Same","TRUNCATE slower"],
-["FUNNY","Why scarecrow win award?","Outstanding in his field","He is tall","He scares birds"],
-["FUNNY","What call fish without eyes?","A fsh","A fish","Blind fish"],
-["FUNNY","Why coffee file police report?","It got mugged - depresso","It was stolen","It was cold"],
-["FUNNY","What call cheese not yours?","Nacho cheese","Cheddar","Mozzarella"],
-["FUNNY","Why bicycle fall over?","Two-tired","No wheels","Wind"],
-["FUNNY","What call can opener not work?","A can't opener","Broken opener","Tin opener"],
-["FUNNY","Why math book look sad?","Too many problems","It is heavy","No pages"],
-["FUNNY","What call bear no teeth?","A gummy bear","Brown bear","Polar bear"],
-["FUNNY","Why golfer bring two pants?","Hole in one","Cold","Fashion"],
-["FUNNY","Hardest riddle in list?","One you still thinking about","Number 1","Number 100"]
-];
+var pinCb=null,leaderMode="pvp",chatWithName="",quizT=null,quizLeft=30,quizRound=[],quizIdx=0,quizScore=0,quizLoss=0,quizMode="",quizCat="",gameOn=true,shopCat="All",currentLoan=null,pendingLoanForDate=null,reviewType="review",cryptoPrices={BTC:85000,ETH:4200,DOGE:2},cryptoHold={BTC:0,ETH:0,DOGE:0};
+var RB="BIBLE|In which book is vanity of vanities?|Ecclesiastes - Solomon|Genesis - Moses|Psalms - David;BIBLE|Only woman judge in Judges?|Deborah - Palm tree|Ruth - Oak tree|Esther - Cedar tree;BIBLE|How many years did Methuselah live?|969 years|777 years|856 years;BIBLE|3 men in fiery furnace?|Shadrach Meshach Abednego|Daniel Hananiah Mishael|Peter James John;BIBLE|High priest tore robes?|Caiaphas|Annas|Pilate;BIBLE|How many elders around throne?|24 elders|12 elders|7 elders;BIBLE|Only person both king and priest?|Melchizedek|David|Solomon;BIBLE|Weight of Goliath spearhead?|600 shekels - 15 lbs|100 shekels|300 shekels;BIBLE|Father of Caleb?|Jephunneh|Nun|Aaron;BIBLE|Moses father-in-law?|Jethro|Aaron|Hobab only;BIBLE|City first Gentile church?|Antioch|Jerusalem|Rome;BIBLE|What does Ebenezer mean?|Stone of Help - Samuel|Rock of Ages - David|House of God - Jacob;BIBLE|How many times Fear not?|365 times|100 times|50 times;BIBLE|Only apostle died natural death?|John|Peter|Paul;BIBLE|Demon called Legion?|Legion - we are many|Beelzebub|Lucifer;BIBLE|Longest chapter?|Psalm 119|Psalm 23|Genesis 1;BIBLE|Shortest chapter?|Psalm 117|Psalm 23|John 11;BIBLE|Man struck blind for Ark?|Uzzah|Aaron|Saul;BIBLE|Who built ark?|Noah|Moses|Abraham;BIBLE|Who defeated Goliath?|David|Samson|Saul;HARD|Always hungry must be fed, finger lick turns red|Fire|Water|Shadow;HARD|Brothers sisters I have none, that man's father is my father's son, who in photo?|His son|His brother|His father;HARD|3 boxes labels all WRONG, pick 1 fruit, how fix?|Pick from box labeled both|Pick from apples box|Pick from oranges box;HARD|Plane crashes US-Canada border, bury survivors where?|Nowhere - survivors alive|Canada|USA;HARD|Rooster lays egg on roof, which side rolls?|Roosters don't lay eggs|Left side|Right side;HARD|Overtake person in 2nd place, what place?|2nd place|1st place|3rd place;HARD|What is 3/7 chicken, 2/3 cat, 1/2 goat?|Chicago|Chicatgo|London;HARD|Cowboy rides town Friday, stays 3 days, leaves Friday, how?|His horse named Friday|Time travels|Friday twice;HARD|Comes once in minute, twice in moment, never in thousand years?|Letter M|Letter O|Letter T;HARD|Man pushes car to hotel, tells owner bankrupt, why?|Playing Monopoly|Homeless|Car broke;HARD|Maker doesn't need, buyer doesn't use, user doesn't know?|A coffin|A gift|A car;HARD|Hold in right hand never left?|Your left hand|Your right hand|A pen;HARD|Cities no houses, forests no trees, water no fish?|A map|A dream|A book;HARD|Next: 1,11,21,1211,111221?|312211|121221|1112221;HARD|12 coins one fake, 3 weighs?|Divide 4-4-4 then 1-1 logic|Weigh all|Guess;HARD|Prisoner 2 doors, one lies one truth, one question?|Ask what would other say, pick opposite|Ask which is freedom|Ask your name;HARD|So fragile saying name breaks it?|Silence|Glass|Egg;HARD|Beginning of eternity, end of time, beginning of every end?|Letter E|Letter A|Letter T;HARD|Man dies old age on 25th birthday, how?|Born Feb 29|He lied|Sick;HARD|Head tail brown no legs?|A penny|A snake|A dog;LOVE|Not seen but felt, king kneel slave rise, given never taken?|Love|Money|Power;LOVE|Grows give away, dies hold tight, lives set free?|Love|Money|Fear;LOVE|Prison no bars, chain no iron, fire no flame, want stay?|Being in love|Jail|Hate;LOVE|Broken without touched, mended without fixed?|A heart|A glass|A bone;LOVE|Written without pen, spoken without voice, seen without eyes?|Love|Dream|Song;LOVE|Only war both win when surrender?|Love|Chess|Peace;LOVE|Make time stop and fly?|Love|Sleep|Work;LOVE|Both question and answer in 3 words?|I love you|How are you|I miss you;LOVE|Blind but sees everything?|Love|Justice|Night;LOVE|Both beginning and forever?|True love|Time|Death;LOVE|Make stranger feel home, home stranger when gone?|Love|Money|Fear;LOVE|Felt in heart measured in tears?|Love|Pain|Joy;LOVE|Both cure and disease?|Love|Medicine|Poison;LOVE|Light in darkness and darkness in light?|Love|Fire|Moon;LOVE|Make you lose yourself to find yourself?|Love|Travel|Sleep;LOGIC|100 prisoners 100 boxes, open 50, strategy >30%?|Loop strategy - own number follow chain|Open random|Open first 50;LOGIC|Bat and ball $1.10, bat $1 more, ball?|5 cents|10 cents|15 cents;LOGIC|3 numbers add 12 multiply 48?|2, 4, 6|1, 5, 6|3, 3, 6;LOGIC|What is half of 2+2?|3|2|4;LOGIC|Farmer 17 sheep, all but 9 die, left?|9|8|17;LOGIC|How many months have 28 days?|All 12|1 - February|2;LOGIC|3-gallon and 5-gallon measure 4?|Fill 5 pour into 3 leave 2, etc leaves 4|Fill both|Impossible;LOGIC|2 fathers 2 sons in car but only 3 people?|Grandfather father son|Twins|Two cars;LOGIC|5 machines 5 parts 5 min, 100 machines 100 parts?|5 minutes|100 minutes|20 minutes;LOGIC|Boat filled people sinks, no one dies, how?|Everyone married - no one single|Boat not real|They swam;LOGIC|Only word 3 consecutive double letters?|Bookkeeper|Mississippi|Balloon;LOGIC|Spelled same forwards backwards means race?|Racecar|Level|Madam;LOGIC|Number same letters as value?|Four - 4 letters|Three|Five;LOGIC|Man 3x son age, in 15 years twice, son now?|15 years old|10 years|20 years;LOGIC|Next letter O T T F F S S E ?|N - Nine|T - Ten|E - Eleven;LOGIC|How many times subtract 10 from 100?|Once - then 90|10 times|9 times;LOGIC|Has 4 letters, sometimes 9, never 5?|What - word play|Love|Time;LOGIC|Pass person in 2nd, what place?|2nd|1st|3rd;LOGIC|What runs but never walks?|Water|Man|Car;LOGIC|I speak without mouth?|Echo|Parrot|Radio;PROG|Why programmers mix Halloween and Christmas?|OCT 31 == DEC 25|Both holidays|They forget;PROG|10 types people understand binary and don't?|10 binary = 2|10 = ten|Joke;PROG|Output [] + [] in JS?|Empty string|0|NaN;PROG|What is 0.1+0.2?|0.30000000000000004|0.3|0.4;PROG|Why programmer died in shower?|Shampoo Lather Rinse Repeat loop|Water hot|Slipped;PROG|What is deadlock?|Two processes waiting each other forever|Computer crash|Bug;PROG|Difference bug vs feature?|Documentation|Nothing|Code;PROG|Null vs undefined JS?|Null intentionally empty, Undefined never assigned|Same|Opposite;PROG|What does !false equal?|true|false|0;PROG|Why NaN !== NaN?|NaN not equal itself IEEE 754|Bug|It is equal;PROG|What is recursion?|To understand recursion must first understand recursion|Loop|Function;PROG|Hardest problem in CS?|Naming cache off-by-one|Sorting|Memory;PROG|Output 1+1 in JS?|11 - string concatenation|2|1;PROG|Why developer go broke?|Used up all cache|Spent money|No job;PROG|DELETE vs TRUNCATE?|DELETE rollback WHERE, TRUNCATE drops all|Same|TRUNCATE slower;FUNNY|Why scarecrow win award?|Outstanding in his field|Tall|Scares birds;FUNNY|What call fish without eyes?|A fsh|A fish|Blind fish;FUNNY|Why coffee file police report?|It got mugged|Stolen|Cold;FUNNY|What call cheese not yours?|Nacho cheese|Cheddar|Mozzarella;FUNNY|Why bicycle fall over?|Two-tired|No wheels|Wind;FUNNY|What call can opener not work?|A can't opener|Broken opener|Tin opener;FUNNY|Why math book sad?|Too many problems|Heavy|No pages;FUNNY|What call bear no teeth?|A gummy bear|Brown bear|Polar bear;FUNNY|Why golfer bring two pants?|Hole in one|Cold|Fashion;FUNNY|Hardest riddle?|One you still thinking about|Number 1|Number 100";
+function parseRB(){var out=[];RB.split(";").forEach(function(s){var p=s.split("|");if(p.length>=5)out.push({cat:p[0],q:p[1],a:p[2],w1:p[3],w2:p[4],id:p[0]+"|"+p[1]})});return out}
 function carExtraTime(){var t=0;myCars.forEach(function(c){if(/Lamborghini|Ferrari|Bugatti/.test(c))t+=15;else if(/Tesla|Mercedes|BMW/.test(c))t+=10;else if(/Audi|Range Rover/.test(c))t+=7;else t+=2});return Math.min(t,30)}
 function isDom(){return user&&user.name&&user.name.toLowerCase()==="dominic"&&user.password==="2164"}
 function toast(m){var t=document.getElementById("toast");if(!t)return;t.innerText=m;t.classList.remove("hidden");setTimeout(function(){t.classList.add("hidden")},4500)}
-function hideMenu(){var d=document.getElementById("menuDrop");if(d){d.classList.add("hidden");d.style.display="none"}}
-function showPage(id){hideMenu();currentPage=id;["page-home","page-register","page-dash","page-leader","page-game","page-coming","page-bank","page-send","page-withdraw","page-deposit","page-exchange","page-profile","page-other","page-notifs","page-menu","page-update","page-server-info","page-review","page-challenge","page-messages","page-chat","page-economy","page-lottery","page-scifi","page-shop","page-crypto"].forEach(function(p){var e=document.getElementById(p);if(e){e.classList.add("hidden");e.style.display="none"}});var tg=document.getElementById(id);if(tg){tg.classList.remove("hidden");tg.style.display="block"}window.scrollTo(0,0);updateVisibility()}
+function showPage(id){hideMenu();if(quizT){clearInterval(quizT);quizT=null}currentPage=id;["page-home","page-register","page-dash","page-leader","page-game","page-coming","page-bank","page-send","page-withdraw","page-deposit","page-exchange","page-profile","page-other","page-notifs","page-menu","page-update","page-server-info","page-review","page-challenge","page-messages","page-chat","page-economy","page-lottery","page-scifi","page-shop","page-crypto"].forEach(function(p){var e=document.getElementById(p);if(e){e.classList.add("hidden");e.style.display="none"}});var tg=document.getElementById(id);if(tg){tg.classList.remove("hidden");tg.style.display="block"}window.scrollTo(0,0);updateVisibility()}
+window.showPage2=function(){showPage("page-register")};
 function updateVisibility(){var r=document.getElementById("topRight"),nv=document.getElementById("bottomNav"),b=document.getElementById("backFab"),mf=document.getElementById("msgFab");var isEnter=(currentPage==="page-home"||currentPage==="page-register");if(isEnter){if(r)r.style.display="none";if(nv)nv.classList.add("hidden");if(b)b.style.display="none";if(mf)mf.style.display="none";stopDashLoop()}else if(loggedIn&&currentPage==="page-dash"){if(r){r.classList.remove("hidden");r.style.display="flex"}if(nv)nv.classList.remove("hidden");if(b)b.style.display="none";if(mf)mf.style.display="flex";startDashLoop()}else if(loggedIn){if(r)r.style.display="none";if(nv)nv.classList.add("hidden");if(b)b.style.display="flex";if(mf)mf.style.display="flex";stopDashLoop()}else{if(r)r.style.display="none";if(nv)nv.classList.add("hidden");if(b)b.style.display="none";if(mf)mf.style.display="none";stopDashLoop()}checkSwitch();checkLoanDue()}
 function checkSwitch(){fetch("/api/switch_status").then(function(r){return r.json()}).then(function(d){gameOn=d.game_on!==false;var o=document.getElementById("frozenOverlay");if(!o)return;if(!gameOn){o.style.display="flex";document.getElementById("frozenDominicBox").style.display=isDom()?"block":"none"}else o.style.display="none"}).catch(function(){})}
 function dominicUnfreeze(){var pin=document.getElementById("frozenPin").value.trim();if(pin!=="2164"){toast("Wrong PIN");return}fetch("/api/switch_toggle",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:"2164",on:true})}).then(function(){gameOn=true;document.getElementById("frozenOverlay").style.display="none";toast("✅ GAME ON")})}
 function toggleGameSwitch(){if(!isDom()){toast("🔒 Dominic only");return}var wantOff=gameOn;if(!confirm(wantOff?"Turn OFF?":"Turn ON?"))return;openPin("PIN 2164 SWITCH "+(wantOff?"OFF":"ON"),function(pin){fetch("/api/switch_toggle",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:pin,on:!wantOff})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}gameOn=d.game_on;toast(gameOn?"✅ ON":"❄️ OFF");checkSwitch()})})}
 function goDash(){if(!loggedIn){showPage("page-register");return}showPage("page-dash");loadLeader()}
 function goBack(){if(currentPage==="page-register")showPage("page-home");else if(currentPage==="page-chat")showPage("page-messages");else goDash()}
-function enterClicked(){showPage("page-register");showRegister();setTimeout(function(){var o=document.getElementById("page-welcome");if(o){o.classList.remove("hidden");o.style.display="flex"}},100)}
 function welcomeChoice(c){var o=document.getElementById("page-welcome");o.classList.add("hidden");o.style.display="none";if(c==="yes")showLogin();else showRegister()}
 function showRegister(){document.getElementById("registerForm").classList.remove("hidden");document.getElementById("loginForm").classList.add("hidden")}
 function showLogin(){document.getElementById("registerForm").classList.add("hidden");document.getElementById("loginForm").classList.remove("hidden")}
@@ -611,15 +458,15 @@ function saveLocal(){try{var backup={name:user?user.name:"",password:user?user.p
 function doLogout(){loggedIn=false;stopDashLoop();showPage("page-home");toast("👋 Logged out - Data SAFE in DB.")}
 function special(n,pw){var x=(n||"").toLowerCase().trim();if(x==="britney"||x==="kayula")return"Welcome MY Fiance 💖";if(x==="blessing")return"Welcome Avatar ✨";if(x==="lubuto")return"Welcome Desk Bender 🛠️";if(x==="dominic"&&pw==="2164")return"Welcome Infinity Emperor ♾";return"Welcome, "+n+" 👑"}
 function doRegister(){var n=document.getElementById("regName").value.trim();var pw=document.getElementById("regPass").value.trim();if(!n||!pw||pw.length!==4||isNaN(pw)){toast("Name + 4-digit PIN");return}if(pw==="1234"||pw==="0000"){toast("Too easy");return}fetch("/api/player?name="+encodeURIComponent(n)).then(function(r){return r.json()}).then(function(d){if(d&&d.found){showLogin();document.getElementById("loginName").value=n;toast("Already exists! Just Login");return}user={name:n,password:pw};wins=0;losses=0;myGold=0;myGems=0;seenQs=[];myCars=[];saveLocal();syncScore();enterDash(special(n,pw))})}
-function doLogin(){var n=document.getElementById("loginName").value.trim();var pw=document.getElementById("loginPass").value.trim();if(!n||!pw){toast("Name + Password");return}fetch("/api/player?name="+encodeURIComponent(n)+"&password="+encodeURIComponent(pw)).then(function(r){return r.json()}).then(function(d){if(d&&d.found&&d.password_ok!==false){user={name:n,password:pw};wins=d.wins||0;losses=d.losses||0;myGold=d.gold||0;myGems=d.gems||0;myPlayerID=d.player_id||"";myBankID=d.bank_id||"";seenQs=d.seen_qs||[];myCars=d.cars||[];cryptoHold=d.crypto||cryptoHold;saveLocal();enterDash(special(n,pw)+" - Restored from DB ✅")}else if(d&&d.found===false){var b={};try{b=JSON.parse(localStorage.getItem("inf_backup")||"{}")}catch(e){}if(b.name&&b.name.toLowerCase()===n.toLowerCase()){toast("⚠️ Restoring from phone backup...");fetch("/api/restore",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,password:pw,wins:b.wins||wins,losses:b.losses||losses,gold:b.gold||myGold,gems:b.gems||myGems,cars:b.cars||myCars,player_id:b.player_id||myPlayerID,bank_id:b.bank_id||myBankID})}).then(function(r){return r.json()}).then(function(rd){if(rd.found){user={name:n,password:pw};wins=rd.player.wins||0;losses=rd.player.losses||0;myGold=rd.player.gold||0;myGems=rd.player.gems||0;myPlayerID=rd.player.player_id||"";saveLocal();enterDash(special(n,pw)+" - RESTORED ✅")}else toast("Not found - Register")})}else toast("Wrong / Not found")}else toast("Wrong / Not found")})}
+function doLogin(){var n=document.getElementById("loginName").value.trim();var pw=document.getElementById("loginPass").value.trim();if(!n||!pw){toast("Name + Password");return}fetch("/api/player?name="+encodeURIComponent(n)+"&password="+encodeURIComponent(pw)).then(function(r){return r.json()}).then(function(d){if(d&&d.found&&d.password_ok!==false){user={name:n,password:pw};wins=d.wins||0;losses=d.losses||0;myGold=d.gold||0;myGems=d.gems||0;myPlayerID=d.player_id||"";myBankID=d.bank_id||"";seenQs=d.seen_qs||[];myCars=d.cars||[];saveLocal();enterDash(special(n,pw)+" - Restored from DB ✅")}else if(d&&d.found===false){var b={};try{b=JSON.parse(localStorage.getItem("inf_backup")||"{}")}catch(e){}if(b.name&&b.name.toLowerCase()===n.toLowerCase()){toast("⚠️ Restoring from phone backup...");fetch("/api/restore",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,password:pw,wins:b.wins||wins,losses:b.losses||losses,gold:b.gold||myGold,gems:b.gems||myGems,cars:b.cars||myCars,player_id:b.player_id||myPlayerID,bank_id:b.bank_id||myBankID})}).then(function(r){return r.json()}).then(function(rd){if(rd.found){user={name:n,password:pw};wins=rd.player.wins||0;losses=rd.player.losses||0;myGold=rd.player.gold||0;myGems=rd.player.gems||0;myPlayerID=rd.player.player_id||"";saveLocal();enterDash(special(n,pw)+" - RESTORED ✅")}else toast("Not found - Register")})}else toast("Wrong / Not found")}else toast("Wrong / Not found")})}
 function enterDash(m){loggedIn=true;toast(m);playPin();startDashLoop();showPage("page-dash");document.getElementById("welcomeText").innerText=m;loadLeader();loadMe();checkAnn()}
 function syncScore(){if(!user)return;fetch("/api/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,password:user.password,wins:wins,losses:losses,gold:myGold,gems:myGems,seen_qs:seenQs,cars:myCars})}).catch(function(){})}
-function loadMe(){if(!user)return;fetch("/api/player?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){if(!d||!d.found)return;myGold=d.gold;myGems=d.gems;myCars=d.cars||myCars;wins=d.wins;losses=d.losses||0;cryptoHold=d.crypto||cryptoHold;saveLocal();var e=function(id,v){var x=document.getElementById(id);if(x)x.innerText=v};e("bankGold",d.bank_gold||0);e("bankGems",d.bank_gems||0);e("bankIDShow",d.bank_id||myBankID);e("walletGold",d.gold);e("walletGems",d.gems);e("myCarsCount",myCars.length);e("myExtraTime",carExtraTime());var lb=document.getElementById("dashLoanBox");if(d.active_loan){lb.innerHTML="<div style='background:#00ff88;color:#000;padding:10px;border-radius:14px;font-size:12px;font-weight:900'>🏦 ACTIVE LOAN: "+d.active_loan.amount+" "+d.active_loan.currency+" - Repay by "+d.active_loan.repay_date+"<br><button class='btn' type='button' style='background:#000;color:#fff;padding:8px' onclick=\"payLoanNow('"+d.active_loan.id+"')\">💰 Pay Loan Now</button></div>"}else lb.innerHTML="";checkLoanDueWith(d.active_loan)})}
+function loadMe(){if(!user)return;fetch("/api/player?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){if(!d||!d.found)return;myGold=d.gold;myGems=d.gems;myCars=d.cars||myCars;wins=d.wins;losses=d.losses;if(d.crypto)cryptoHold=d.crypto;saveLocal();var e=function(id,v){var x=document.getElementById(id);if(x)x.innerText=v};e("bankGold",d.bank_gold||0);e("bankGems",d.bank_gems||0);e("bankIDShow",d.bank_id||myBankID);e("walletGold",d.gold);e("walletGems",d.gems);e("myCarsCount",myCars.length);e("myExtraTime",carExtraTime());var lb=document.getElementById("dashLoanBox");if(d.active_loan){lb.innerHTML="<div style='background:#00ff88;color:#000;padding:10px;border-radius:14px;font-size:12px;font-weight:900'>🏦 ACTIVE LOAN: "+d.active_loan.amount+" "+d.active_loan.currency+" - Repay by "+d.active_loan.repay_date+"<br><button class='btn' type='button' style='background:#000;color:#fff;padding:8px' onclick=\"payLoanNow('"+d.active_loan.id+"')\">💰 Pay Loan Now</button></div>"}else lb.innerHTML="";checkLoanDueWith(d.active_loan)})}
 function loadLeader(){fetch("/api/leaderboard?mode=pvp").then(function(r){return r.json()}).then(function(d){var h="";(d.players||[]).slice(0,5).forEach(function(p,i){h+="<div class='leadRow' onclick=\"viewOther('"+p.name+"')\"><span>"+(i+1)+". "+p.name+(p.active_loan?" 🏦":"")+"</span><span>🏆 "+p.wins+"W ❌ "+p.losses+"L</span></div>"});document.getElementById("leaderList").innerHTML=h||"No players"})}
 function setLeaderMode(m){leaderMode=m;["gold","gems","pvp"].forEach(function(x){var el=document.getElementById("tab"+x.charAt(0).toUpperCase()+x.slice(1));if(el)el.classList.remove("active")});var a=document.getElementById("tab"+m.charAt(0).toUpperCase()+m.slice(1));if(a)a.classList.add("active");openFullLeader()}
-function openFullLeader(){showPage("page-leader");fetch("/api/leaderboard?mode="+leaderMode).then(function(r){return r.json()}).then(function(d){var h="";(d.players||[]).forEach(function(p,i){var main=leaderMode==="gold"?"🪙 "+p.gold:leaderMode==="gems"?"💎 "+p.gems:"🏆 "+p.wins+"W ❌ "+p.losses+"L";h+="<div class='leadRow' onclick=\"viewOther('"+p.name+"')\"><span>"+(i+1)+". "+p.name+"<br><small>"+p.player_id+" | 🏆 "+p.wins+"W ❌ "+p.losses+"L | 🪙 "+p.gold+" | 💎 "+p.gems+(p.active_loan?" | 🏦 Loan":"")+"</small></span><span>"+main+"</span></div>"});document.getElementById("fullLeaderList").innerHTML=h||"No players"})}
+function openFullLeader(){showPage("page-leader");fetch("/api/leaderboard?mode="+leaderMode).then(function(r){return r.json()}).then(function(d){var h="";(d.players||[]).forEach(function(p,i){h+="<div class='leadRow' onclick=\"viewOther('"+p.name+"')\"><span>"+(i+1)+". "+p.name+"<br><small>"+p.player_id+(p.active_loan?" | 🏦 Has Loan":"")+"</small></span><span>"+(leaderMode==="gold"?"🪙 "+p.gold+"<br><small>"+p.wins+"W ❌ "+p.losses+"L</small>":leaderMode==="gems"?"💎 "+p.gems+"<br><small>"+p.wins+"W ❌ "+p.losses+"L</small>":"🏆 "+p.wins+"W ❌ "+p.losses+"L")+"</span></div>"});document.getElementById("fullLeaderList").innerHTML=h||"No players"})}
 function viewOther(name){fetch("/api/player?name="+encodeURIComponent(name)).then(function(r){return r.json()}).then(function(d){showPage("page-other");document.getElementById("otherName").innerText=d.name;document.getElementById("otherRank").innerText=d.rank;document.getElementById("otherWins").innerText=d.wins;document.getElementById("otherLoss").innerText=d.losses;document.getElementById("otherActions").innerHTML="<button class='btn' type='button' onclick=\"openBankSendTo('"+d.player_id+"')\">💸 Send Gold</button><button class='btn2' type='button' onclick=\"sendFriendTo('"+d.player_id+"')\">👥 Send Friend Request</button>"})}
-function openMyProfile(){showPage("page-profile");fetch("/api/player?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){document.getElementById("profName").innerText=special(d.name,user.password);document.getElementById("profIDShow").innerText="ID:"+d.player_id;document.getElementById("profBankID").innerText=d.bank_id;document.getElementById("profRank").innerText="#-";document.getElementById("profWins").innerText=d.wins;document.getElementById("profLoss").innerText=d.losses;document.getElementById("profGold").innerText=d.gold;document.getElementById("profGems").innerText=d.gems;document.getElementById("profCrypto").innerText="BTC "+(d.crypto.BTC||0)+" | ETH "+(d.crypto.ETH||0)+" | DOGE "+(d.crypto.DOGE||0);document.getElementById("profCars").innerText=(d.cars||[]).join(", ")||"None";document.getElementById("profGalaxy").innerText=d.galaxy_level||1;document.getElementById("profGalaxyKills").innerText=d.galaxy_kills||0;var lb=document.getElementById("profLoanBox");if(d.active_loan){lb.style.display="block";lb.innerHTML="🏦 ACTIVE LOAN<br>"+d.active_loan.amount+" "+d.active_loan.currency+"<br>Repay by: "+d.active_loan.repay_date+"<br><button class='btn' type='button' onclick=\"payLoanNow('"+d.active_loan.id+"')\">💰 Pay Now</button>"}else lb.style.display="none";var fh="";(d.friends||[]).forEach(function(f){fh+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0;display:flex;justify-content:space-between'><span>👥 "+f+"</span><button class='btn' type='button' style='width:auto;padding:6px 10px' onclick=\"openChatWith('"+f+"')\">💬 Chat</button></div>"});document.getElementById("profFriends").innerHTML=fh||"No friends yet";var rh="";(d.friend_requests||[]).forEach(function(rq){rh+="<div style='padding:10px;background:rgba(255,215,0,.2);border-radius:12px;margin:6px 0'>👥 "+rq.from+"<br><button class='btn' type='button' onclick=\"respondFriend('"+rq.id+"',true)\">✅ Accept</button><button class='btn2' type='button' onclick=\"respondFriend('"+rq.id+"',false)\">❌ Decline</button></div>"});document.getElementById("profFriendReqs").innerHTML=rh||"No pending requests";var inv=d.items||[];var h="";inv.forEach(function(it){h+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0'>🎒 "+it+"</div>"});document.getElementById("profInventory").innerHTML=h||"No items";var cb=document.getElementById("consumeBox");var drink=inv.find(function(x){return /Cola|Juice|Drink/.test(x)});var food=inv.find(function(x){return /Burger|Pizza|Donut/.test(x)});var h2="";if(drink)h2+="<button class='btn' type='button' onclick=\"consumeP('"+drink+"')\">🥤 Drink "+drink+"</button>";if(food)h2+="<button class='btn2' type='button' onclick=\"consumeP('"+food+"')\">🍔 Eat "+food+"</button>";cb.innerHTML=h2})}
+function openMyProfile(){showPage("page-profile");fetch("/api/player?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){document.getElementById("profName").innerText=special(d.name,user.password);document.getElementById("profIDShow").innerText="ID:"+d.player_id;document.getElementById("profBankID").innerText=d.bank_id;document.getElementById("profRank").innerText="#-";document.getElementById("profWins").innerText=d.wins;document.getElementById("profLoss").innerText=d.losses;document.getElementById("profGold").innerText=d.gold;document.getElementById("profGems").innerText=d.gems;var cr="";if(d.crypto){for(var k in d.crypto){if(d.crypto[k]>0)cr+=k+": "+d.crypto[k]+" "}}document.getElementById("profCrypto").innerText=cr||"None";document.getElementById("profCars").innerText=(d.cars||[]).join(", ")||"None";document.getElementById("profGalaxy").innerText=d.galaxy_level||1;document.getElementById("profGalaxyKills").innerText=d.galaxy_kills||0;var lb=document.getElementById("profLoanBox");if(d.active_loan){lb.style.display="block";lb.innerHTML="🏦 ACTIVE LOAN<br>"+d.active_loan.amount+" "+d.active_loan.currency+"<br>Repay by: "+d.active_loan.repay_date+"<br><button class='btn' type='button' onclick=\"payLoanNow('"+d.active_loan.id+"')\">💰 Pay Now</button>"}else lb.style.display="none";var fh="";(d.friends||[]).forEach(function(f){fh+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0;display:flex;justify-content:space-between'><span>👥 "+f+"</span><button class='btn' type='button' style='width:auto;padding:6px 10px' onclick=\"openChatWith('"+f+"')\">💬 Chat</button></div>"});document.getElementById("profFriends").innerHTML=fh||"No friends yet";var rh="";(d.friend_requests||[]).forEach(function(rq){rh+="<div style='padding:10px;background:rgba(255,215,0,.2);border-radius:12px;margin:6px 0'>👥 "+rq.from+"<br><button class='btn' type='button' onclick=\"respondFriend('"+rq.id+"',true)\">✅ Accept</button><button class='btn2' type='button' onclick=\"respondFriend('"+rq.id+"',false)\">❌ Decline</button></div>"});document.getElementById("profFriendReqs").innerHTML=rh||"No pending requests";var inv=d.items||[];var h="";inv.forEach(function(it){h+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0'>🎒 "+it+"</div>"});document.getElementById("profInventory").innerHTML=h||"No items";var cb=document.getElementById("consumeBox");var drink=inv.find(function(x){return /Cola|Juice|Drink/.test(x)});var food=inv.find(function(x){return /Burger|Pizza|Donut/.test(x)});var h2="";if(drink)h2+="<button class='btn' type='button' onclick=\"consumeP('"+drink+"')\">🥤 Drink "+drink+"</button>";if(food)h2+="<button class='btn2' type='button' onclick=\"consumeP('"+food+"')\">🍔 Eat "+food+"</button>";cb.innerHTML=h2})}
 function respondFriend(id,ok){fetch("/api/friend_respond",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,request_id:id,accept:ok})}).then(function(){toast(ok?"✅ Friend Accepted":"❌ Declined");openMyProfile()})}
 function sendFriendTo(pid){fetch("/api/friend_request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,target_id:pid})}).then(function(r){return r.json()}).then(function(d){toast(d.error||"✅ Friend Request Sent")})}
 function sendFriendRequest(){var dg=document.getElementById("addFriendDigits").value.replace(/[^0-9]/g,"");if(dg.length!==8){toast("8 digits");return}sendFriendTo("INF-"+dg)}
@@ -647,16 +494,13 @@ function doSend(){var dg=document.getElementById("sendDigits").value.replace(/[^
 function doWithdraw(){var amt=parseInt(document.getElementById("withdrawAmt").value||"0");var cur=document.getElementById("withdrawCur").value;openPin("PIN withdraw "+amt,function(pin){fetch("/api/bank_action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,amount:amt,action:"withdraw",currency:cur})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;myGems=d.gems;saveLocal();toast("✅ Withdrawn")})})}
 function doDeposit(){var amt=parseInt(document.getElementById("depositAmt").value||"0");var cur=document.getElementById("depositCur").value;openPin("PIN deposit "+amt,function(pin){fetch("/api/bank_action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,amount:amt,action:"deposit",currency:cur})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;myGems=d.gems;saveLocal();toast("✅ Deposited")})})}
 function doExchange(dir){var amt=parseInt(document.getElementById("exAmt").value||"0");openPin("PIN Exchange",function(pin){fetch("/api/exchange",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,amount:amt,direction:dir})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;myGems=d.gems;saveLocal();toast("✅ Exchanged")})})}
-function openCrypto(){showPage("page-crypto");fetch("/api/crypto?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){cryptoPrices=d.prices;cryptoHold=d.holdings;document.getElementById("cryptoGold").innerText=d.gold;var h="";["BTC","ETH","DOGE"].forEach(function(c){var price=d.prices[c];var amt=c==="BTC"?0.001:c==="ETH"?0.05:10;h+="<div style='padding:12px;background:rgba(0,0,0,.4);border-radius:14px;margin:8px 0'><b>₿ "+c+"</b> - Price: <b>"+price+" Gold</b><br>You hold: <b>"+(d.holdings[c]||0)+" "+c+"</b><br><input id='cr_"+c+"' type='number' step='any' value='"+amt+"' placeholder='Amount'><div style='display:flex;gap:8px'><button class='btn' type='button' style='background:#00cc44' onclick=\"cryptoTrade('"+c+"','buy')\">BUY</button><button class='btn2' type='button' onclick=\"cryptoTrade('"+c+"','sell')\">SELL</button></div></div>"});document.getElementById("cryptoList").innerHTML=h})}
-function cryptoTrade(coin,action){var amt=parseFloat(document.getElementById("cr_"+coin).value||"0");if(!amt){toast("Enter amount");return}openPin("PIN Crypto "+action+" "+coin,function(pin){fetch("/api/crypto_trade",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,coin:coin,amount:amt,action:action})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;cryptoHold=d.holdings;saveLocal();toast("✅ Crypto "+action+" done");openCrypto()})})}
+function openCrypto(){showPage("page-crypto");fetch("/api/crypto?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){cryptoPrices=d.prices;cryptoHold=d.holdings;document.getElementById("cryptoGold").innerText=d.gold;var h="";for(var k in d.prices){h+="<div class='card' style='margin:8px 0'><b>₿ "+k+" - "+d.prices[k]+" Gold</b><br><small>You hold: "+(d.holdings[k]||0)+" "+k+"</small><br><input id='crAmt_"+k+"' type='number' step='0.001' placeholder='Amount e.g 0.01'><button class='btn' type='button' onclick=\"cryptoTrade('"+k+"','buy')\">🟢 Buy</button><button class='btn2' type='button' onclick=\"cryptoTrade('"+k+"','sell')\">🔴 Sell</button></div>"}document.getElementById("cryptoList").innerHTML=h})}
+function cryptoTrade(coin,act){var amt=parseFloat(document.getElementById("crAmt_"+coin).value||"0");if(!amt){toast("Enter amount");return}openPin("PIN Crypto "+act+" "+coin,function(pin){fetch("/api/crypto_trade",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,coin:coin,amount:amt,action:act})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}toast("✅ Crypto "+act+" done @ "+d.price);openCrypto()})})}
 function openNotifs(){showPage("page-notifs");fetch("/api/player?name="+encodeURIComponent(user.name)).then(function(r){return r.json()}).then(function(d){var h="";(d.notifs||[]).slice().reverse().forEach(function(n){if(n.type==="loan_request"&&isDom()){h+="<div style='padding:12px;background:rgba(255,215,0,.2);border-radius:12px;margin:6px 0'><b>🏦 LOAN:</b> "+n.text+"<br><input type='date' id='domDate_"+n.loan_id+"' value='"+(n.repay_date||"")+"'><br><button class='btn' type='button' onclick=\"dominicLoan('"+n.loan_id+"',true)\">✅ Approve</button><button class='btn2' type='button' onclick=\"dominicLoan('"+n.loan_id+"',false)\">❌ Decline</button></div>"}else if(n.type==="request"&&isDom()){h+="<div style='padding:12px;background:rgba(255,0,255,.15);border-radius:12px;margin:6px 0'><b>🔒 SECRET:</b> "+n.text+"<br><input type='number' id='domAmt_"+n.request_id+"' value='"+(n.amount||"")+"' placeholder='Amount'><br><button class='btn' type='button' onclick=\"dominicReq('"+n.request_id+"','"+n.currency+"')\">✅ Approve</button></div>"}else if(n.type==="loan_date_change"){h+="<div style='padding:12px;background:#00ff88;color:#000;border-radius:12px;margin:6px 0'><b>📅 Dominic changed date to "+n.new_date+"</b><br><button class='btn' type='button' style='background:#000;color:#fff' onclick=\"showLoanDatePopup('"+n.loan_id+"','"+n.new_date+"')\">📅 View / Accept</button></div>"}else{h+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0'>"+n.text+"<br><small>"+(n.time||"")+"</small></div>"}});document.getElementById("notifList").innerHTML=h||"No notifications"})}
 function showLoanDatePopup(id,dt){pendingLoanForDate=id;document.getElementById("loanDatePopupText").innerText="Dominic set repay date to "+dt+". Tap Yes to receive loan, No to refund.";document.getElementById("loanDateInput").value=dt;var o=document.getElementById("loanDatePopup");o.classList.remove("hidden");o.style.display="flex"}
 function dominicLoan(id,ok){var dt="";var el=document.getElementById("domDate_"+id);if(el)dt=el.value;openPin("PIN Dominic Loan",function(pin){fetch("/api/loan_dominic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:pin,loan_id:id,approve:ok,new_date:dt})}).then(function(r){return r.json()}).then(function(d){toast(d.error||(ok?"✅ Loan Approved":"❌ Declined"));openNotifs();loadMe()})})}
 function dominicReq(id,cur){var amt=document.getElementById("domAmt_"+id).value;openPin("PIN Secret",function(pin){fetch("/api/request_approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:pin,request_id:id,amount:amt,currency:cur})}).then(function(r){return r.json()}).then(function(d){toast(d.error||"✅ Secret Approved");openNotifs()})})}
-function openEconomy(){if(!isDom()){toast("Dominic only");return}showPage("page-economy");fetch("/api/economy?name=dominic&password=2164").then(function(r){return r.json()}).then(function(d){var e=d.economy;document.getElementById("ecoGold").innerText=e.gold;document.getElementById("ecoGems").innerText=e.gems;document.getElementById("ecoBankGold").innerText=e.bank_gold;document.getElementById("ecoBankGems").innerText=e.bank_gems;document.getElementById("ecoLottery").innerText=e.lottery||0;document.getElementById("ecoBackup").innerText=e.backup||0;document.getElementById("ecoStatus").innerText=e.gold<0?"⚠️ NEGATIVE - Emergency unlocked":"✅ Economy Healthy";document.getElementById("emergencyBtn").disabled=e.gold>=0;document.getElementById("emergencyBtn").style.background=e.gold<0?"#ff2222":"#666";var cb="";var cp=e.crypto||{BTC:85000,ETH:4200,DOGE:2};["BTC","ETH","DOGE"].forEach(function(c){cb+="<div>₿ "+c+": <b>"+cp[c]+" Gold</b></div>"});document.getElementById("ecoCryptoBox").innerHTML=cb;var h="";(d.backups||[]).forEach(function(b){h+="<div>"+b.file+" - Players: "+b.players+" - Exists: "+b.exists+"</div>"});document.getElementById("ecoBackups").innerHTML=h;var rh="";(d.requests||[]).forEach(function(rq){rh+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0'>🔒 "+rq.from+" wants "+rq.amount+" "+rq.currency+"</div>"});document.getElementById("ecoRequests").innerHTML=rh||"No requests";var lh="";(d.loans||[]).forEach(function(l){lh+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px**CONTINUATION — paste this right after where it stopped, do NOT repaste from the top:**
-
-```js
-"<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0'>🏦 "+l.from+" - "+l.amount+" "+l.currency+" repay "+l.repay_date+"<br><input type='date' id='ecoDate_"+l.id+"' value='"+l.repay_date+"'><button class='btn' type='button' onclick=\"dominicLoanEco('"+l.id+"',true)\">Approve</button></div>"});document.getElementById("ecoLoans").innerHTML=lh||"No loans"})}
+function openEconomy(){if(!isDom()){toast("Dominic only");return}showPage("page-economy");fetch("/api/economy?name=dominic&password=2164").then(function(r){return r.json()}).then(function(d){var e=d.economy;document.getElementById("ecoGold").innerText=e.gold;document.getElementById("ecoGems").innerText=e.gems;document.getElementById("ecoBankGold").innerText=e.bank_gold;document.getElementById("ecoBankGems").innerText=e.bank_gems;document.getElementById("ecoLottery").innerText=e.lottery||0;document.getElementById("ecoBackup").innerText=e.backup||0;document.getElementById("ecoStatus").innerText=e.gold<0?"⚠️ NEGATIVE - Emergency unlocked":"✅ Economy Healthy";document.getElementById("emergencyBtn").disabled=e.gold>=0;document.getElementById("emergencyBtn").style.background=e.gold<0?"#ff2222":"#666";var ch="";if(e.crypto){for(var k in e.crypto)ch+="₿ "+k+": "+e.crypto[k]+" Gold<br>"}document.getElementById("ecoCryptoBox").innerHTML=ch;var h="";(d.backups||[]).forEach(function(b){h+="<div>"+b.file+" - Players: "+b.players+" - Exists: "+b.exists+"</div>"});document.getElementById("ecoBackups").innerHTML=h;var rh="";(d.requests||[]).forEach(function(rq){rh+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0'>🔒 "+rq.from+" wants "+rq.amount+" "+rq.currency+"</div>"});document.getElementById("ecoRequests").innerHTML=rh||"No requests";var lh="";(d.loans||[]).forEach(function(l){lh+="<div style='padding:10px;background:rgba(0,0,0,.4);border-radius:12px;margin:6px 0'>🏦 "+l.from+" - "+l.amount+" "+l.currency+" repay "+l.repay_date+"<br><input type='date' id='ecoDate_"+l.id+"' value='"+l.repay_date+"'><button class='btn' type='button' onclick=\"dominicLoanEco('"+l.id+"',true)\">Approve</button></div>"});document.getElementById("ecoLoans").innerHTML=lh||"No loans"})}
 function dominicLoanEco(id,ok){var dt=document.getElementById("ecoDate_"+id).value;openPin("PIN Dominic",function(pin){fetch("/api/loan_dominic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({admin:"dominic",pin:pin,loan_id:id,approve:ok,new_date:dt})}).then(function(){toast("Done");openEconomy()})})}
 function doEmergency(){openPin("PIN Emergency",function(pin){fetch("/api/emergency",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:"dominic",pin:pin})}).then(function(r){return r.json()}).then(function(d){toast(d.error||"🚨 Economy Restored");openEconomy()})})}
 function openAnnounce(){if(!isDom()){toast("Dominic only");return}var o=document.getElementById("announceOverlay");o.classList.remove("hidden");o.style.display="flex"}
@@ -669,19 +513,20 @@ function openMenuPage(){hideMenu();showPage("page-menu");document.getElementById
 function openReview(t){reviewType=t;showPage("page-review");document.getElementById("reviewTitle").innerText=t==="bug"?"🐛 Report Bug":"⭐ Review"}
 function submitReview(){var t=document.getElementById("reviewText").value;fetch("/api/review",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,type:reviewType,text:t})}).then(function(){toast("✅ Sent");goDash()})}
 function openLottery(){showPage("page-lottery")}
-function playLottery(){var bet=parseInt(document.getElementById("lotBet").value||"0");var cur=document.getElementById("lotCur").value;openPin("PIN Lottery",function(pin){fetch("/api/lottery",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,bet:bet,currency:cur})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;myGems=d.gems;saveLocal();document.getElementById("lotResult").innerHTML=d.result.win?"🎉 WON +"+d.result.prize:"😢 Lost "+d.result.lost})})}
+function playLottery(){var bet=parseInt(document.getElementById("lotBet").value||"0");var cur=document.getElementById("lotCur").value;openPin("PIN Lottery",function(pin){fetch("/api/lottery",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:user.name,pin:pin,bet:bet,currency:cur})}).then(function(r){return r.json()}).then(function(d){if(d.error){toast(d.error);return}myGold=d.gold;myGems=d.gems;saveLocal();document.getElementById("lotResult").innerHTML=d.result.win?"🎉 WON +"+d.result.prize:"Continue from where it stopped — paste this **right after** the cut line, don't repaste the whole file ❤️
+
+```js
+"😢 Lost "+d.result.lost})})}
 function openSciFi(){var now=new Date();var unlock=new Date(2026,11,25);if(now<unlock){showPage("page-coming");var diff=unlock-now;var days=Math.floor(diff/86400000);document.getElementById("countDown").innerText=days+" days left";return}showPage("page-scifi");document.getElementById("scifiList").innerHTML="<button class='btn' type='button' onclick=\"startGalaxy()\">🌌 Galaxy Shooter</button><button class='btn' type='button' onclick=\"startDino()\">🦖 Dino Jump</button><button class='btn' type='button' onclick=\"startMatch()\">🍬 Royal Match</button>"}
-function startGalaxy(){showPage("page-game");document.getElementById("gameTitle").innerText="🌌 Galaxy Shooter";document.getElementById("gameBody").innerHTML="<p>Kills: <b id='gKills'>0</b></p><button class='btn' type='button' onclick='galaxyKills++;document.getElementById(\"gKills\").innerText=galaxyKills;if(galaxyKills%5==0){wins+=5;myGold+=500;saveLocal();syncScore();toast(\"+5 Wins +500 Gold\")}'>🔫 SHOOT</button><button class='btn2' type='button' onclick='goDash()'>Back</button>"}
+function startGalaxy(){showPage("page-game");document.getElementById("gameTitle").innerText="🌌 Galaxy Shooter";var gk=0;document.getElementById("gameBody").innerHTML="<p>Kills: <b id='gKills'>0</b></p><button class='btn' type='button' onclick='galaxyShoot()'>🔫 SHOOT</button><button class='btn2' type='button' onclick='goDash()'>Back</button>";window.galaxyShoot=function(){gk++;document.getElementById("gKills").innerText=gk;if(gk%5==0){wins+=5;myGold+=500;saveLocal();syncScore();toast("+5 Wins +500 Gold")}}}
 function startDino(){showPage("page-game");document.getElementById("gameTitle").innerText="🦖 Dino Jump";var j=0;document.getElementById("gameBody").innerHTML="<p>Jumps: <b id='dJumps'>0</b></p><button class='btn' type='button' id='dinoBtn'>🦖 JUMP</button><button class='btn2' type='button' onclick='goDash()'>Back</button>";document.getElementById("dinoBtn").onclick=function(){j++;document.getElementById("dJumps").innerText=j;if(j%10==0){wins+=2;saveLocal();syncScore();toast("+2 Wins")}}}
-function startMatch(){showPage("page-game");document.getElementById("gameTitle").innerText="🍬 Royal Match";document.getElementById("gameBody").innerHTML="<p>Score: <b id='mScore'>0</b></p><div class='grid'><div class='box' onclick='matchHit()'>🍬</div><div class='box' onclick='matchHit()'>🍭</div><div class='box' onclick='matchHit()'>🍫</div><div class='box' onclick='matchHit()'>🍩</div></div><button class='btn2' type='button' onclick='goDash()'>Back</button>"}
-function matchHit(){matchScore++;document.getElementById("mScore").innerText=matchScore;if(matchScore%5==0){wins+=1;myGold+=100;saveLocal();syncScore();toast("+1 Win +100 Gold")}}
-function hostPickMode(m){toast("Challenge: "+m);goDash()}
-function openRiddles(){showPage("page-game");document.getElementById("gameTitle").innerText="🧩 Choose Riddles";document.getElementById("gameBody").innerHTML="<button class='btn' type='button' onclick=\"startQuiz('HARD')\">🧠 Hard Riddles</button><button class='btn' type='button' onclick=\"startQuiz('LOVE')\">💖 Love Riddles</button><button class='btn' type='button' onclick=\"startQuiz('LOGIC')\">🧮 Logic / Smart</button><button class='btn' type='button' onclick=\"startQuiz('PROG')\">💻 Programmers</button><button class='btn' type='button' onclick=\"startQuiz('FUNNY')\">😂 Funny</button><button class='btn2' type='button' onclick='goDash()'>Back</button>"}
-function openBible(){startQuiz("BIBLE")}
-function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
-function startQuiz(cat){quizCat=cat;quizScore=0;quizLoss=0;quizIdx=0;var pool=RIDDLE_BANK.filter(function(r){return r[0]===cat});var fresh=pool.filter(function(r){return seenQs.indexOf(cat+":"+r[1])<0});if(fresh.length<10){fresh=pool;seenQs=seenQs.filter(function(s){return s.indexOf(cat+":")!==0})}quizRound=shuffle(fresh.slice()).slice(0,10);showPage("page-game");document.getElementById("gameTitle").innerText=(cat==="BIBLE"?"📖 Bible Fight":cat==="HARD"?"🧩 Hard Riddles":cat==="LOVE"?"💖 Love Riddles":cat==="LOGIC"?"🧮 Logic":cat==="PROG"?"💻 Programmers":"😂 Funny")+" - 10 Questions";showQuizQ()}
-function showQuizQ(){if(quizT)clearInterval(quizT);if(quizIdx>=quizRound.length){wins+=quizScore;losses+=quizLoss;myGold+=quizScore*100;saveLocal();syncScore();document.getElementById("gameBody").innerHTML="<h3>Done! ✅ "+quizScore+" / 10 | ❌ "+quizLoss+"</h3><p>+ "+(quizScore*100)+" Gold</p><p>Score: "+(quizScore<3?"Normal":quizScore<=5?"Smart":quizScore<=8?"Genius":"Professor")+"</p><button class='btn' type='button' onclick='openRiddles()'>Play Again</button><button class='btn2' type='button' onclick='goDash()'>Back Home</button>";return}var q=quizRound[quizIdx];seenQs.push(quizCat+":"+q[1]);saveLocal();var opts=shuffle([q[2],q[3],q[4]]);quizLeft=30;document.getElementById("gameBody").innerHTML="<p>Q"+(quizIdx+1)+"/10 | ✅ "+quizScore+" ❌ "+quizLoss+"</p><p><b>"+q[1]+"</b></p><p>⏱ <b id='quizTimer'>30</b>s</p><div class='timerBar'><div class='timerFill' id='quizBar' style='width:100%'></div></div><div id='quizOpts'></div>";var oh="";opts.forEach(function(o,i){oh+="<button class='opt' type='button' onclick=\"answerQuiz("+i+")\">"+(i+1)+". "+o+"</button>"});document.getElementById("quizOpts").innerHTML=oh;window._quizAns=opts.indexOf(q[2]);quizT=setInterval(function(){quizLeft--;var tt=document.getElementById("quizTimer");if(tt)tt.innerText=quizLeft;var bb=document.getElementById("quizBar");if(bb)bb.style.width=(quizLeft/30*100)+"%";if(quizLeft<=0){clearInterval(quizT);quizLoss++;toast("⏰ Time up! Answer: "+q[2]);quizIdx++;showQuizQ()}},1000)}
-function answerQuiz(i){if(quizT)clearInterval(quizT);var q=quizRound[quizIdx];if(i===window._quizAns){quizScore++;toast("✅ Correct +1")}else{quizLoss++;toast("❌ Answer: "+q[2])}quizIdx++;showQuizQ()}
+function startMatch(){showPage("page-game");document.getElementById("gameTitle").innerText="🍬 Royal Match";var ms=0;document.getElementById("gameBody").innerHTML="<p>Score: <b id='mScore'>0</b></p><div class='grid'><div class='box' onclick='matchHit()'>🍬</div><div class='box' onclick='matchHit()'>🍭</div><div class='box' onclick='matchHit()'>🍫</div><div class='box' onclick='matchHit()'>🍩</div></div><button class='btn2' type='button' onclick='goDash()'>Back</button>";window.matchHit=function(){ms++;document.getElementById("mScore").innerText=ms;if(ms%5==0){wins+=1;myGold+=100;saveLocal();syncScore();toast("+1 Win +100 Gold")}}}
+function hostPickMode(m){toast("Challenge mode: "+m);goDash()}
+function openRiddles(){showPage("page-game");document.getElementById("gameTitle").innerText="🧩 Choose Riddle Type";document.getElementById("gameBody").innerHTML="<button class='btn' type='button' onclick=\"startQuiz('Riddles','HARD')\">🧠 Hard Riddles</button><button class='btn' type='button' onclick=\"startQuiz('Riddles','LOVE')\">💖 Love Riddles</button><button class='btn' type='button' onclick=\"startQuiz('Riddles','LOGIC')\">🧮 Logic / Smart</button><button class='btn' type='button' onclick=\"startQuiz('Riddles','PROG')\">💻 Programmers</button><button class='btn' type='button' onclick=\"startQuiz('Riddles','FUNNY')\">😂 Funny</button><button class='btn2' type='button' onclick='goDash()'>Back</button>"}
+function openBible(){startQuiz("Bible Fight","BIBLE")}
+function startQuiz(mode,cat){quizMode=mode;quizCat=cat;quizScore=0;quizLoss=0;quizIdx=0;var all=parseRB().filter(function(x){return x.cat===cat});var fresh=all.filter(function(x){return seenQs.indexOf(x.id)<0});if(fresh.length<10){fresh=all;seenQs=seenQs.filter(function(s){return s.indexOf(cat+"|")!==0});saveLocal()}for(var i=fresh.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=fresh[i];fresh[i]=fresh[j];fresh[j]=t}quizRound=fresh.slice(0,10);showPage("page-game");document.getElementById("gameTitle").innerText=mode+" - "+cat+" (10 Qs)";showQuizQ()}
+function showQuizQ(){if(quizT){clearInterval(quizT);quizT=null}if(quizIdx>=quizRound.length){wins+=quizScore;losses+=quizLoss;myGold+=quizScore*100;saveLocal();syncScore();document.getElementById("gameBody").innerHTML="<h3>Done! ✅ "+quizScore+" / 10 - ❌ "+quizLoss+" wrong</h3><p>+ "+(quizScore*100)+" Gold</p><button class='btn' type='button' onclick='goDash()'>Back Home</button>";return}var q=quizRound[quizIdx];if(seenQs.indexOf(q.id)<0){seenQs.push(q.id);saveLocal();syncScore()}var opts=[q.a,q.w1,q.w2];for(var i=opts.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=opts[i];opts[i]=opts[j];opts[j]=t}var oh="";opts.forEach(function(o,ix){oh+="<button class='opt' type='button' onclick=\"answerQuiz("+ix+")\">"+(ix+1)+". "+o+"</button>"});document.getElementById("gameBody").innerHTML="<p>Q"+(quizIdx+1)+"/10 - ✅ "+quizScore+" ❌ "+quizLoss+"</p><p><b>"+q.q+"</b></p><div style='font-size:22px;font-weight:900;color:#ffd700'>⏱ <span id='quizTime'>30</span>s</div><div class='timerBar'><div class='timerFill' id='quizBar' style='width:100%'></div></div>"+oh;quizLeft=30;quizT=setInterval(function(){quizLeft--;var el=document.getElementById("quizTime");if(el)el.innerText=quizLeft;var bar=document.getElementById("quizBar");if(bar)bar.style.width=(quizLeft/30*100)+"%";if(quizLeft<=0){clearInterval(quizT);quizT=null;quizLoss++;toast("⏰ Time up! Answer: "+q.a);quizIdx++;setTimeout(showQuizQ,800)}},1000);window.quizOpts=opts}
+function answerQuiz(ix){if(quizT){clearInterval(quizT);quizT=null}var q=quizRound[quizIdx];var chosen=window.quizOpts[ix];if(chosen===q.a){quizScore++;toast("✅ Correct +1")}else{quizLoss++;toast("❌ Answer: "+q.a)}quizIdx++;showQuizQ()}
 function setShopCat(c){shopCat=c;openShop()}
 function openShop(){showPage("page-shop");renderShop()}
 function renderShop(){var items=[["Toyota Corolla",5000,"Cars"],["BMW M4",15000,"Cars"],["Lamborghini",50000,"Cars"],["Ferrari",60000,"Cars"],["Tesla",30000,"Cars"],["Mercedes",25000,"Cars"],["Audi",20000,"Cars"],["Range Rover",28000,"Cars"],["Hilux",18000,"Cars"],["Nissan GTR",22000,"Cars"],["Bugatti",100000,"Cars"],["Burger",500,"Food"],["Pizza",800,"Food"],["Donut",300,"Food"],["Cola",200,"Food"],["Juice",250,"Food"],["Phone",8000,"Tech"],["Laptop",20000,"Tech"],["Headphones",5000,"Tech"],["Dog",10000,"Pets"],["Cat",8000,"Pets"]];var grid=document.getElementById("shopGrid");if(!grid)return;var html="";items.forEach(function(it){if(shopCat!=="All"&&it[2]!==shopCat)return;var owned=myCars.indexOf(it[0])>=0;html+="<div class='shopBox'><b>"+it[0]+"</b><div>Gold "+it[1]+"</div><div style='font-size:11px;color:#ffd700'>"+it[2]+"</div>"+(owned?"<div style='color:#00ff88;font-weight:900'>OWNED</div>":"<button class='btn' type='button' onclick=\"buyShopItem('"+it[0]+"',"+it[1]+")\">Buy</button>")+"</div>"});grid.innerHTML=html||"No items"}
@@ -693,11 +538,11 @@ function sendMsg(){var t=document.getElementById("msgInput").value.trim();if(!t|
 function openPin(desc,cb){pinCb=cb;document.getElementById("pinDesc").innerText=desc;document.getElementById("pinInput").value="";var o=document.getElementById("pinOverlay");o.classList.remove("hidden");o.style.display="flex";playPin()}
 function closePin(){var o=document.getElementById("pinOverlay");o.classList.add("hidden");o.style.display="none";pinCb=null}
 function confirmPin(){var pin=document.getElementById("pinInput").value.trim();if(pin.length!==4){toast("4 digits");return}var cb=pinCb;closePin();if(cb)cb(pin)}
-function setupMenu(){var mb=document.getElementById("menuBtn");if(mb){mb.onclick=function(e){e.stopPropagation();var drop=document.getElementById("menuDrop");if(drop.classList.contains("hidden")){var items="";if(isDom()){items+="<div onclick=\"hideMenu();openEconomy()\">Economy (Dominic)</div><div onclick=\"hideMenu();openAnnounce()\">Announcement</div><div onclick=\"hideMenu();openServerInfo()\">Server Info</div><div onclick=\"hideMenu();showPage('page-update')\">Update</div><div onclick=\"hideMenu();toggleGameSwitch()\" style='color:#ff5555'>SWITCH ON/OFF</div>"}items+="<div onclick=\"hideMenu();openMenuPage()\">Menu</div><div onclick=\"hideMenu();openShop()\">Shop</div><div onclick=\"hideMenu();openLottery()\">Lottery</div><div onclick=\"hideMenu();openCrypto()\">Crypto</div><div onclick=\"hideMenu();toggleSound()\">Sound ON/OFF</div><div onclick=\"hideMenu();openMyProfile()\">My Profile</div><div onclick=\"hideMenu();doLogout()\" style='color:#ff5555'>Logout</div>";drop.innerHTML=items;drop.classList.remove("hidden");drop.style.display="block"}else hideMenu()}};var pb=document.getElementById("profileBtn");if(pb)pb.onclick=function(){openMyProfile()};document.addEventListener("click",function(e){var drop=document.getElementById("menuDrop");var btn=document.getElementById("menuBtn");if(drop&&btn&&!drop.contains(e.target)&&e.target!==btn){hideMenu()}})}
+function setupMenu(){var mb=document.getElementById("menuBtn");if(mb){mb.onclick=function(e){e.stopPropagation();var drop=document.getElementById("menuDrop");if(drop.classList.contains("hidden")){var items="";if(isDom()){items+="<div onclick=\"hideMenu();openEconomy()\">Economy (Dominic)</div><div onclick=\"hideMenu();openAnnounce()\">Announcement</div><div onclick=\"hideMenu();openServerInfo()\">Server Info</div><div onclick=\"hideMenu();showPage('page-update')\">Update</div><div onclick=\"hideMenu();toggleGameSwitch()\" style='color:#ff5555'>SWITCH ON/OFF</div>"}items+="<div onclick=\"hideMenu();openMenuPage()\">Menu</div><div onclick=\"hideMenu();openShop()\">Shop</div><div onclick=\"hideMenu();openLottery()\">Lottery</div><div onclick=\"hideMenu();openCrypto()\">Crypto</div><div onclick=\"hideMenu();toggleSound()\">Sound ON/OFF</div><div onclick=\"hideMenu();openMyProfile()\">My Profile</div><div onclick=\"hideMenu();doLogout()\" style='color:#ff5555'>Logout</div>";drop.innerHTML=items;drop.classList.remove("hidden");drop.style.display="block"}else hideMenu()}};var pb=document.getElementById("profileBtn");if(pb)pb.onclick=function(){hideMenu();openMyProfile()};document.addEventListener("click",function(e){var drop=document.getElementById("menuDrop");var btn=document.getElementById("menuBtn");if(drop&&btn&&!drop.contains(e.target)&&e.target!==btn){hideMenu()}})}
 setupMenu();
-try{document.getElementById("enterBtn").onclick=function(){enterClicked()}}catch(e){}
-if(user){fetch("/api/player?name="+encodeURIComponent(user.name)+"&password="+encodeURIComponent(user.password)).then(function(r){return r.json()}).then(function(d){if(d&&d.found&&d.password_ok!==false){wins=d.wins||0;losses=d.losses||0;myGold=d.gold||0;myGems=d.gems||0;myPlayerID=d.player_id||"";myBankID=d.bank_id||"";saveLocal()}}).catch(function(){})}
+try{var eb=document.getElementById("enterBtn");if(eb)eb.onclick=function(){enterClicked()}}catch(e){}
+if(user){fetch("/api/player?name="+encodeURIComponent(user.name)+"&password="+encodeURIComponent(user.password)).then(function(r){return r.json()}).then(function(d){if(d&&d.found&&d.password_ok!==false){wins=d.wins||0;losses=d.losses||0;myGold=d.gold||0;myGems=d.gems||0;myPlayerID=d.player_id||"";myBankID=d.bank_id||"";if(d.crypto)cryptoHold=d.crypto;saveLocal()}}).catch(function(){})}
 </script></body></html>"""
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+if __name__=="__main__":
+    port=int(os.environ.get("PORT",5000))
+    app.run(host="0.0.0.0",port=port)
